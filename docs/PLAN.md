@@ -449,3 +449,7 @@ Checks actually run:
 Bug found by tests and fixed: timestamp parse errors echoed the offending input into rejection reasons; reasons now come from a fixed vocabulary.
 
 Not done / limits (explicit): no real export has been read or imported; the owner-run import (`scripts/import-export.ps1 -ExportPath <file> -Migrate`) migrates the live store 0001 -> 0002 and is pending the owner. Real Health Auto Export authentication/delivery/retry, certificate renewal integration and enabling `/api/ingest` on the LAN remain required before routine syncing. Deep/REM descriptive target categories and all UI are Phase 3. Weighted HR deferred (P18). Floats with 1e-9 test tolerance rather than exact decimals. Defaults chosen without separate approval: plausibility limits, provisional below 14 baseline nights, circular resultant threshold 0.1, qty cross-check 120 s, completion lookahead 30 min (3 h nap threshold was approved via "most logical").
+
+## Phase 2 checkpoint commit and handoff (2026-10-29)
+
+Local commit 45eddae "Phase 2: ingest, sleep-session domain and versioned scoring" created after all checks above passed (staged list reviewed: source, tests, docs, scripts/import-export.ps1 only; no data, secrets, builds or screenshots). Not pushed. I01, D02 and C01 are done on synthetic data. Phase 3 (UI/analytics) is NOT approved; the owner-run real-export import and enabling `/api/ingest` remain separate owner steps. Awaiting explicit Phase 3 approval.
