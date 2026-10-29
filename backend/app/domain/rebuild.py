@@ -45,16 +45,26 @@ def latest_night(conn: Connection, cfg: DeriveConfig = DERIVE) -> date | None:
     return date.fromisoformat(value) if value else None
 
 
+def _longest_interval(conn: Connection, metric: str) -> int:
+    value = conn.execute(
+        text("SELECT max(end_utc - start_utc) FROM observations WHERE metric = :m"), {"m": metric}
+    ).scalar()
+    return int(value or 0)
+
+
 def _window_mean(
-    conn: Connection, metric: str, column: str, start: int, end: int
+    conn: Connection, metric: str, column: str, start: int, end: int, longest: int
 ) -> tuple[float | None, int]:
     # Representative instant is the interval midpoint (start + end) / 2, kept in integers.
+    # The start_utc bounds are implied by the midpoint test and the longest stored interval;
+    # they let SQLite use the (metric, status, start_utc) index instead of scanning the metric.
     rows = conn.execute(
         text(
             f"SELECT {column} FROM observations WHERE metric = :m AND status = 'active' "
+            "AND start_utc BETWEEN :first AND :end "
             "AND start_utc + end_utc BETWEEN :lo AND :hi ORDER BY start_utc, id"
         ),
-        {"m": metric, "lo": 2 * start, "hi": 2 * end},
+        {"m": metric, "first": start - longest // 2 - 1, "end": end, "lo": 2 * start, "hi": 2 * end},
     ).scalars()
     values = [float(v) for v in rows]
     return (math.fsum(values) / len(values), len(values)) if values else (None, 0)
@@ -94,7 +104,12 @@ def _flags(conn: Connection, night: Night, cfg: DeriveConfig) -> list[str]:
 
 
 def _store_night(
-    conn: Connection, day: date, night: Night, cfg: DeriveConfig, now: int
+    conn: Connection,
+    day: date,
+    night: Night,
+    cfg: DeriveConfig,
+    now: int,
+    longest: dict[str, int],
 ) -> dict[str, object]:
     window = night.selected
     asleep, awake = window.asleep, window.awake
@@ -119,7 +134,7 @@ def _store_night(
         "computed_utc": now,
     }
     for key, (metric, column) in PHYSIOLOGY.items():
-        mean, count = _window_mean(conn, metric, column, window.start, window.end)
+        mean, count = _window_mean(conn, metric, column, window.start, window.end, longest[metric])
         values[f"{key}_mean"], values[f"{key}_n"] = mean, count
     values["hr_method"] = "simple_mean_fallback" if values["hr_n"] else None
     columns = ", ".join(values)
@@ -252,8 +267,9 @@ def rebuild(
         {"v": score.version, "d": start_day.isoformat()},
     )
     rebuilt = sorted(day for day in nights if day >= start_day)
+    longest = {metric: _longest_interval(conn, metric) for metric, _ in PHYSIOLOGY.values()}
     for day in rebuilt:
-        _store_night(conn, day, nights[day], derive, stamp)
+        _store_night(conn, day, nights[day], derive, stamp, longest)
     windows = sorted(
         (night.selected.start, night.selected.end)
         for day, night in nights.items()

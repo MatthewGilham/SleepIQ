@@ -6,7 +6,7 @@ Last updated: 2026-10-29.
 
 This is the **single source of truth for implementation progress**: phase/task statuses, dependencies, blockers, approvals and actual verification evidence. [DECISIONS.md](DECISIONS.md) remains authoritative for owner choices; specialist documents specify behavior. [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) defines workflow. Do not create a second task log.
 
-**Current phase: 4 - Optional AI (AI01 done and live-validated once on synthetic data; see "Phase 4 completion" and "Phase 4 live validation" at the end of this file). Phase 5 is NOT approved and has not been started.**
+**Current phase: 5 - Hardening/delivery (owner approved entry 2026-10-29: "Complete phase 5. Update the docs as you go."). Agent-side R01 work is done; the owner-observed acceptance items in OPERATIONS.md remain open, so R01 is `awaiting_approval`, not `done`. See "Phase 5 R01 progress" at the end of this file. Phases 1-4 are done.**
 
 **Phase 1 note:** Owner confirmed Phase 1 entry: "Yes i did approve this" (2026-10-28). Foundation exit review passed with P16's explicit phone-test deferral. P17's checked local commit was made as fb23f79. (Historical: Phase 2 was later approved and completed; see the Phase 2 sections at the end of this file.)
 
@@ -40,11 +40,11 @@ Estimate: five working weeks at roughly 20–25 focused development hours/week, 
 | 2 — Ingest/domain/scoring (week 2) | done; committed 45eddae (follow-ups through 2c96203); owner approved entry 2026-10-29 ("Complete phase 2") | I01, D02, C01; six metrics, corrections/backfill, sessions, versioned metrics/scores | Domain fixtures exact; incremental rebuild equals clean rebuild; missingness/no-future-leakage gates pass; request Phase 3 approval |
 | 3 — UI/analytics (weeks 3–4) | done; committed a0c7860 on 2026-10-29 (owner directed "Complete the remaining parts of phase 3"); evidence in "Phase 3 completion" at end of file | U01, U02, A01, X01; approved design, charts/presets, statistics, exports | Browser workflows, numerical references, keyboard/missing-data tests pass; request Phase 4 approval |
 | 4 — Optional AI (early week 5) | done; live-validated 2026-10-29 on synthetic data; owner approved entry 2026-10-29 ("Lets get started with phase 4. Once completed stop.") and controls P23; commit recorded in Phase 4 completion | AI01; local evidence, explicit Analyze, provider boundary | Zero calls without action; approved payload/budget; mocked failures safe. Live validation requires separate spend/disclosure approval; request Phase 5 approval |
-| 5 — Hardening/delivery (rest week 5) | planned; no entry authorization | R01; security/performance/regression, real-device delivery/retry, restore drill, Windows guide | Full checks pass; owner demonstrations and operational approval recorded |
+| 5 — Hardening/delivery (rest week 5) | in_progress: agent work complete 2026-10-29, owner acceptance items open; entry approved 2026-10-29 (P24) | R01; security/performance/regression, real-device delivery/retry, restore drill, Windows guide | Full checks pass; owner demonstrations and operational approval recorded |
 
 If AI approval is deferred, record that limitation and obtain explicit approval to change phase sequencing; never silently declare AI complete or skip a phase gate.
 
-At each boundary record: exit evidence IDs, unresolved risks, next scope, owner approval text/date and limitations. Phase 1 approved 2026-10-28: "Yes i did approve this". Phases 2-5 have no entry authorization.
+At each boundary record: exit evidence IDs, unresolved risks, next scope, owner approval text/date and limitations. Phase 1 approved 2026-10-28: "Yes i did approve this". Phases 2-5 were each later approved by the owner; see the phase rows. Phase 5 approval: "Complete phase 5. Update the docs as you go." (2026-10-29).
 
 ## Task register
 
@@ -68,7 +68,7 @@ Risk notation: complexity / risk / uncertainty = low, medium or high. Models are
 | A01 | 3 / done (synthetic; see A01 completion evidence) | D02/P6, low-coverage/clock-metric contract (resolved by P21). backend/app/analytics/ and correlation UI | `python -m pytest backend/tests/analytics -q`; `npm --prefix frontend run test:e2e -- analytics`: paired n, missing exclusions, constants/<3 pairs, z-scores and calendar rolling outputs match independent references | medium/high/medium; S high / T high |
 | X01 | 3 / done (CSV only; XLSX deferred, see P22) | D02/C01/U01. Export endpoints and UI only; CSV first, settle whether XLSX also required before task starts | `python -m pytest backend/tests/export -q`; `npm --prefix frontend run test:e2e -- export`: selected/all metrics/ranges, units, missing values, versions, spreadsheet-formula escaping and secret exclusion pass | medium/medium/medium; T medium / L high |
 | AI01 | 4 / done (mocked tests plus one live synthetic validation) | A01 + Phase 4 approval; backend/app/ai/ and Analytics panel. Provider/budget/disclosure gate before live request | `python -m pytest backend/tests/ai -q`; `npm --prefix frontend run test:e2e -- ai`: no background calls, minimal approved evidence, no write tools, quota/timeout failures safe, request budget enforced | high/high/high; S high + A privacy review / T high + same review |
-| R01 | 5 / planned | Prior gates + Phase 5 approval. Hardening, docs and targeted fixes only; broaden scope only with approval | `pwsh -File scripts/check.ps1 -Suite Full`: static/unit/integration/build/browser/security checks pass. Separate owner-observed real encrypted ingest, downtime/retry, restore and launcher acceptance; record performance workload/results | high/high/medium; S high + A final review / T high + same review |
+| R01 | 5 / awaiting_approval (agent work done; owner acceptance open) | Prior gates + Phase 5 approval. Hardening, docs and targeted fixes only; broaden scope only with approval | `pwsh -File scripts/check.ps1 -Suite Full`: static/unit/integration/build/browser/security checks pass. Separate owner-observed real encrypted ingest, downtime/retry, restore and launcher acceptance; record performance workload/results | high/high/medium; S high + A final review / T high + same review |
 
 ## Progressive reading and rollback
 
@@ -609,3 +609,23 @@ Owner: "Before you start phase 5, do live valadation tests. If that works as exp
 Result: HTTP 200; model `gpt-6-luna` accepted; usage counter 1/day and 1/month; provider-reported tokens 1,510 input and 184 output (well inside the 15,000/2,000 caps); evidence r = 0.03 over 45 paired nights, which matches an independent `statistics.correlation` calculation; the answer cited n = 45 and r = 0.03, said the association is almost nil, noted it is one person's data and not causation, gave no medical advice and invented no figures; the key did not appear in the reply or script output. Checks run: the script's two refusal paths (no `--confirm-spend`, no key) and Ruff/secret scan on the script (158 files PASS).
 
 Not covered: only one question and one model were tried; real-data answer quality, the 401/429/timeout provider paths against the real service (these are covered by mock-transport tests only) and the provider's retention behaviour are unverified. No real health data has been sent. The `.env` key stays outside Git (ignored); its value was never displayed or stored elsewhere.
+
+### Phase 5 R01 progress (2026-10-29)
+Owner: "Complete phase 5. Update the docs as you go." Recorded as P24. Scope: R01 only. No real store, certificate, firewall, DNS or API spend was touched; synthetic data only.
+
+Built:
+- `scripts/check.ps1 -Suite Full` now exists (it previously threw "not implemented"): Foundation stages, then Playwright, `perf-check.py --enforce`, and `security.ps1` (secret scan, `pip-audit`, `npm audit`).
+- `scripts/perf-check.py`: synthetic calibration workload (1,826 nights, 944,042 observations, direct bulk insert into a throwaway store) with enforced budgets.
+- **Defect found and fixed by calibration:** clean rebuild was quadratic. Measured before the fix: 365 nights 11.3 s, 730 nights 44.4 s, 1,826 nights 279.8 s. Cause: `_window_mean` filtered on `start_utc + end_utc BETWEEN`, which SQLite cannot index, so every night scanned every reading of that metric. Fix in `backend/app/domain/rebuild.py`: add `start_utc` bounds implied by the midpoint test and the longest stored interval per metric (computed once per rebuild). Results are unchanged (domain/scoring/ingest suites pass); after the fix 365 nights 0.7 s and 1,826 nights 3.5 s. New test `backend/tests/domain/test_rebuild_windows.py` (a 12-hour reading whose midpoint is inside the night counts, one whose midpoint is outside does not); with the bound sabotaged the test fails.
+- Docs: new `docs/OPERATIONS.md` (Windows operator guide, backups, restore drill, downtime behaviour, certificate renewal, troubleshooting, owner acceptance checklist A1-A6); TESTING.md release-gate and performance section; DECISIONS P24.
+
+Executed evidence (`powershell -NoProfile -File scripts/check.ps1 -Suite Full`, exit 0): Ruff PASS; Mypy PASS (44 files); **205 backend tests passed** (1 new); **33 frontend unit tests passed**; strict TypeScript/Vite build PASS; **21 Playwright tests passed** (Edge, synthetic store); performance run within budget (dashboard 2-8 ms, five-year chart 25-40 ms, 30-day chart 10 ms, incremental import 0.35 s, clean rebuild 3.5 s; Windows 11, AMD64 family 25, Python 3.13.16); secret scan PASS (162 files); `pip-audit` no known vulnerabilities; `npm audit` 0 vulnerabilities. The Vite build step prints a PowerShell `NativeCommandError` banner for stderr output but the stage and the suite exit 0. Documentation edits made after that run (OPERATIONS.md, TESTING.md, PLAN.md, DECISIONS.md) cannot affect those checks; the secret scan was rerun afterwards.
+
+Open items, not claimed done:
+1. Owner acceptance A1-A6 in OPERATIONS.md. Already observed earlier (Phase 2 evidence): one manual real export reached the receiver over TLS with authentication and `batches` rose 15 to 16. Still unobserved: scheduled/unattended runs, retry after downtime, a populated-snapshot restore drill, launcher acceptance, real-store dashboard review.
+2. **Certificate expires 2027-01-27**; renewal is documented but not integrated or demonstrated. Any scheduled-renewal automation touches certificate/credential policy and needs owner approval.
+3. PC address 192.168.1.190 is not reserved (P12); an address change breaks uploads until DNS is updated.
+4. The receiver task does not run the backup scheduler; backups happen only while the dashboard is launched.
+5. Backups are on the same PC and unencrypted.
+6. `ruff format --check` still lists 5 older files under `backend/tests/security/` (not part of the gate).
+7. Performance numbers are from one PC with synthetic data; real-store timings are unmeasured.
