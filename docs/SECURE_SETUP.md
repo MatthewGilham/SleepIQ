@@ -90,3 +90,22 @@ Apple documents [POST and JSON request bodies](https://support.apple.com/guide/s
 Only after the Shortcut is configured, the owner runs view-ingest-credential.ps1 -Show in normal PowerShell. The viewer reads only the existing private DPAPI ingest token, never the Cloudflare token, and starts masked in a native window. The owner can explicitly reveal it and manually type it into the Shortcut's runtime prompt. No console/clipboard/network/plaintext-file output is implemented; the window closes after three minutes or Close. Do not send screenshots/photos of it, paste it into chat/email, or run the viewer through an agent capture. Normal process/screen access by other software running as this user remains outside its protection.
 
 Run the Shortcut with a deliberately wrong runtime input first: expect HTTP401/Unauthorized. Then rerun with the real local credential: expect status transport_ok and stored=false. Report only the sanitized result, not the credential or request headers. This is a Shortcuts test, not Health Auto Export compatibility or real-data import evidence. Close the viewer and stop the foreground receiver with Ctrl+C at the end. Existing single-rule firewall rollback remains available.
+
+
+## Auto-sync with Health Auto Export (P19)
+
+Receiver with real ingestion (normal PowerShell, project folder; the P15 firewall rule is already in place):
+
+```powershell
+powershell -File scripts/start-probe.ps1 -Activate -EnableIngest
+```
+
+Without `-EnableIngest` the receiver stays the synthetic probe and `/api/ingest` returns 503. Leave the window open; Ctrl+C stops it. It shares the data-writer lock with imports and backups. It does not run the backup scheduler: the daily backup still happens when the dashboard launcher (`scripts/start.ps1`) runs, and the importer's CLI also snapshots first.
+
+Phone (Health Auto Export, REST API automation; field names may differ slightly by app version):
+- URL `https://sync.mgilham.online:8443/api/ingest`, method POST, JSON version 2.
+- Header `Authorization` with value `Bearer ` + the ingest credential. Show it locally with `powershell -File scripts/view-ingest-credential.ps1 -Show`, reveal it, and type it into the phone. Never paste it into chat, email or screenshots.
+- Metrics: the six configured ones. Summarize Data off. Prefer batching on. Date range: a short overlapping window (for example previous 7 days) so a day the PC was off is caught up; overlaps are skipped by the importer. Avoid "Since last sync" until retry behaviour is observed.
+- First run: a manual run inside the automation with a short range, then `powershell -File scripts/import-report.ps1` to confirm counts increased.
+
+Limits: syncs only while the PC is on and the receiver window is open on the home Wi-Fi; the PC address is not reserved (P12); the certificate expires 2027-01-27 and renewal is not yet automated.

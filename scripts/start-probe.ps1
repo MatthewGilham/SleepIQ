@@ -1,4 +1,4 @@
-param([switch]$Activate)
+param([switch]$Activate, [switch]$EnableIngest)
 $ErrorActionPreference = 'Stop'
 if (!$Activate) { throw 'LAN activation requires owner approval and explicit -Activate.' }
 . (Join-Path $PSScriptRoot 'private-folders.ps1')
@@ -36,17 +36,28 @@ $protected = Get-Content -Raw -LiteralPath $tokenPath | ConvertTo-SecureString
 $pointer = [IntPtr]::Zero
 $oldToken = $env:SLEEPIQ_PROBE_TOKEN
 $oldCertificates = $env:SLEEPIQ_PROBE_CERTIFICATES
+$oldIngest = $env:SLEEPIQ_INGEST_DATA
+$env:SLEEPIQ_INGEST_DATA = $null
+if ($EnableIngest) {
+    # Real health uploads are accepted ONLY with this explicit switch (P19). Store must be provisioned.
+    $dataRoot = Join-Path $env:LOCALAPPDATA 'SleepIQ'
+    Assert-PrivateFolder $dataRoot
+    Assert-PrivateFolder (Join-Path $dataRoot 'raw')
+    $env:SLEEPIQ_INGEST_DATA = $dataRoot
+}
 Push-Location (Join-Path $root 'backend')
 try {
     $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($protected)
     $env:SLEEPIQ_PROBE_TOKEN = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer)
     $env:SLEEPIQ_PROBE_CERTIFICATES = $certificates
-    Write-Output 'Starting synthetic HTTPS probe. Ctrl+C stops it. No health imports or dashboard routes.'
+    if ($EnableIngest) { Write-Output 'Starting HTTPS receiver WITH health ingestion enabled. Ctrl+C stops it. No dashboard routes.' }
+    else { Write-Output 'Starting synthetic HTTPS probe. Ctrl+C stops it. No health imports or dashboard routes.' }
     & (Join-Path $root '.venv/Scripts/python.exe') -m app.transport.serve
     if ($LASTEXITCODE) { throw 'Probe did not finish cleanly; no plaintext fallback was started.' }
 } finally {
     $env:SLEEPIQ_PROBE_TOKEN = $oldToken
     $env:SLEEPIQ_PROBE_CERTIFICATES = $oldCertificates
+    $env:SLEEPIQ_INGEST_DATA = $oldIngest
     if ($pointer -ne [IntPtr]::Zero) { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer) }
     Pop-Location
 }
