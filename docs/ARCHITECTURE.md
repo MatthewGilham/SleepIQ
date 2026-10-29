@@ -322,7 +322,7 @@ Use docs/PLAN.md as the sole progress, task and phase-approval record. DEVELOPME
 
 ## D01 implemented persistence boundary
 
-`backend/app/db/engine.py` creates an explicitly selected SQLite connection pool with modern transaction handling, a five-second busy timeout and foreign-key enforcement on each connection. The caller must supply an existing directory. `db/migrate.py` invokes Alembic on a caller-owned transaction. Revision `0001_settings` creates only the non-secret `app_settings` table with a unique, bounded key and JSON-text value; health observations and presets are not implemented here. Destructive downgrade is refused. No migration runs on app import or browser startup. Real-database migration remains an owner approval gate. Tests use fresh synthetic databases under ignored `.cache/test-runs` and preserve artifacts for inspection.
+`backend/app/db/engine.py` creates an explicitly selected SQLite connection pool with modern transaction handling, a five-second busy timeout and foreign-key enforcement on each connection. The caller must supply an existing directory. `db/migrate.py` invokes Alembic on a caller-owned transaction. Revision `0001_settings` creates only the non-secret `app_settings` table with a unique, bounded key and JSON-text value; health observations and presets are not implemented in that revision (Phase 2 adds revision `0002_health` with observations, import batches and derived tables; presets remain Phase 3). Destructive downgrade is refused. No migration runs on app import or browser startup. Real-database migration remains an owner approval gate. Tests use fresh synthetic databases under ignored `.cache/test-runs` and preserve artifacts for inspection.
 
 ## Phase 2 ingest and domain boundary
 
