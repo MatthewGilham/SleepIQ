@@ -28,7 +28,7 @@ Canonical Apple Health readings (DATA_PIPELINE.md)
   → versioned consistency calculation (uses only preceding 30 calendar days)
   → versioned composition / missing-data rule
   → SleepIQ score + component explanations + method/version IDs
-  → stored/rebuildable historical scores → dashboard, charts and AI context
+  → stored/rebuildable historical scores → dashboard and charts
 ```
 
 Keep pure Python functions (input → output), tests, and configuration separate from FastAPI routes and UI. Configuration changes require explicit version bump and recomputation. Avoid formula settings hidden in frontend code or mutable, unversioned database fields.

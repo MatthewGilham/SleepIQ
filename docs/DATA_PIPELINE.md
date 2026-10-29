@@ -39,7 +39,7 @@ A real ~1.53 MB JSON POST returned HTTP 200 and was saved by the temporary recei
 | `resting_heart_rate` | 4 | `count/min` | `start`, `end`, `qty`, `source` |
 | `apple_sleeping_wrist_temperature` | 4 | `degC` | `start`, `end`, `qty`, `source` |
 
-**Important:** These are sample counts from one inspected export, not a guaranteed full-history inventory. A timestamp can include an explicit `+0100` or `+0000` offset. The 25 October 2026 fall-back creates *visually reversed local clock times* within an actually positive-duration interval. `heartbeatSeries` is nested source data; retain or handle it deliberately rather than implicitly sending it to AI. Observed wrist temperature intervals can span many hours; do not assume they are instantaneous points. The exporter may evolve: validate by observed version/keys and fail safely on unsupported shapes.
+**Important:** These are sample counts from one inspected export, not a guaranteed full-history inventory. A timestamp can include an explicit `+0100` or `+0000` offset. The 25 October 2026 fall-back creates *visually reversed local clock times* within an actually positive-duration interval. `heartbeatSeries` is nested source data; retain or handle it deliberately rather than implicitly. Observed wrist temperature intervals can span many hours; do not assume they are instantaneous points. The exporter may evolve: validate by observed version/keys and fail safely on unsupported shapes.
 
 ## 3. Proposed processing stages
 
@@ -61,7 +61,7 @@ JSON POST
   → session detection and sleep-date assignment
   → timestamp-based nightly metrics + quality flags
   → derived-metric versioned snapshots (rebuildable)
-  → analytics, charts, score inputs, optional user-invoked AI summaries
+  → analytics, charts, score inputs
 ```
 
 **Atomicity:** Never mark a batch 'processed' until the required database operations are committed. Failed or partial batches must be retryable without double-counting. Logging should include counts/status/error codes, *not* raw records.

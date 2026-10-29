@@ -44,7 +44,7 @@ Rollback / migration safety:
 
 ## 5. High-impact checkpoints
 
-Do not reopen approved P1-P7 choices without new evidence. Remaining phase-specific questions and authorization boundaries are maintained in docs/PLAN.md, including concrete DNS/certificate/firewall setup, evidence-dependent data rules, coherent visual approval, AI disclosure/budget and final operational readiness.
+Do not reopen approved P1-P7 choices without new evidence. Remaining phase-specific questions and authorization boundaries are maintained in docs/PLAN.md, including concrete DNS/certificate/firewall setup, evidence-dependent data rules, coherent visual approval and final operational readiness.
 
 Agents explain consequential unresolved choices with alternatives and trade-offs. Work within an approved phase can proceed on routine details; advancement between phases always requires explicit owner approval. Design approval is not blanket infrastructure or spending permission.
 

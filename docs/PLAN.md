@@ -784,8 +784,8 @@ Owner-requested on 2026-10-29 after U05; choices in DECISIONS P28. Order: U06, t
 | ID | Status | Objective and bounded files | Acceptance |
 |---|---|---|---|
 | U06 | done | **Remove the AI assistant completely.** Delete `backend/app/ai/`, `backend/tests/ai/`, `scripts/live-ai-check.py`, `frontend/src/ai.ts`, `ai.test.ts`, `Investigator.tsx`, `e2e/ai.spec.ts`; remove the AI wiring in `main.py`, `start.py`, `scripts/preview-charts.py`, the `/api/v1/analysis` boundary entry and the panel in `Analytics.tsx`. One idempotent start-up cleanup deletes only the `ai.usage.v1` settings row (owner-approved deletion; counts only, no health data). `httpx2` moves to dev dependencies (FastAPI's test client needs it). Docs: SECURITY, SETUP, OPERATIONS, ARCHITECTURE, PRODUCT, DESIGN, TESTING and AGENTS.md stop describing AI as a feature; A6 and P23 marked superseded. | U06-1 onward |
-| U07 | done (U07-4 owner view pending) | **Text stays inside its card at every width.** KPI cards (and any other card found overflowing) adapt to their own width with CSS container queries: the graphic stacks above the value and type steps down when the card is narrow. Files: `style.css`, small markup changes in `Analytics.tsx`/`Dashboard.tsx` only if needed. | U07-1 onward |
-| U08 | done (owner view optional) | **Average line per selected metric on the main chart.** A thin dotted horizontal line in the metric's colour at its mean over the whole selected range (not the zoomed part), labelled "avg ..." at the right edge, plus an "Average" row in the tooltip; "Show averages" toggle, on by default. Normalized mode: one shared line at 0. Bedtime/wake: no average line. The mean comes from Python (`normalization.mean` in the timeseries response, observed nights only); the page only positions and formats it. | U08-1 onward |
+| U07 | done | **Text stays inside its card at every width.** KPI cards (and any other card found overflowing) adapt to their own width with CSS container queries: the graphic stacks above the value and type steps down when the card is narrow. Files: `style.css`, small markup changes in `Analytics.tsx`/`Dashboard.tsx` only if needed. | U07-1 onward |
+| U08 | done | **Average line per selected metric on the main chart.** A thin dotted horizontal line in the metric's colour at its mean over the whole selected range (not the zoomed part), labelled "avg ..." at the right edge, plus an "Average" row in the tooltip; "Show averages" toggle, on by default. Normalized mode: one shared line at 0. Bedtime/wake: no average line. The mean comes from Python (`normalization.mean` in the timeseries response, observed nights only); the page only positions and formats it. | U08-1 onward |
 
 ### Acceptance criteria (round 2)
 
@@ -838,7 +838,7 @@ Owner-requested on 2026-10-29 after U05; choices in DECISIONS P28. Order: U06, t
 | U07-2 | Same file: mocked summary showing "10h 59m", "100.0 /100", "250 ms", "1000 of 1000" and "▲ 120 min vs previous 1000 days" at 1000 px passes |
 | G-1 | `check.ps1 -Suite Full` exit 0: Ruff, Mypy (41 files), 213 backend tests, 38 frontend unit tests, build, 45 Playwright tests, performance budgets, secret scan 170 files PASS, `pip-audit` and `npm audit` clean |
 | G-2, G-3 | Staged list held only U07 CSS, test and docs; commit `b4ebdd4` |
-| U07-4 | Pending: owner views Analytics at half and full screen |
+| U07-4 | Owner-reported pass (2026-10-29): after viewing Analytics, "I've had a look, I like it. Mark them as complete" |
 
 ### U08 verification evidence
 
@@ -851,3 +851,8 @@ Owner-requested on 2026-10-29 after U05; choices in DECISIONS P28. Order: U06, t
 | G-2, G-3 | Staged list held only U08 source, tests and docs; commit `c4861ed` |
 | Regression | First full run failed 5 older Playwright tests because average elements reused `data-metric`; renamed to `data-average`, no older test changed |
 | G-1 | `check.ps1 -Suite Full` exit 0: Ruff, Mypy (41 files), 214 backend tests, 39 frontend unit tests, build, 52 Playwright tests, performance budgets, secret scan 171 files PASS, `pip-audit` and `npm audit` clean |
+| Owner view | Owner-reported pass (2026-10-29): "I like it" |
+
+### Round 2 (P28) status
+
+U06, U07 and U08 are complete and accepted by the owner on 2026-10-29. Commits: U06 `a0f314c`, U07 `b4ebdd4`, U08 `c4861ed`. Docs sweep on acceptance: remaining AI references outside the U06-7 list (DESIGN, SCORING, DATA_PIPELINE, SECURITY, DEVELOPMENT_PLAN, ASTRA_PLANNING_PROMPT) now describe the app without the assistant; historical PLAN entries and superseded decisions are kept as records. No further round-2 work is planned; any new work needs owner approval.

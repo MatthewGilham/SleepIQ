@@ -44,7 +44,7 @@ Agents may: read task-relevant code/docs, edit scoped files, run local tests, cr
 Before daily use: encrypted auth tested **from the iPhone**, weak HTTP token path disabled, LAN rules verified, payload/abuse tests pass, no raw/private content in logs or Git, backup+restore tested, explicit owner approval. Short proof-of-concept setup is allowed only while supervised on a trusted LAN; stop it afterward.
 
 ## 8. Context routing
-Importer task reads ingress sections plus `DATA_PIPELINE.md`; AI task reads egress section plus `PRODUCT.md` analytics rules; deployment task reads transport/backups and `ARCHITECTURE.md`; all agents read `AGENTS.md` first. Raise unresolved security decisions with concise options, recommendation, risks, and await owner approval.
+Importer task reads ingress sections plus `DATA_PIPELINE.md`; deployment task reads transport/backups and `ARCHITECTURE.md`; all agents read `AGENTS.md` first. Raise unresolved security decisions with concise options, recommendation, risks, and await owner approval.
 
 ## Approved setup and recovery boundaries P1/P4/P5/P7
 - Public certificates do not authorize public ingress. Review domain/DNS provider, private hostname resolution, renewal and concrete firewall/certificate actions before execution. No private-root installation is selected.
