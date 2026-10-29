@@ -125,3 +125,14 @@ Boundaries unchanged: same Cloudflare token (Zone Read + DNS Edit on this zone o
 
 ## P26 Desktop launcher shortcut (2026-10-29)
 Owner asked for a Desktop shortcut that runs PowerShell and opens the app in Google Chrome, approved the plan and defaults ("Complete the task of creating a desktop launcher. Follow the plan."): visible window (the window is the on/off switch), built-in Windows icon, Chrome with fallback to the default browser. Implements A5 (manual launch by shortcut); no autostart, no execution-policy change, loopback only, no AI key in the shortcut. Scripts: `launch.ps1`, `launcher-tools.ps1`, `install-shortcut.ps1`.
+
+## P27 UI improvements: dashboard and Analytics redesign (2026-10-29)
+Owner choices from numbered options: (A) **full Analytics redesign**, previewed first; owner approved the synthetic preview ("I really like that new analytics page") and asked to add **deep sleep and REM over time**, as tiles and in the mixed graph; (B) **remove resting heart rate** from the dashboard, and from Analytics because sleeping heart rate covers it; (C) **step through recorded nights only** on the dashboard. Keep the multi-colour palette (Afterburn reds plus gold and ice-blue). Main chart: two axes are acceptable, and metrics that share a unit share an axis so more than two lines can show (example: total, deep and REM sleep alongside heart rate). Tasks U03-U05 in PLAN.md "Improvements".
+
+Agent defaults pending owner confirmation: all sleep durations on one hours axis; at most six lines; resting heart rate also leaves the CSV export (the export uses the same metric list; stored columns are kept).
+
+Open questions (asked 2026-10-29, unanswered):
+1. On a shared duration axis deep/REM (about 1-2 h) look flatter than total sleep (about 7 h). Accept that honest scale, or add a per-group "zoom to fit" so small lines show their movement? Normalised mode remains available either way.
+2. Also add Core and Awake time as tiles and chart lines, or only Deep and REM?
+3. Resting heart rate also removed from the CSV export (default yes)?
+4. Sleeping wrist temperature: check its coverage with the counts-only report and remove it the same way if it is always empty?
