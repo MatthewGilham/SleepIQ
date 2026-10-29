@@ -3,7 +3,7 @@ export type Physiology = {id:string;label:string;value:number|null;n:number};
 export type Component = {score:number;weight:number;neutral:boolean};
 export type DashboardScore = {status:"scored"|"insufficient_data";overall:number|null;consistency:number|null;version:string;ceiling:number;missing:string[];components:Record<string,Component>;consistency_detail:{available?:boolean;reason?:string|null;baseline_nights?:number;provisional?:boolean;onset_deviation_min?:number|null;wake_deviation_min?:number|null}};
 export type Latest = {wake_date:string;source:string;onset_local:string;wake_local:string;start_offset_min:number;end_offset_min:number;session_s:number;asleep_s:number;core_s:number;deep_s:number;rem_s:number;awake_s:number;efficiency:number;physiology:Physiology[];flags:string[];stages:{stage:Stage;start_s:number;duration_s:number}[];score:DashboardScore|null};
-export type DashboardData = {synthetic:boolean;versions:string[];import:{batches:number;last_received_utc:number|null;nights:number};latest:Latest|null;trend:{dates:string[];asleep_h:(number|null)[]}};
+export type DashboardData = {synthetic:boolean;versions:string[];import:{batches:number;last_received_utc:number|null;nights:number};latest:Latest|null;trend:{dates:string[];asleep_h:(number|null)[]};previous_night?:string|null;next_night?:string|null};
 export const units:Record<string,string>={hr:"bpm",hrv:"ms",resp:"breaths/min",temp:"°C"};
 export const physiologyDetail:Record<string,string>={hr:"Unweighted mean · overnight samples",hrv:"Mean SDNN · overnight samples",resp:"Overnight mean",temp:"Overnight mean"};
 const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],days=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
@@ -33,8 +33,20 @@ export function importText(info:DashboardData["import"]):string{
  if(!info.batches||info.last_received_utc===null)return "No imports yet";
  return `${info.nights} nights · last import ${new Date(info.last_received_utc*1000).toISOString().slice(0,10)}`;
 }
-export async function loadDashboard(signal:AbortSignal):Promise<DashboardData|"unconfigured">{
- const response=await fetch("/api/v1/dashboard",{signal});
+export const NIGHT_PATTERN=/^\d{4}-\d{2}-\d{2}$/;
+/** The `?night=` value in an address bar search string, only when it is shaped like a date. */
+export function nightFromSearch(search:string):string|null{const n=new URLSearchParams(search).get("night");return n&&NIGHT_PATTERN.test(n)?n:null;}
+/** Address-bar search string for a night; the latest night carries no parameter. */
+export function searchForNight(night:string|null):string{return night?`?night=${night}`:"";}
+export function arrowDirection(e:{key:string;target:unknown;altKey?:boolean;ctrlKey?:boolean;metaKey?:boolean;shiftKey?:boolean}):-1|1|0{
+ if(e.altKey||e.ctrlKey||e.metaKey||e.shiftKey||(e.key!=="ArrowLeft"&&e.key!=="ArrowRight"))return 0;
+ const t=e.target as {tagName?:string;isContentEditable?:boolean}|null;
+ if(t&&(t.isContentEditable||["INPUT","TEXTAREA","SELECT"].includes(t.tagName??"")))return 0;
+ return e.key==="ArrowLeft"?-1:1;
+}
+export async function loadDashboard(signal:AbortSignal,night:string|null=null):Promise<DashboardData|"unconfigured">{
+ const response=await fetch(night?`/api/v1/dashboard?night=${encodeURIComponent(night)}`:"/api/v1/dashboard",{signal});
+ if(response.status===404&&night)throw new Error("No sleep was recorded for that night.");
  if(response.status===503||response.status===404)return "unconfigured";
  if(!response.ok)throw new Error(`Dashboard request failed (${response.status}).`);
  return await response.json() as DashboardData;

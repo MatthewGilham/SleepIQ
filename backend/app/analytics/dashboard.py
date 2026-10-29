@@ -1,7 +1,7 @@
-"""Latest-night dashboard read model. Reads derived rows and stage intervals; never writes."""
+"""Dashboard read model for one stored night (latest by default). Reads derived rows and stage intervals; never writes."""
 
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import Engine, text
@@ -47,19 +47,37 @@ def _score(row: Any) -> dict[str, Any] | None:
     }
 
 
-def dashboard(engine: Engine, synthetic: bool) -> dict[str, Any]:
+class NightNotFound(LookupError):
+    """The requested wake date has no stored night."""
+
+
+NEIGHBOUR = {
+    True: "SELECT min(wake_date) FROM nightly_metrics WHERE derivation_version=:v AND wake_date>:d",
+    False: "SELECT max(wake_date) FROM nightly_metrics WHERE derivation_version=:v AND wake_date<:d",
+}
+
+
+def _neighbour(conn: Any, wake_date: str, later: bool) -> str | None:
+    """Nearest stored wake date after (or before) this one; unrecorded days are skipped."""
+    found = conn.execute(text(NEIGHBOUR[later]), {"v": DERIVE.version, "d": wake_date}).scalar()
+    return str(found) if found is not None else None
+
+
+def dashboard(engine: Engine, synthetic: bool, wake_date: date | None = None) -> dict[str, Any]:
+    """Read model for `wake_date`, or the latest stored night when omitted."""
     with engine.connect() as conn:
+        query = "SELECT * FROM nightly_metrics WHERE derivation_version=:v"
+        params: dict[str, Any] = {"v": DERIVE.version}
+        if wake_date is not None:
+            query += " AND wake_date=:d"
+            params["d"] = wake_date.isoformat()
         night = (
-            conn.execute(
-                text(
-                    "SELECT * FROM nightly_metrics WHERE derivation_version=:v "
-                    "ORDER BY wake_date DESC LIMIT 1"
-                ),
-                {"v": DERIVE.version},
-            )
+            conn.execute(text(query + " ORDER BY wake_date DESC LIMIT 1"), params)
             .mappings()
             .first()
         )
+        if night is None and wake_date is not None:
+            raise NightNotFound
         batches = conn.execute(text("SELECT count(*), max(received_utc) FROM import_batches")).one()
         nights = conn.execute(
             text("SELECT count(*) FROM nightly_metrics WHERE derivation_version=:v"),
@@ -74,6 +92,8 @@ def dashboard(engine: Engine, synthetic: bool) -> dict[str, Any]:
                 "nights": nights,
             },
             "latest": None,
+            "previous_night": None,
+            "next_night": None,
             "trend": {"dates": [], "asleep_h": []},
         }
         if night is None:
@@ -89,6 +109,8 @@ def dashboard(engine: Engine, synthetic: bool) -> dict[str, Any]:
             .mappings()
             .first()
         )
+        result["previous_night"] = _neighbour(conn, night["wake_date"], later=False)
+        result["next_night"] = _neighbour(conn, night["wake_date"], later=True)
         start, end = night["session_start_utc"], night["session_end_utc"]
         stages = [
             {"stage": r[0], "start_s": r[1] - start, "duration_s": r[2] - r[1]}

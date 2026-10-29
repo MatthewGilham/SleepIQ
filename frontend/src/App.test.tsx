@@ -1,6 +1,7 @@
 ﻿import { expect, test } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { App, metricValue } from "./App";
+import { arrowDirection, nightFromSearch, searchForNight } from "./dashboardModel";
 
 test("missing measurements remain missing, including legitimate zero values", () => {
   expect(metricValue(null)).toBe("Missing data");
@@ -47,4 +48,22 @@ test("loading, error and empty live states are explicit and never show preview n
   const empty = renderToStaticMarkup(<App initial={{ kind: "ready", data: { ...data, latest: null, import: { batches: 0, last_received_utc: null, nights: 0 } } }} />);
   expect(empty).toContain("No sleep history available");
   expect(empty).toContain("No imports yet");
+});
+
+test("the viewed night round-trips through the address and ignores malformed values", () => {
+  expect(nightFromSearch("?night=2026-10-27")).toBe("2026-10-27");
+  expect(nightFromSearch("?night=abc")).toBeNull();
+  expect(nightFromSearch("")).toBeNull();
+  expect(searchForNight("2026-10-27")).toBe("?night=2026-10-27");
+  expect(searchForNight(null)).toBe("");
+});
+test("arrow keys navigate only without modifiers and outside form fields", () => {
+  const body = { tagName: "BODY" };
+  expect(arrowDirection({ key: "ArrowLeft", target: body })).toBe(-1);
+  expect(arrowDirection({ key: "ArrowRight", target: body })).toBe(1);
+  expect(arrowDirection({ key: "ArrowLeft", target: { tagName: "INPUT" } })).toBe(0);
+  expect(arrowDirection({ key: "ArrowRight", target: { tagName: "SELECT" } })).toBe(0);
+  expect(arrowDirection({ key: "ArrowLeft", target: { tagName: "DIV", isContentEditable: true } })).toBe(0);
+  expect(arrowDirection({ key: "ArrowLeft", target: body, altKey: true })).toBe(0);
+  expect(arrowDirection({ key: "ArrowUp", target: body })).toBe(0);
 });

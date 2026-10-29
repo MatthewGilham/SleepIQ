@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import Engine, text
 
 from app.analytics.catalog import BY_ID, CATALOG, Metric
-from app.analytics.dashboard import dashboard
+from app.analytics.dashboard import NightNotFound, dashboard
 from app.analytics.stats import ROLLING_MINIMUM, pearson, rolling_mean
 from app.db.coordinator import write_guard
 from app.domain.config import DERIVE, SCORE
@@ -289,8 +289,11 @@ def router(engine: Engine, data: Path, synthetic: bool = False) -> APIRouter:
         return [asdict(m) for m in CATALOG]
 
     @api.get("/dashboard")
-    def latest() -> dict[str, Any]:
-        return dashboard(engine, synthetic)
+    def latest(night: date | None = None) -> dict[str, Any]:
+        try:
+            return dashboard(engine, synthetic, night)
+        except NightNotFound:
+            raise HTTPException(404, "No sleep was recorded for that night") from None
 
     @api.post("/analytics/timeseries")
     def timeseries(selection: Selection) -> dict[str, Any]:

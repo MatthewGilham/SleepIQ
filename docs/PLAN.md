@@ -667,7 +667,7 @@ Owner-requested UI improvements after Phase 5 (2026-10-29). Choices are recorded
 | ID | Status | Objective and bounded files | Acceptance |
 |---|---|---|---|
 | U03 | done (2026-10-29) | **Remove resting heart rate** from the dashboard card grid (`analytics/dashboard.py` PHYSIOLOGY, `Dashboard.tsx`, `dashboardModel.ts`, synthetic preview in `App.tsx`) and from the Analytics/export catalog (`analytics/catalog.py`, `api.py` coverage map). Saved presets that list `rhr_mean` drop it silently on load. The stored `rhr_mean`/`rhr_n` columns and derivation stay untouched (no migration). | Criteria U03-1 onward, below |
-| U04 | planned | **Night-by-night navigation on the dashboard.** `GET /api/v1/dashboard?night=YYYY-MM-DD` (validated date; omitted = latest) returns that stored night plus `previous_night`/`next_night` (nearest stored wake dates, gaps skipped) and the 30-night trend ending on that night. UI: ← date → buttons, "Latest" button, Left/Right arrow keys when focus is not in a form field, `?night=` in the address so refresh keeps the place, buttons disabled at the ends, previous content kept (dimmed) while loading so the page does not jump. | Criteria U04-1 onward, below |
+| U04 | done (2026-10-29) | **Night-by-night navigation on the dashboard.** `GET /api/v1/dashboard?night=YYYY-MM-DD` (validated date; omitted = latest) returns that stored night plus `previous_night`/`next_night` (nearest stored wake dates, gaps skipped) and the 30-night trend ending on that night. UI: ← date → buttons, "Latest" button, Left/Right arrow keys when focus is not in a form field, `?night=` in the address so refresh keeps the place, buttons disabled at the ends, previous content kept (dimmed) while loading so the page does not jump. | Criteria U04-1 onward, below |
 | U05 | planned (after U03/U04) | **Analytics redesign** to the approved preview: KPI row (average sleep, average score gauge with 92.5 marker, average HRV, nights-recorded ring, each "vs previous period"); main interactive chart; stage composition ring; per-metric tiles (click to focus); stacked nightly stage bars; bedtime/wake strip. **Deep sleep, REM and Awake time** get their own tiles and are selectable in the main chart (Core is not added, per owner). **Same-unit grouping:** metrics sharing a unit share one axis, at most two axes (left/right) and up to six lines, e.g. total sleep + deep + REM on a shared duration axis with sleeping heart rate on the right. All sleep durations (total, deep, REM, awake) use one hours axis, honest scale by default, with a "zoom to fit" toggle for that axis (P27). More than two units → normalised mode (existing). Keep every current capability: presets, 7/30/90/all/custom, normalised mode, rolling averages, clock metrics, data table, keyboard access, gaps never bridged, AI panel at the foot. New summary figures (period averages, vs-previous deltas, stage composition, typical bedtime/wake quartiles) computed in Python by one new endpoint `POST /api/v1/analytics/summary`; the page only formats. Multi-colour palette (Afterburn reds plus gold and ice-blue) kept. | Criteria U05-1 onward, below |
 
 ### Acceptance criteria
@@ -735,3 +735,20 @@ Built: resting heart rate removed from the dashboard physiology list, metric cat
 | U03-6 | `git diff --name-only` shows no migration or `backend/app/domain/` file |
 | G-1 | `check.ps1 -Suite Full` exit 0: Ruff, Mypy (45 files), 231 backend tests, 36 frontend unit tests, build, 22 Playwright tests, performance budgets, secret scan 173 files PASS, `pip-audit` and `npm audit` clean |
 | G-4 | DESIGN.md, PRODUCT.md, SCORING.md, ARCHITECTURE.md updated |
+| G-2, G-3 | Staged list contained only U03 source, tests and docs; commit `9ac483a` |
+
+### U04 evidence (2026-10-29)
+Built: `GET /api/v1/dashboard?night=YYYY-MM-DD` (validated `date` query; omitted = latest) with `previous_night`/`next_night`; 404 plain message for an unrecorded night. UI: Previous / Next / Latest bar, Left/Right keys (`arrowDirection` ignores form fields and modified keys), `?night=` kept with `pushState`/`popstate`, previous night kept dimmed with `aria-busy` while loading, "Show latest night" recovery for a stale address. Missing HRV/HR/respiratory cards now say "No overnight samples" (wrist temperature keeps "No reading attributed to this night").
+
+| Criterion | Result |
+|---|---|
+| U04-1 | `test_default_is_latest_night_with_no_next` passes |
+| U04-2 | `test_neighbours_skip_unrecorded_days` passes (nights 1, 2, 5) |
+| U04-3 | `test_unknown_or_malformed_night_is_rejected_plainly` passes (404 plain message; 422 for `2026-13-40` and `abc`; empty store 404; no stored value echoed) |
+| U04-4 | `test_trend_ends_on_requested_night` passes |
+| U04-5 | `test_night_variant_keeps_local_origin_and_no_store_rules` passes (LAN client 403, bad origin 403, `no-store` on 200 and 404) |
+| U04-6 to U04-11 | `frontend/e2e/night-nav.spec.ts` (8 tests) pass; expected nights and values come from an independent TypeScript re-derivation of the synthetic store (asleep = 390 + i%40 minutes), not from the app. Also 2 new Vitest tests for the address and arrow-key helpers |
+| G-1 | `check.ps1 -Suite Full` exit 0: Ruff, Mypy (45 files), 236 backend tests, 38 frontend unit tests, build, 30 Playwright tests, performance budgets, secret scan 174 files PASS, `pip-audit` and `npm audit` clean |
+| G-4 | ARCHITECTURE.md (dashboard contract), DESIGN.md (navigation), TESTING.md (`-- night-nav` filter) updated |
+
+Not agent-tested: the feature on the owner's real 393-night store.
