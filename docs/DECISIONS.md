@@ -131,7 +131,9 @@ Owner choices from numbered options: (A) **full Analytics redesign**, previewed 
 
 Agent defaults pending owner confirmation: all sleep durations on one hours axis; at most six lines; resting heart rate also leaves the CSV export (the export uses the same metric list; stored columns are kept).
 
-Open questions (asked 2026-10-29, unanswered):
+Owner answers (2026-10-29): (1) honest shared duration axis **plus** a "zoom to fit" toggle for that axis; (2) no Core, but **add Awake time** as a tile and chart line; (3) resting heart rate also leaves the CSV export; (4) remove wrist temperature only if empty. Coverage check (counts only, read-only, owner-approved): 393 nights; wrist temperature present on 326, resting heart rate on 52. **Wrist temperature is kept**; resting heart rate removal stands.
+
+Questions as asked:
 1. On a shared duration axis deep/REM (about 1-2 h) look flatter than total sleep (about 7 h). Accept that honest scale, or add a per-group "zoom to fit" so small lines show their movement? Normalised mode remains available either way.
 2. Also add Core and Awake time as tiles and chart lines, or only Deep and REM?
 3. Resting heart rate also removed from the CSV export (default yes)?
