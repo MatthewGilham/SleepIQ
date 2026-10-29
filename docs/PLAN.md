@@ -600,3 +600,5 @@ Executed evidence:
 - `scripts/scan_source.py` PASS (157 files); `pip_audit` no known vulnerabilities; `uv lock` updated for the httpx2 move; no other dependency changes.
 
 Not done / limits: **no live request to OpenAI has been made**, so real response shape, token usage fields, model availability, current price and real answer quality are unverified; the first live check needs the owner's approval of a real key and its cost. The 3-characters-per-token input estimate is a pessimistic local ceiling, not the provider's tokenizer. Answer faithfulness (the model not misquoting numbers) cannot be proven by tests; the evidence table lets the owner check each answer.
+
+Phase 4 checkpoint commit: `8521029` "Phase 4: on-request AI analysis with local evidence and spend limits" (25 files; staged list reviewed: source, tests, docs, pyproject/uv.lock only; no data, secrets, builds or screenshots). Not pushed. Next scope if approved: Phase 5 (R01 hardening and delivery). Awaiting explicit owner approval; none recorded. A live AI validation remains a separate owner approval.
