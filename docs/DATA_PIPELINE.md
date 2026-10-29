@@ -175,6 +175,13 @@ The owner approved D1–D9 on 28 October 2026. The choices below are binding, wh
 
 This document is final for planning. Implementation agents use `AGENTS.md` for task-level context routing and `DECISIONS.md` for owner approvals. Any still-open implementation detail must be proposed with alternatives, pros/cons and an owner checkpoint where consequential; do not delay documentation completion or silently treat a recommendation as approval.
 
+## Phase 2 implemented contracts (P18)
+- Identity: the observed export has no provider IDs, so identity is a content fingerprint (metric, source, instants, offsets, stage, values); exact repeats are skipped. A different fingerprint in the same slot (or overlapping stage rows from an earlier batch of the same source) is stored `conflicting`; the first received stays active and affected nights are flagged `revised`.
+- Sessions: per-source chains joined by gaps up to 30 minutes (gaps are neither sleep nor Awake); overlapping rows resolve to the latest start without double counting and flag `overlapping_stages`; leading/trailing Awake trimmed; blocks under 3 h asleep are naps; Apple Watch source preferred (case-insensitive substring), others flagged; wake date is the local date at the window end in that row's offset.
+- Physiology: a reading whose midpoint is inside the window counts for the night (HR labelled `simple_mean_fallback` with n; HRV mean of SDNN with n); everything else is a general daily metric. Missing stays missing.
+- Rebuild: `domain/rebuild.rebuild(conn, from_date)`; incremental equals clean rebuild. Derived tables carry derive-1 / pilot-1 versions and a config hash.
+- Rejected rows are counted by fixed reason codes only; raw JSON is retained content-addressed as `raw/<sha256>.json`.
+
 ## Approved planning refinements P3-P5
 - Show latest selected night even if unscored; partial/conflicted status is separate from absent score inputs. Age alone does not prove source completeness.
 - P4 selects owner-supervised local metadata-only validation. Arrange the specific private input and supervision before access. Actual records, identifiers and payloads never enter agent/model context.

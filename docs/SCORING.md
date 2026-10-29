@@ -160,4 +160,6 @@ Never turn missing physiological readings into zeros. Do not manufacture histori
 - Total score = approved weighted sum. Preserve full calculation precision; display overall score to one decimal. Pilot range is theoretically 22.5-92.5 for eligible nights; disclose ceiling. Invalid inputs do not become scores.
 - The approved consistency penalty is 0.5 points per minute of circular onset/wake deviation, each subscore bounded 0-100 then averaged equally. Circular mean remains the proposed baseline estimator; define ambiguous/antipodal behavior before coding rather than fabricate a baseline.
 
+**Phase 2 implementation (P18):** `app/domain/scoring.py` and `config.py` (version `pilot-1`) implement these rules. Consistency baseline = valid unrevised sessions among the preceding 30 calendar dates (scored or not), minimum 7, provisional below 14, circular mean, with an undefined baseline (resultant length < 0.1) reported as Insufficient data; floats with 1e-9 test tolerance.
+
 **Checkpoint resolved:** P2 approved neutral pilot values and curves with worked examples. Example: duration 8 h, consistency 100, efficiency 95% gives 92.5; 7 h, consistency 90, efficiency 90% gives 80.25 before display rounding. Required HR/HRV must be present. Track outstanding edge contracts and phase approvals in docs/PLAN.md.

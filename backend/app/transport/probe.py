@@ -1,4 +1,4 @@
-"""Synthetic HTTPS/auth compatibility probe, not a health-data importer."""
+"""HTTPS/auth ingress boundary. Health ingestion is off unless a handler is explicitly supplied."""
 
 import asyncio
 import hashlib
@@ -14,6 +14,8 @@ from fastapi import FastAPI, Request
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+from app.ingest.parse import UnsupportedExport
 
 
 class IngressBoundary:
@@ -150,6 +152,10 @@ class IngressBoundary:
         await self.app(scope, replay, send)
 
 
+INGEST_BODY_LIMIT = 32 * 1024 * 1024
+INGEST_TIMEOUT = 60.0
+
+
 def create_probe(
     token: str,
     subnet: str = "192.168.1.0/24",
@@ -158,7 +164,11 @@ def create_probe(
     body_limit: int = 4096,
     timeout: float = 5,
     clock: Callable[[], float] = time.monotonic,
+    ingest: Callable[[bytes], dict[str, object]] | None = None,
 ) -> ASGIApp:
+    """`ingest` (default None = disabled, 503) receives an authenticated, size-bounded JSON body."""
+    if ingest is not None:
+        body_limit, timeout = max(body_limit, INGEST_BODY_LIMIT), max(timeout, INGEST_TIMEOUT)
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 
     @app.get("/health")
@@ -176,8 +186,19 @@ def create_probe(
         return JSONResponse({"status": "transport_ok", "stored": False})
 
     @app.post("/api/ingest")
-    def not_enabled() -> JSONResponse:
-        return JSONResponse({"detail": "Health ingestion is not enabled"}, status_code=503)
+    async def receive(request: Request) -> JSONResponse:
+        if ingest is None:
+            return JSONResponse({"detail": "Health ingestion is not enabled"}, status_code=503)
+        try:
+            summary = await asyncio.to_thread(ingest, await request.body())
+        except UnsupportedExport:
+            return JSONResponse({"detail": "Unsupported export"}, status_code=422)
+        except TimeoutError:
+            return JSONResponse({"detail": "Importer busy; retry"}, status_code=503)
+        except Exception:  # noqa: BLE001 - generic response on purpose; nothing was committed
+            # Nothing was committed (atomic import). No payload or error text is returned/logged.
+            return JSONResponse({"detail": "Import failed; retry"}, status_code=500)
+        return JSONResponse(summary)
 
     boundary = IngressBoundary(app, token, subnet, limit, body_limit, timeout, clock)
     # Host check wraps all requests, including health and auth errors.

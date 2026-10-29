@@ -2,16 +2,20 @@
 
 import os
 import ssl
+from collections.abc import Callable
 from pathlib import Path
 
 import uvicorn
 
+from app.ingest.service import make_handler
 from app.transport.probe import create_probe
 
 
-def configuration(token: str, certificates: Path) -> uvicorn.Config:
+def configuration(
+    token: str, certificates: Path, ingest: Callable[[bytes], dict[str, object]] | None = None
+) -> uvicorn.Config:
     return uvicorn.Config(
-        create_probe(token),
+        create_probe(token, ingest=ingest),
         host="192.168.1.190",
         port=8443,
         proxy_headers=False,
@@ -30,7 +34,9 @@ def configuration(token: str, certificates: Path) -> uvicorn.Config:
 def main() -> None:
     token = os.environ.pop("SLEEPIQ_PROBE_TOKEN")
     certificates = Path(os.environ.pop("SLEEPIQ_PROBE_CERTIFICATES"))
-    config = configuration(token, certificates)
+    # Health ingestion stays disabled unless the owner explicitly names a private data folder.
+    data = os.environ.pop("SLEEPIQ_INGEST_DATA", None)
+    config = configuration(token, certificates, make_handler(Path(data)) if data else None)
     # Validate the certificate/key pairing before binding. No plaintext fallback.
     config.load()
     if config.ssl is None:

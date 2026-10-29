@@ -15,13 +15,20 @@ def test_upgrade_is_repeatable_and_preserves_settings(scratch: Path) -> None:
         with engine.begin() as connection:
             connection.execute(text("INSERT INTO app_settings VALUES ('theme', '\"dark\"')"))
         upgrade(engine)
-        assert set(inspect(engine).get_table_names()) == {"alembic_version", "app_settings"}
+        assert set(inspect(engine).get_table_names()) == {
+            "alembic_version",
+            "app_settings",
+            "general_metrics",
+            "import_batches",
+            "nightly_metrics",
+            "nightly_scores",
+            "observations",
+        }
         with engine.connect() as connection:
             assert connection.scalar(text("SELECT value_json FROM app_settings")) == '"dark"'
             assert connection.scalar(text("PRAGMA foreign_keys")) == 1
             assert (
-                connection.scalar(text("SELECT version_num FROM alembic_version"))
-                == "0001_settings"
+                connection.scalar(text("SELECT version_num FROM alembic_version")) == "0002_health"
             )
     finally:
         engine.dispose()

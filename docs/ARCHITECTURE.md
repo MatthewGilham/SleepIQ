@@ -324,6 +324,10 @@ Use docs/PLAN.md as the sole progress, task and phase-approval record. DEVELOPME
 
 `backend/app/db/engine.py` creates an explicitly selected SQLite connection pool with modern transaction handling, a five-second busy timeout and foreign-key enforcement on each connection. The caller must supply an existing directory. `db/migrate.py` invokes Alembic on a caller-owned transaction. Revision `0001_settings` creates only the non-secret `app_settings` table with a unique, bounded key and JSON-text value; health observations and presets are not implemented here. Destructive downgrade is refused. No migration runs on app import or browser startup. Real-database migration remains an owner approval gate. Tests use fresh synthetic databases under ignored `.cache/test-runs` and preserve artifacts for inspection.
 
+## Phase 2 ingest and domain boundary
+
+`ingest/` validates and stores (parse, atomic store, CLI, service); `domain/` is pure session/metric/score logic plus `rebuild.py` (SQL orchestration); `transport/probe.py` hosts `/api/ingest`, which stays 503 unless `serve.py` is given `SLEEPIQ_INGEST_DATA`. Imports and backups share `db/coordinator.write_guard`. Details: DATA_PIPELINE.md, "Phase 2 implemented contracts".
+
 ## B01 backup foundation
 
 `db/backup.py` implements verified self-contained daily snapshots with immutable manifest inventory and SQLite consistency checks. `db/backup_cli.py` provides daily/verify/restore-isolated commands. `scripts/setup-data.ps1` checks private folders and invokes a new-empty-store initializer and first backup; it never migrates an existing database. This leaves raw/DB import synchronization, normal launcher/runtime scheduling and owner-folder acceptance as explicit integration gates in PLAN.md.

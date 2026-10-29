@@ -51,6 +51,10 @@ At high-impact milestones, agent shows short before/after screenshots or a tiny 
 - P6: paired Pearson unavailable below three pairs or for constant inputs; z-scores and calendar rolling windows use approved missing/coverage contracts; no invented values or causal claims.
 - Store actual commands/results/limitations and phase approval history in docs/PLAN.md only. Planned commands are not verification evidence. Documentation tasks use link/consistency checks and independent synthetic arithmetic where relevant; do not claim application tests before code exists.
 
+## Phase 2 test commands
+
+`python -m pytest backend/tests/ingest backend/tests/domain backend/tests/scoring -q` (also part of `scripts/check.ps1 -Suite Foundation`). Synthetic builders live in `backend/tests/factories.py`; never place real exports in the repository. The 365-night timing test is a smoke guard, not a performance budget.
+
 ## Current foundation command
 
 Run `powershell -File scripts/check.ps1 -Suite Foundation` on Windows. It checks Ruff, Mypy, backend tests, frontend health-response tests, strict TypeScript and the production build. Pytest caching is disabled because this session cannot access its cache directories; static-server tests use a committed synthetic fixture and require no writable temporary directory. Vitest uses thread workers for compatibility with process restrictions. These are execution adaptations, not skipped assertions. Full browser/security/release gates remain required later; `-Suite Full` deliberately fails until implemented. Results and unfinished foundation scope live only in PLAN.md.

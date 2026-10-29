@@ -1,5 +1,7 @@
 # Secure LAN setup proposal (S01, not deployed)
 
+> **Phase 2:** `/api/ingest` is implemented but disabled. It activates only if the receiver is launched with the environment variable `SLEEPIQ_INGEST_DATA` naming the private data folder (store must be at schema 0002). Enabling it for the real Health Auto Export is a separate owner-approved step; see PLAN.md.
+
 P1 approves publicly trusted HTTPS with DNS-based validation and direct LAN ingestion. Concrete DNS/certificate/firewall actions still require owner approval. The existing browser app remains loopback-only; no ingest listener has been deployed.
 
 ## Current evidence
