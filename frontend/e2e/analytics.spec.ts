@@ -1,28 +1,35 @@
 import {expect,test} from "@playwright/test";
 // Expected counts derive from scripts/preview-charts.py: night i exists unless i%13==0; HRV absent when i%9==0; Deep is constant.
 async function open(page:any,name:string){await page.goto("/");await page.getByRole("button",{name,exact:true}).click();}
+const choose=(page:any,group:string,name:string)=>page.getByRole("group",{name:group}).getByRole("button",{name,exact:true}).click();
+// Clicks inside steady() use dispatchEvent so Playwright does not scroll to the control; only the app may move the page.
+const press=(page:any,group:string,name:string)=>page.getByRole("group",{name:group}).getByRole("button",{name,exact:true}).dispatchEvent("click");
+const line=(page:any,id:string)=>page.locator(`.main-svg g[data-metric="${id}"]`);
 test("rolling averages show coverage, skip clock times and persist in presets",async({page})=>{
- await open(page,"Analytics");await expect(page.getByRole("heading",{name:"Multi-metric exploration"})).toBeVisible();
- await page.getByLabel("Rolling average").selectOption("7");
- const asleep=page.locator("section.panel",{has:page.getByRole("heading",{name:"Total asleep",exact:true})});
- await expect(page.getByRole("group",{name:"Total asleep chart",exact:true}).locator(".rolling-line").first()).toBeAttached();
+ await open(page,"Analytics");await expect(page.locator(".main-svg")).toBeVisible();
+ await choose(page,"Rolling average","7-day avg");
+ await expect(line(page,"asleep_s").locator(".rolling-line").first()).toBeAttached();
  await expect(page.getByText(/Dashed line: trailing 7-day calendar mean/)).toBeVisible();
- await page.getByRole("heading",{name:"Multi-metric exploration"}).screenshot({path:"../.cache/rolling-heading.png"});await page.screenshot({path:"../.cache/rolling-desktop.png",fullPage:true});
- await asleep.getByText("Accessible data table").click();
- await expect(asleep.getByRole("columnheader",{name:"7-day mean"})).toBeVisible();
- await expect(asleep.getByRole("cell",{name:/^7-day mean [\d.]+ h \([4-7]\/7 nights recorded\)$/}).first()).toBeVisible();
- await page.getByLabel("Display",{exact:true}).selectOption("normalized");
- await expect(page.getByRole("group",{name:"Overnight HRV chart",exact:true}).locator(".rolling-line").first()).toBeAttached();
- await page.getByLabel("Display",{exact:true}).selectOption("actual");
+ await page.screenshot({path:"../.cache/rolling-desktop.png",fullPage:true});
+ await page.getByRole("button",{name:"Show as table"}).click();
+ await expect(page.getByRole("columnheader",{name:"Total asleep 7-day mean"})).toBeVisible();
+ await expect(page.getByRole("cell",{name:/^7-day mean \d+h \d\dm \([4-7]\/7 nights recorded\)$/}).first()).toBeVisible();
+ // The crosshair tooltip carries the same coverage text.
+ await page.locator(".chart-frame").focus();await expect(page.locator(".chart-tip .tip-row.rolling").first()).toContainText(/7-day mean .*nights recorded/);
+ await choose(page,"Display","Normalized");
+ await expect(line(page,"hrv_mean").locator(".rolling-line").first()).toBeAttached();
+ await choose(page,"Display","Actual units");
+ // Hours and ms already use both axes, so HRV makes way for the clock metric.
+ await page.getByRole("checkbox",{name:"Overnight HRV",exact:true}).uncheck();
  await page.getByRole("checkbox",{name:"Sleep onset",exact:true}).check();
- const onset=page.locator("section.panel",{has:page.getByRole("heading",{name:"Sleep onset",exact:true})});
- await onset.getByText("Accessible data table").click();
- await expect(onset.getByRole("cell",{name:"7-day mean: Not available for clock times"}).first()).toBeVisible();
- await expect(page.getByRole("group",{name:"Sleep onset chart",exact:true}).locator(".rolling-line")).toHaveCount(0);
- await page.getByLabel("Rolling average").selectOption("30");
+ await expect(page.getByRole("cell",{name:"7-day mean: Not available for clock times"}).first()).toBeVisible();
+ await expect(line(page,"onset_minute")).toBeAttached();await expect(line(page,"onset_minute").locator(".rolling-line")).toHaveCount(0);
+ await choose(page,"Rolling average","30-day avg");
+ await page.locator(".preset-menu > summary").click();
  await page.getByLabel("Preset name",{exact:true}).fill("Rolling trend");await page.getByRole("checkbox",{name:"Default on opening Analytics"}).check();await page.getByRole("button",{name:"Save as new"}).click();await expect(page.getByText("Preset saved.",{exact:true})).toBeVisible();
- await page.reload();await open(page,"Analytics");await expect(page.getByLabel("Rolling average")).toHaveValue("30");
- await page.getByRole("button",{name:"Delete selected"}).click();await page.getByRole("button",{name:"Confirm delete"}).click();await expect(page.getByText("Preset deleted.",{exact:true})).toBeVisible();
+ await page.reload();await open(page,"Analytics");await expect(page.getByRole("group",{name:"Rolling average"}).getByRole("button",{name:"30-day avg"})).toHaveAttribute("aria-pressed","true");
+ await expect(page.getByRole("checkbox",{name:"Sleep onset",exact:true})).toBeChecked();
+ await page.locator(".preset-menu > summary").click();await page.getByRole("button",{name:"Delete selected"}).click();await page.getByRole("button",{name:"Confirm delete"}).click();await expect(page.getByText("Preset deleted.",{exact:true})).toBeVisible();
 });
 test("correlation explorer pairs nights, reports exclusions and unavailable cases",async({page})=>{
  await open(page,"Correlations");await expect(page.getByRole("heading",{name:"Correlation explorer"})).toBeVisible();
@@ -59,12 +66,12 @@ async function steady(page:any,action:()=>Promise<unknown>,done:()=>Promise<unkn
 }
 test("changing options keeps charts in place instead of jumping the page",async({page})=>{
  await page.route("**/api/v1/analytics/*",async(route:any)=>{await new Promise(f=>setTimeout(f,300));await route.continue();});
- await open(page,"Analytics");await expect(page.getByRole("heading",{name:"Multi-metric exploration"})).toBeVisible();
- await steady(page,()=>page.getByLabel("Rolling average").selectOption("7"),()=>expect(page.locator(".rolling-line").first()).toBeAttached());
- await steady(page,()=>page.getByLabel("Date range").selectOption("90"),()=>expect(page.getByText(/2026-07-31 — 2026-10-28/)).toBeVisible());
- await steady(page,()=>page.getByRole("checkbox",{name:"Sleeping heart rate",exact:true}).check(),()=>expect(page.getByRole("heading",{name:"Sleeping heart rate",exact:true})).toBeVisible());
+ await open(page,"Analytics");await expect(page.locator(".main-svg")).toBeVisible();
+ await steady(page,()=>press(page,"Rolling average","7-day avg"),()=>expect(page.locator(".rolling-line").first()).toBeAttached());
+ await steady(page,()=>press(page,"Date range","90 days"),()=>expect(page.locator(".range-label")).toHaveText("31 Jul – 28 Oct · 90 days"));
+ await steady(page,()=>page.getByRole("checkbox",{name:"Deep",exact:true}).dispatchEvent("click"),()=>expect(line(page,"deep_s")).toBeAttached());
  // Stale charts keep the mode they were fetched in: the z-axis label appears only with normalized data.
- await page.getByLabel("Display",{exact:true}).selectOption("normalized");await expect(page.getByText("Standard deviations (z)",{exact:true})).toHaveCount(0);await expect(page.getByText("Standard deviations (z)",{exact:true})).toBeVisible();
+ await choose(page,"Display","Normalized");await expect(page.getByText("Standard deviations (z)",{exact:true})).toHaveCount(0);await expect(page.getByText("Standard deviations (z)",{exact:true})).toBeVisible();
  await open(page,"Correlations");await expect(page.locator(".correlation-r")).toHaveText(/\d/);
  await steady(page,()=>page.getByLabel("Date range").selectOption("all"),()=>expect(page.getByText(/^2026-07-0\d — 2026-10-28/)).toBeVisible());
 });

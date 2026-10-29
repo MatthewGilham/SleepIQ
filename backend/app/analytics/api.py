@@ -299,6 +299,12 @@ def router(engine: Engine, data: Path, synthetic: bool = False) -> APIRouter:
     def timeseries(selection: Selection) -> dict[str, Any]:
         return {**series(engine, selection), "synthetic": synthetic}
 
+    @api.post("/analytics/summary")
+    def period_summary(window: Window) -> dict[str, Any]:
+        from app.analytics.summary import summary
+
+        return {**summary(engine, window), "synthetic": synthetic}
+
     @api.post("/analytics/correlation")
     def paired(pairing: Pairing) -> dict[str, Any]:
         return {**correlation(engine, pairing), "synthetic": synthetic}

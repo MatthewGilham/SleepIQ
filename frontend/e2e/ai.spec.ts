@@ -7,7 +7,7 @@ test("opening Analytics, changing options and navigating never trigger an AI req
  const posts:string[]=[];page.on("request",r=>{if(r.url().includes("/api/v1/analysis")&&r.method()!=="GET")posts.push(r.url());});
  const before=(await usage(page)).today;
  await open(page);
- await page.getByLabel("Rolling average").selectOption("7");await page.getByLabel("Display",{exact:true}).selectOption("normalized");
+ await page.getByRole("group",{name:"Rolling average"}).getByRole("button",{name:"7-day avg"}).click();await page.getByRole("group",{name:"Display"}).getByRole("button",{name:"Normalized"}).click();
  await page.getByRole("button",{name:"Correlations",exact:true}).click();await page.getByRole("button",{name:"Dashboard",exact:true}).click();
  await page.getByRole("button",{name:"Analytics",exact:true}).click();
  await page.getByLabel("Your question about the selected metrics and range").fill("Is HRV related to sleep time?");
@@ -39,14 +39,18 @@ test("a provider failure shows a safe message, counts the attempt and leaves cha
  await page.getByLabel("Your question about the selected metrics and range").fill("FAIL please");
  await page.getByRole("button",{name:"Analyze"}).click();
  await expect(page.getByRole("alert")).toContainText("The AI service did not answer in time.");
- await expect(page.getByRole("group",{name:"Total asleep chart",exact:true})).toBeVisible();
+ await expect(page.locator('.main-svg g[data-metric="asleep_s"]')).toBeAttached();
  await expect(page.getByText(`used today ${before+1}/20`)).toBeVisible();
 });
-test("selecting too many metrics explains why Analyze is unavailable",async({page})=>{
+test("the chart never selects more metrics than the AI accepts (6)",async({page})=>{
  await open(page);
  await page.getByLabel("Your question about the selected metrics and range").fill("Anything at all");
- for(const name of ["Recorded awake","Core","Deep","REM","Sleep efficiency"])await page.getByRole("checkbox",{name,exact:true}).check();
- await expect(page.getByText("Select at most 6 metrics to analyze.")).toBeVisible();await expect(page.getByRole("button",{name:"Analyze"})).toBeDisabled();
+ await page.getByRole("checkbox",{name:"Overnight HRV",exact:true}).uncheck();
+ for(const name of ["Recorded awake","Deep","REM","SleepIQ score","Consistency"])await page.getByRole("checkbox",{name,exact:true}).check();
+ await expect(page.getByText("6 metrics selected")).toBeVisible();await expect(page.getByRole("button",{name:"Analyze"})).toBeEnabled();
+ await page.getByRole("checkbox",{name:"Sleeping heart rate",exact:true}).click({force:true});
+ await expect(page.locator(".chip-note")).toContainText("at most 6 lines");await expect(page.getByText("6 metrics selected")).toBeVisible();
+ await expect(page.getByText("Select at most 6 metrics to analyze.")).toHaveCount(0);
 });
 test("narrow screen keeps the AI panel inside the page",async({page})=>{
  await open(page);await page.setViewportSize({width:390,height:844});

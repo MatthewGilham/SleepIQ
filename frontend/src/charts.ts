@@ -53,3 +53,70 @@ export async function exportRequest(body:ExportBody):Promise<{blob:Blob;name:str
 }
 // The server names the file; accept only a plain safe name so a header can never choose a path.
 export function fileNameFrom(disposition:string):string{const m=/filename="(sleepiq-nightly-[0-9A-Za-z_.-]+\.csv)"/.exec(disposition);return m?m[1]:"sleepiq-nightly.csv";}
+
+// ---------- Analytics redesign (U05): pure helpers so geometry and limits are unit-testable ----------
+export type Pt=[number,number];
+export type Bezier=[Pt,Pt,Pt,Pt];
+export type Run={points:Pt[];segments:Bezier[]};
+/** Split at nulls (gaps are never bridged), then join each run with monotone cubic segments.
+ * Tangents are 0 at local extremes and the harmonic mean of neighbouring slopes elsewhere (Fritsch-Carlson),
+ * so every segment stays between its two end points: the curve never overshoots a reading. */
+export function curveRuns(points:(Pt|null)[]):Run[]{
+ const runs:Pt[][]=[];let cur:Pt[]=[];
+ points.forEach(p=>{if(p===null){if(cur.length)runs.push(cur);cur=[];}else cur.push(p);});if(cur.length)runs.push(cur);
+ return runs.map(s=>{
+  const n=s.length;if(n<2)return {points:s,segments:[]};
+  const dx:number[]=[],m:number[]=[],t:number[]=[];
+  for(let i=0;i<n-1;i++){dx[i]=s[i+1][0]-s[i][0];m[i]=(s[i+1][1]-s[i][1])/dx[i];}
+  t[0]=m[0];t[n-1]=m[n-2];for(let i=1;i<n-1;i++){const a=m[i-1],b=m[i];t[i]=a*b<=0?0:2*a*b/(a+b);}
+  const segments:Bezier[]=[];for(let i=0;i<n-1;i++){const h=dx[i]/3;segments.push([s[i],[s[i][0]+h,s[i][1]+t[i]*h],[s[i+1][0]-h,s[i+1][1]-t[i+1]*h],s[i+1]]);}
+  return {points:s,segments};
+ });
+}
+export function runPath(run:Run):string{
+ const f=(p:Pt)=>`${p[0].toFixed(2)},${p[1].toFixed(2)}`;
+ return `M${f(run.points[0])}`+run.segments.map(([,a,b,c])=>`C${f(a)} ${f(b)} ${f(c)}`).join("");
+}
+export function bezierAt([p0,p1,p2,p3]:Bezier,t:number):Pt{
+ const u=1-t,k=[u*u*u,3*u*u*t,3*u*t*t,t*t*t];
+ return [k[0]*p0[0]+k[1]*p1[0]+k[2]*p2[0]+k[3]*p3[0],k[0]*p0[1]+k[1]*p1[1]+k[2]*p2[1]+k[3]*p3[1]];
+}
+/** Sleep durations share one hours axis, whatever unit the catalog stores them in (P27). */
+export const DURATIONS=new Set(["asleep_s","deep_s","rem_s","awake_s","core_s"]);
+export const MAX_LINES=6,MAX_AXES=2;
+export function axisUnit(m:Pick<Metric,"id"|"unit">,normalized=false):string{return normalized?"z":DURATIONS.has(m.id)?"h":m.unit;}
+/** Catalog value -> axis value. Only a unit change (minutes to hours); never a different measurement. */
+export function toAxis(m:Pick<Metric,"id"|"unit">,v:number|null):number|null{return v===null?null:DURATIONS.has(m.id)&&m.unit==="min"?v/60:v;}
+export type Axis={unit:string;ids:string[]};
+/** Same-unit metrics share an axis; first unit on the left, second on the right. */
+export function groupAxes(ids:string[],unitOf:(id:string)=>string):Axis[]{
+ const axes:Axis[]=[];ids.forEach(id=>{const u=unitOf(id),a=axes.find(x=>x.unit===u);if(a)a.ids.push(id);else axes.push({unit:u,ids:[id]});});return axes;
+}
+/** Why `id` cannot join the chart, or null when it can. */
+export function refusal(ids:string[],id:string,unitOf:(id:string)=>string):string|null{
+ if(ids.includes(id))return null;
+ if(ids.length>=MAX_LINES)return `The chart shows at most ${MAX_LINES} lines. Remove one first.`;
+ const units=groupAxes(ids,unitOf).map(a=>a.unit);
+ if(!units.includes(unitOf(id))&&units.length>=MAX_AXES)return `The chart has two axes, already used by ${units.map(unitName).join(" and ")}. Remove one of those, or switch Display to Normalized to compare more units.`;
+ return null;
+}
+/** Keep a saved or edited selection within the chart's limits, in order, dropping what does not fit. */
+export function fitMetrics(ids:string[],allowed:Set<string>,unitOf:(id:string)=>string):string[]{
+ const out:string[]=[];ids.filter(id=>allowed.has(id)).forEach(id=>{if(!refusal(out,id,unitOf))out.push(id);});return out;
+}
+export function unitName(unit:string):string{return unit==="h"?"Hours":unit==="z"?"Standard deviations (z)":unit;}
+export function hoursText(h:number):string{const total=Math.round(h*60),sign=total<0?"−":"";const a=Math.abs(total);return `${sign}${Math.floor(a/60)}h ${String(a%60).padStart(2,"0")}m`;}
+export function clockText(minutes:number):string{const m=((Math.round(minutes)%1440)+1440)%1440;return `${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;}
+const DIGITS:Record<string,number>={"/100":1,"%":1,ms:0,bpm:1,"breaths/min":1,"°C":2};
+/** One formatter for chart labels, tooltips and the table, so the table always matches the chart. */
+export function display(m:Pick<Metric,"id"|"unit"|"clock">,v:number|null,normalized=false):string{
+ if(v===null)return "no reading";
+ if(normalized)return `${v.toFixed(2)} z`;
+ if(m.clock)return clockText(v);
+ const a=toAxis(m,v)!;if(DURATIONS.has(m.id))return hoursText(a);
+ return `${a.toFixed(DIGITS[m.unit]??2)} ${m.unit}`;
+}
+export type MetricSummary={mean:number|null;n:number;min:number|null;max:number|null;previous_mean:number|null;previous_n:number;delta:number|null};
+export type ClockSummary={n:number;q1:number|null;median:number|null;q3:number|null};
+export type Summary={synthetic?:boolean;start:string|null;end:string|null;days:number;nights:number;ceiling:number;previous:{start:string;end:string;days:number;nights:number}|null;
+ metrics:Record<string,MetricSummary>;stages:Record<"deep"|"rem"|"core"|"awake",{minutes:number|null;percent:number|null}>|null;clock:{onset:ClockSummary;wake:ClockSummary}|null;versions:string[]};
