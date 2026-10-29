@@ -3,7 +3,6 @@ import type {ReactNode} from "react";
 
 import {axisUnit,chartRequest,clockText,curveRuns,display,fitMetrics,hoursText,initialSelection,refusal,rollingNote,runPath,sliceSeries,toAxis,unitName,withDefaults} from "./charts";
 import {shortDay} from "./dashboardModel";
-import {Investigator} from "./Investigator";
 import type {ChartData,Metric,Preset,Selection,Series,Summary} from "./charts";
 
 // Afterburn reds plus gold and ice-blue (P27). Fixed per metric so a metric keeps its colour everywhere.
@@ -310,6 +309,5 @@ export function Analytics(){
     <div className="an-row2"><StageBars tiles={win.tiles}/><ClockStrip summary={win.summary} tiles={win.tiles}/></div>
     <p className="muted versions">{win.summary.versions.join(" · ")} · averages exclude nights without a reading</p></>}
   </div>}
-  <Investigator selection={selection}/>
  </div>;
 }

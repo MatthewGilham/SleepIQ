@@ -25,7 +25,6 @@ Create anonymized **synthetic** JSON-v2-shaped data with realistic stage interva
 | Analytics | Range selection, nightly paired samples, rolling means with missing-date gaps, correlation coefficient and sample size, actual/normalized overlay modes |
 | Persistence | SQLite transaction/uniqueness, schema migrations, saved chart preset CRUD/default, backups rotation/catchup and **isolated restore test** |
 | Security | Auth missing/incorrect, token rotation, request limits, TLS/iPhone trust spike, no private data in logs, frontend bound locally, secret scanner |
-| AI | No call before explicit Analyze, local statistics not fabricated, minimal sent context, clear uncertainty, API failure handled, cost limits |
 | UI | Latest-night state, missing/insufficient/provisional, stage chart, preset round-trip, custom range, export actions, keyboard and narrower screen |
 
 ## 4. Key edge-case definitions
@@ -79,8 +78,8 @@ Run `npm --prefix frontend run test:e2e` after building. Playwright uses install
 ## Phase 3 UI/analytics/export commands
 `python -m pytest backend/tests/analytics backend/tests/export -q` (dashboard read model, charts, statistics, CSV export); `npm --prefix frontend test` (unit/server-render); `npm --prefix frontend run test:e2e` (Edge against an isolated synthetic store; port 8766 must be free; filter with `-- dashboard`, `-- night-nav`, `-- analytics-redesign`, `-- export`, `-- analytics`, `-- charts presets`). All run synthetic data only. `scripts/check.ps1 -Suite Foundation` covers lint, types, backend, unit tests and the build; browser tests are run separately.
 
-## Phase 4 AI commands
-`python -m pytest backend/tests/ai -q` (mock provider and mock HTTP transport only) and `npm --prefix frontend run test:e2e -- ai` (canned local provider in `scripts/preview-charts.py`). These never contact an AI service. `scripts/live-ai-check.py --confirm-spend` is the owner-approved live check (one billable request, synthetic data only, key from the environment); it passed on 2026-10-29. Run it again only deliberately, since each run costs a request.
+## Retired AI tests
+Removed in P28. `backend/tests/persistence/test_retired_settings.py` (start-up cleanup of `ai.usage.v1`, no `/api/v1/analysis` route) and `frontend/e2e/no-ai.spec.ts` (no AI panel, no analysis request) guard the removal.
 
 ## Desktop launcher tests (L01)
 `backend/tests/test_desktop_launcher.py` runs the PowerShell launcher against throwaway loopback servers on ephemeral ports (about 30 s): the running check accepts only a `{"status":"ok"}` health answer; the wait succeeds when the server appears late and gives up on time otherwise; with SleepIQ already running the browser opens and no second copy starts; on a cold start the browser opens only after the stand-in app answers; a failing start reports the error and opens nothing; the shortcut targets `powershell.exe` with `-NoProfile -File .../launch.ps1`, the project as working directory, no execution-policy flags, refuses silent overwrite and removes cleanly (created in a temp folder, never the real Desktop); the scripts parse. The browser step is replaced by a log line through the `SLEEPIQ_TEST_BROWSER_LOG` test hook. **Not agent-tested:** the real Chrome launch and the real Desktop shortcut (owner check in OPERATIONS.md).

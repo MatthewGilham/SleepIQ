@@ -8,21 +8,10 @@ from uuid import uuid4
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT), str(ROOT / "backend")]
 import uvicorn
-from app.ai.config import AiConfig
-from app.ai.provider import AiError, Completion
 from app.ingest.store import import_bytes
 from app.main import create_app
 
 from backend.tests.factories import merge, new_store, night_blocks, payload
-
-
-class PreviewProvider:
-    """Canned stand-in: the preview never contacts an AI service. A question containing FAIL simulates a timeout."""
-
-    def complete(self, system: str, user: str, max_output_tokens: int) -> Completion:
-        if "FAIL" in user.rsplit("<<<", 1)[-1]:
-            raise AiError(504, "timeout", "The AI service did not answer in time.")
-        return Completion("SYNTHETIC preview answer. No AI service was contacted; this only shows the layout.", 1000, 20)
 
 
 # A fixed isolated preview location allows presets to survive preview-server restarts.
@@ -43,7 +32,6 @@ if not (data / "sleepiq.sqlite3").exists():
     ]
     import_bytes(engine, data, payload(merge(*groups)))
     engine.dispose()
-app = create_app(ROOT / "frontend" / "dist", chart_data=data, chart_synthetic=True,
-                 ai_config=AiConfig(True, "synthetic-preview-not-a-key"), ai_provider=PreviewProvider())
+app = create_app(ROOT / "frontend" / "dist", chart_data=data, chart_synthetic=True)
 print("SYNTHETIC chart preview only: http://127.0.0.1:8766", flush=True)
 uvicorn.run(app, host="127.0.0.1", port=8766, access_log=False)

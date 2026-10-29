@@ -3,12 +3,12 @@
 **Applies to Codex, Claude Code and other coding agents.** Read this file first. It is the **routing index**, not a dump of the whole project. Do **not** create a redundant `CLAUDE.md` by default.
 
 ## Mission
-Build a secure, local-first Windows sleep analytics web app: Apple Watch / Apple Health → Health Auto Export → authenticated encrypted LAN ingestion → FastAPI → SQLite → React/TypeScript dashboard, charts, versioned scoring and on-demand AI analysis. The **owner learns and makes meaningful decisions**; the agent designs, implements, tests and explains.
+Build a secure, local-first Windows sleep analytics web app: Apple Watch / Apple Health → Health Auto Export → authenticated encrypted LAN ingestion → FastAPI → SQLite → React/TypeScript dashboard, charts, and versioned scoring. The **owner learns and makes meaningful decisions**; the agent designs, implements, tests and explains.
 
 ## Hard constraints
 - No scope creep: **no nocturia, manual daily log, notes, training, official Apple Sleep Score, general chatbot**, or excluded extras. Missing readings remain missing. Support configured Health Auto Export metrics, not the entire Health catalog.
 - **Never ship proof-of-concept HTTP+8-character-token receiver.** Permanent syncing requires encrypted authenticated trusted-LAN solution and owner approval. No public exposure, silent cloud sync, health-data telemetry or secret leakage.
-- Owner-approved choices in `docs/DECISIONS.md` are authoritative. Preserve individual readings, idempotent imports, time-zone/DST correctness, score versioning, 14 successful daily backups, manually launched shortcut, AI only when invoked.
+- Owner-approved choices in `docs/DECISIONS.md` are authoritative. Preserve individual readings, idempotent imports, time-zone/DST correctness, score versioning, 14 successful daily backups, manually launched shortcut.
 - Changes involving data deletion, real records, API spend, infrastructure/certificate/firewall permissions, security policy, irreversible migration, architecture or significant UX require owner approval.
 - **Tests are part of every task.** Never fake test results, bypass security gates, fabricate data/statistics, or commit user health exports or secrets.
 
@@ -24,7 +24,7 @@ Read **only** relevant docs and target files after this index:
 | JSON ingest, sleep session, time zones, metrics | `docs/DATA_PIPELINE.md` + chosen architecture interfaces |
 | Score, consistency, history | `docs/SCORING.md` + nightly schema in `docs/DATA_PIPELINE.md` |
 | UI, charts, presets, accessibility | `docs/DESIGN.md` + API shapes |
-| Auth, TLS, privacy, AI egress, backups | `docs/SECURITY.md` + relevant architecture section |
+| Auth, TLS, privacy, backups | `docs/SECURITY.md` + relevant architecture section |
 | Test plan or review | `docs/TESTING.md` + specific requirement |
 | Phase/ticket planning and model allocation | `docs/PLAN.md` + `docs/DEVELOPMENT_PLAN.md` + relevant `docs/DECISIONS.md` entries |
 

@@ -1,6 +1,6 @@
 # SleepIQ — Security, Privacy and Agent Permissions
 
-**Status:** Complete v1.0 policy brief; transport implementation requires a security spike and owner sign-off. **Audience:** backend, integration, code-review and planning agents. **Scope:** sensitive local health data on a Windows PC and owner-invoked third-party AI.
+**Status:** Complete v1.0 policy brief; transport implementation requires a security spike and owner sign-off. **Audience:** backend, integration, code-review and planning agents. **Scope:** sensitive local health data on a Windows PC. No health data leaves the PC.
 
 ## 1. Non-negotiable boundaries
 1. **Local-first:** FastAPI, React and SQLite on the owner's Windows PC; no cloud database or telemetry by default. Do not send health records to external services unless the owner authorizes the specific purpose and disclosure.
@@ -17,7 +17,6 @@
 | Malformed JSON, giant batches, arbitrary file writes | Strict schema/size/time validation, generated safe filenames, no user-provided paths, bounded processing |
 | Duplicate/corrupt/malicious measurement data | Transactional ingestion, idempotency, quarantine invalid samples, preserve raw evidence, no crash/partial commit |
 | Secrets/health data leak via Git, CI or logs | `.gitignore`, secret scanning, local synthetic fixtures, structured redacted logs |
-| AI API discloses unnecessary personal data | Explicit Analyze action; compute stats locally; send smallest derived, user-approved statistical context; no raw export by default |
 | Corruption/deletion/ransomware | Daily verified SQLite backup, rolling 14 successful daily copies, documented restore drill; same-PC backups **do not** protect against PC loss |
 | Dependency/supply-chain compromise | Pin/lock dependencies, routine audits, manual approval for privileged install scripts or new cloud services |
 
@@ -28,12 +27,8 @@
 - Separate auth/transport module from normalized records/scoring. Use transactional DB writes and safe temporary-file-and-rename patterns.
 - No public internet exposure, port forwarding, UPnP, unsanctioned tunneling or remote access by default.
 
-## 4. AI and data egress
-- AI investigator is **opt-in per query**, no background calls (A6). Backend calculates correlations, sample counts and windows first; model receives only needed summaries, metric descriptions, date spans and user question.
-- UI states which information leaves the PC and that calls incur API charges; keep API key local. No diagnoses, treatment recommendations or fabricated statistical results.
-- Store minimal sanitized question/history only if explicitly approved; logging prompt bodies and raw measurements is off by default. Handle timeouts and quotas without breaking non-AI dashboard.
-- **Implemented (P23):** AI is off unless `SLEEPIQ_AI_ENABLED=1` and `SLEEPIQ_OPENAI_API_KEY` are present in the launching environment; the key is never stored, logged, returned or sent anywhere except the fixed HTTPS provider endpoint. The model gets one bundle of statistics plus nightly values for the selected metrics only, no tools. Local caps: 15,000 input and 2,000 output tokens, 20 per day, 300 per month, 6 metrics; questions and answers are not stored or logged.
-- Model identifier is a configurable provider parameter, not hard-coded to a possibly changing marketing name; initial preference is an affordable capable OpenAI model, subject to owner budget/availability approval.
+## 4. Data egress
+The AI assistant was removed in P28 (2026-10-29), so SleepIQ makes no outbound calls with health data and holds no provider key. The only outbound traffic is dependency/advisory metadata during owner-run audits and installs. The retired local usage counter (`ai.usage.v1`, counts only) is deleted from the settings table at start-up; backups made earlier keep it until normal rotation.
 
 ## 5. Backups, retention, deletion
 - Daily **consistent SQLite snapshots** using SQLite backup API or equivalent safe mechanism; retain 14 most recent **successful daily** backups, run catch-up on next launch if missed. Show status and last verified snapshot; test restore against an isolated copy without overwriting live data.
@@ -56,7 +51,6 @@ Importer task reads ingress sections plus `DATA_PIPELINE.md`; AI task reads egre
 - Private data: %LOCALAPPDATA%\SleepIQ with permission checks; separate same-PC backup folder. Do not assume disk encryption. DNS credentials, private keys and API/ingest secrets stay outside ordinary data backups/exports/logs.
 - Backup/isolated restore precedes routine real-data ingestion. Keep 14 successful daily database snapshots; one current catch-up after downtime, not invented past snapshots. Protect the raw-file recovery manifest and document actual raw-file recovery; the manifest alone is not a backup.
 - P4 authorizes a supervised metadata-only diagnostic approach; arrange the specific private input and owner supervision before access. No record/identifier/payload disclosure to agent/model context.
-- AI disabled until provider, disclosure and budget approval. Phase approval alone does not authorize a live paid call.
 
 ## Approved self-contained backup implementation P10
 

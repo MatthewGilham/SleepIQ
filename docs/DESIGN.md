@@ -24,7 +24,7 @@ Build a **premium, dark, desktop-first local web application** for a single user
 - Optional rolling **7-day / 30-day** averages; show minimum coverage and sample counts; use calendar-day windows with observed-night counts (P6).
 - Interactions: accessible hover/focus tooltips with exact date, value, units and source/method when relevant; legends for toggling series; zoom without losing selected dates.
 - **Saved chart presets**: save, name, load, rename/edit, delete, choose default. Persist per-user settings in SQLite. Protect against accidental overwrite; require confirmation for destructive actions.
-- **AI investigator embedded in Analytics, not a separate general chatbot.** A deliberately scoped question input (e.g., “Is my sleeping HR correlated with deep sleep?”), selected range/metrics context, explicit **Analyze** action, traceable numeric evidence from backend statistics, clear uncertainty and API-use disclosure. No unsolicited calls or medical instructions.
+- **No AI panel.** The AI investigator was removed in P28; Analytics ends with its summary tiles.
 
 ## 4. Correlation explorer
 Select any two eligible numerical nightly metrics, choose date range, render scatterplot and line of best fit only when data supports it. Display coefficient type, value, paired-night **n**, missing-data exclusions and a short reminder that correlation is not causation. Make comparison with mismatched observations explicit. Treat time trend/confounding as limitations; do not pretend inference is causal. Reject insufficient paired samples cleanly.
@@ -40,13 +40,13 @@ Select any two eligible numerical nightly metrics, choose date range, render sca
 - Dark near-charcoal background, slightly lighter elevated surfaces, muted grid lines, restrained blue/teal accent; avoid color as the sole signal of health/quality.
 - 8px spacing rhythm, consistent radius, one sensible sans-serif family with fallback fonts, readable numbers with tabular alignment, clear focus outlines. Design tokens centralized in CSS variables/Tailwind theme.
 - Charts have legible grids and accessible contrast; stage colors remain consistent everywhere. Prefer SVG/vector charts for sharpness, tooltips and interaction.
-- Empty, loading, failed import, no-history, partial-metric, baseline-provisional, AI-unavailable and offline states all need intentional copy and tested UI.
+- Empty, loading, failed import, no-history, partial-metric, baseline-provisional, and offline states all need intentional copy and tested UI.
 - Micro-interactions should be subtle and disabled/reduced for motion preferences.
 
 ## 7. Implementation guidance and acceptance
 **Candidate stack:** React + TypeScript + Tailwind + Recharts, with accessible component primitives as needed. Treat library choice as a proposal if it constrains design. Define small reusable components: `MetricCard`, `ScoreHero`, `StageTimeline`, `MetricSeriesChart`, `MetricPicker`, `ChartPresetMenu`, `CorrelationPanel`, `InvestigatorPanel`, and status indicators. Keep business calculation in Python; UI formats results, never reimplements scoring rules.
 
-Acceptance: latest night readable in first viewport; individual and overlay charts operate with real/mock API; presets round-trip through SQLite; missing values never become zero; custom range and normalized view work; AI only on click; keyboard and accessibility checks pass; Playwright captures desktop and narrow-width screenshots. Never add nocturia, training, notes, or daily manual forms.
+Acceptance: latest night readable in first viewport; individual and overlay charts operate with real/mock API; presets round-trip through SQLite; missing values never become zero; custom range and normalized view work; keyboard and accessibility checks pass; Playwright captures desktop and narrow-width screenshots. Never add nocturia, training, notes, or daily manual forms.
 
 ## 8. Owner-in-the-loop design checkpoint
 The implementing agent should present **one compact visual proposal** (wireframe/screenshot plus 1–3 meaningful options) and explain trade-offs (density, navigation, chart complexity, accessibility/performance). Ask for owner approval before locking in the look and any materially different layout. Routine icon, padding and component implementation choices do not need approval. Offer improvements, identify contradictions and allow owner to decide. Log accepted design changes in `DECISIONS.md`.
@@ -87,8 +87,8 @@ The Correlations navigation destination is the correlation explorer. It has X/Y 
 ## Loading without layout shift
 While analytics or correlation data reloads, the previous results stay in place, dimmed (no fade under reduced motion), with loading text in a reserved toolbar slot. Results are never unmounted for a reload, because collapsing the page made the browser jump the scroll position. Results clear only for errors, invalid ranges or an empty selection.
 
-## 9. AI panel (Phase 4)
-"Ask about these nights" sits at the foot of Analytics and uses the metrics and range currently selected. It shows what is sent and the cost limits before the question box, usage (today and month), an Analyze button that stays disabled until the question and selection are valid, the answer as plain text, and a table of the evidence that was sent. Off, unconfigured, limit reached, failed and timed-out states have their own copy and never affect the charts.
+## 9. AI panel
+*Removed in P28 (2026-10-29): the AI assistant no longer exists; see `docs/DECISIONS.md` P28.*
 
 ## U05 implemented Analytics (2026-10-29)
 Layout top to bottom, matching the approved preview: heading "Your sleep, over time"; segmented **Date range** (7 / 30 / 90 days / All / Custom), **Rolling average** (No average / 7-day / 30-day) and **Display** (Actual units / Normalized) controls and a **Presets** menu holding the existing preset form; KPI row (average sleep with sparkline, average SleepIQ score with a half gauge marking the 92.5 pilot ceiling, average overnight HRV, nights recorded "X of Y" with a ring), each with "vs previous N days" (▲/▼ in gold/ice, deliberately not good/bad colours; "No earlier nights to compare" when the previous period has none); the main chart beside the average-night composition ring (Deep, Core, REM, Awake minutes and %); ten metric tiles (Total asleep, Deep, REM, Awake, SleepIQ score, Sleeping heart rate, Overnight HRV, Sleep efficiency, Respiratory rate, Wrist temperature), click to make that metric the main chart; stacked nightly stage bars (last 60 days of the range, unrecorded nights outlined) and a bedtime/wake dot strip with the middle-50% band and median; then the AI panel.

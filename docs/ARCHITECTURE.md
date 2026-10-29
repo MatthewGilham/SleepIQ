@@ -13,7 +13,7 @@
 2. **Automatic eventual ingestion:** Apple Watch → Apple Health → Health Auto Export → authenticated SleepIQ ingest endpoint. PC downtime must not create corrupt data; overlapping or repeated exports must be safe.
 3. **Correct, reproducible metrics:** Store original observations and calculate clean nightly measurements locally with documented units, timestamp semantics, provenance and formula versions.
 4. **Composable analytics:** Individual metric charts, arbitrary supported metric overlays, date ranges, rolling averages, persistent graph presets, and correlations share a single reusable analytics API.
-5. **AI is optional and read-only:** The embedded trend investigator receives validated statistical results and strictly scoped data, not direct unrestricted database access. The dashboard works without internet access except AI requests.
+5. **Fully offline:** the dashboard works without internet access; only incoming uploads depend on the network. (The optional AI assistant was removed in P28.)
 6. **Owner-guided development:** Every phase has short decision checkpoints and teaching-oriented explanations. Agents do not silently choose irreversible architecture, security or cost trade-offs.
 7. **Progressive disclosure:** `AGENTS.md` routes agents to only the docs relevant to a task. Avoid repeatedly loading the entire documentation set or complete health exports.
 
@@ -44,7 +44,6 @@ FastAPI application (local Windows PC)
     ├── Night/session builder + derived nightly metrics
     ├── Versioned scoring + consistency engine
     ├── Local statistics/analytics service
-    ├── Read-only AI investigation orchestration → optional OpenAI API
     └── REST API for local frontend
             ↕
     SQLite persistent store + same-PC backups
@@ -52,7 +51,7 @@ FastAPI application (local Windows PC)
 React + TypeScript dashboard in desktop browser
 ```
 
-**Boundaries:** The ingestion endpoint receives external input; the parser normalises provider-specific records; the database stores source and canonical data; calculation modules derive nightly summaries; frontend queries read-only views and invokes explicit preset/export/AI operations. No analytics component should directly interpret raw provider JSON.
+**Boundaries:** The ingestion endpoint receives external input; the parser normalises provider-specific records; the database stores source and canonical data; calculation modules derive nightly summaries; frontend queries read-only views and invokes explicit preset/export operations. No analytics component should directly interpret raw provider JSON.
 
 ## 4. Component responsibilities
 
@@ -128,7 +127,6 @@ Illustrative interface families (proposals, not promises of exact paths):
 - `GET /api/v1/analytics/timeseries`: chosen metrics, date window and rolling-average options (implemented as POST; see "U02 chart API and preset contract").
 - `GET /api/v1/analytics/correlation`: paired-night results computed in Python (implemented as POST; see the same section).
 - `GET/POST/PATCH/DELETE /api/v1/presets`: persistent graph presets.
-- `GET /api/v1/analysis/status` and `POST /api/v1/analysis`: AI statistical question scoped to selected metrics/date range, with explicit cost/privacy controls (implemented; see the AI01 section).
 - `POST /api/v1/analytics/export`: CSV of computed nightly metrics (implemented as POST; Excel not built, see P22 and the X01 section).
 - Inbound `POST /api/ingest`: **separate authentication and request restrictions** from the browser API.
 
@@ -139,19 +137,13 @@ Avoid directly exposing raw measurements, database file paths or unrestricted qu
 **Proposed:** React + TypeScript + Tailwind CSS, charting with Recharts. Alternatives remain open if important trade-offs surface.
 
 - Latest selected night at top, including unscored/partial states, with a large SleepIQ Score and individual metrics.
-- Further down: individual metric graphs, multi-metric overlay builder, real-value vs normalised trend, date windows, rolling averages, saved graph presets, correlation explorer and contextual AI panel.
+- Further down: individual metric graphs, multi-metric overlay builder, real-value vs normalised trend, date windows, rolling averages, saved graph presets, and correlation explorer.
 - UI uses typed API responses; no independently implemented scoring or HRV calculations in JavaScript.
-- Missing, incomplete, syncing and AI-offline states are first-class interface states.
+- Missing, incomplete, and syncing states are first-class interface states.
 - Visual design/components/interaction details live in `DESIGN.md`; do not choose a visual direction silently.
 
 ### 4.8 AI investigator
-
-- Back end computes statistics first (Python: Pandas/NumPy/SciPy as justified). The language model interprets bounded, computed evidence with sample counts, units and qualifiers.
-- User's selected metrics and chart window are the default context. Allow a documented, consented expanded scope when their question requires it.
-- Use an OpenAI model configurable by setting; economical GPT-6 Luna is the starting candidate, not a dependency on an exact model identity. **Owner-approved A6:** no automatic AI requests on ingest, schedule, or dashboard load: the owner must explicitly initiate each analysis. Scope data sent to selected derived statistics, with cost and privacy controls to be approved.
-- No unrestricted SQL generation/execution, arbitrary code, medical conclusions or changes to stored measurements.
-- Send only the necessary derived data to the provider, show when AI is unavailable and control provider costs/rate limits.
-- Privacy/cost choices require owner approval; implementation and evaluation details live in `SECURITY.md`, `TESTING.md` and AI task briefs.
+*Removed in P28 (2026-10-29): the AI assistant no longer exists; see `docs/DECISIONS.md` P28.*
 
 ### 4.9 Export, backups and recovery
 
@@ -181,7 +173,6 @@ sleepiq/
       ingest/         # adapter, validation, import orchestration
       domain/         # session rules, nightly metrics, scoring
       analytics/      # trends and statistics
-      ai/             # optional, read-only evidence-oriented analysis
       db/             # models, migrations, repositories
       settings/       # typed non-secret configuration and secret loading
     tests/
@@ -200,7 +191,7 @@ This separates high-impact domain calculations from transport and UI. Avoid prol
 - **Development:** Windows + VS Code; backend via a Python virtual environment; frontend via a modern JS toolchain. Run on localhost for browser access; expose only the explicitly configured ingest service to iPhone delivery.
 - **Normal use:** A simple documented command or local launcher should start everything and expose the dashboard in a desktop browser. **Owner-approved A5:** a manually launched local shortcut/script; do not register a Windows startup task or service by default. Ingestion can occur only while the app is running; accept eventual sync/catch-up as a separately tested requirement.
 - **Environment config:** secrets live outside Git; example templates carry names only. No token or medical data in terminal demonstrations, CI fixtures or Git commits.
-- **Offline behaviour:** dashboard, charts, scores and correlation explorer work locally; only AI and incoming uploads depend on external network connectivity.
+- **Offline behaviour:** dashboard, charts, scores and correlation explorer work locally; only incoming uploads depend on external network connectivity.
 - **Testing and quality:** pytest for parser/domain/API/database, frontend unit tests, Playwright real-browser workflows, type/static checks, dependency/security scanning and CI. The exact checks/commands are in `TESTING.md`.
 - **Documentation access:** `AGENTS.md` is intentionally brief, routing each task to at most the relevant doc(s). Planning output uses small actionable tickets, file boundaries, explicit acceptance tests and an approval gate. Codex and Claude Code share the same agent contract; no mandatory `CLAUDE.md`.
 
@@ -252,6 +243,7 @@ This separates high-impact domain calculations from transport and UI. Avoid prol
 **Owner decision — APPROVED (28 October 2026): A — Manual launch via a simple script/shortcut.** No automatic start with Windows for v1. **Exception P20 (29 October 2026):** the HTTPS ingest receiver only may start at the owner's logon via a per-user scheduled task; the dashboard stays manually launched. **L01 (29 October 2026):** the manual launch is now a Desktop shortcut running `scripts/launch.ps1` (starts `start.ps1` if SleepIQ is not already answering on 127.0.0.1:8765, then opens the browser); still no autostart.
 
 ### A6. AI privacy and budget
+**Superseded by P28 (2026-10-29): the AI assistant was removed.** Original record follows.
 
 - **A: AI is off until user invokes analysis; only narrowly selected, derived statistics are sent (recommended):** lower privacy exposure and API cost. **Trade-off:** no proactive AI narrative.
 - **B: Automatically refresh an AI insight after each import:** more immediate. **Trade-off:** recurrent costs and uploads, possibly unhelpful insights.
@@ -275,7 +267,7 @@ This separates high-impact domain calculations from transport and UI. Avoid prol
 
 **Gate 4 — Design:** `DESIGN.md` presents visual style and user interaction decisions; implementation follows approval.
 
-**Gate 5 — Production security and AI:** `SECURITY.md` and AI planning cover network exposure, secrets, consent, cost and safe agent permissions before permanent operation.
+**Gate 5 — Production security:** `SECURITY.md` covers network exposure, secrets, consent, cost and safe agent permissions before permanent operation.
 
 **Gate 6 — Quality and rollout:** `TESTING.md` and `DEVELOPMENT_PLAN.md` define objective acceptance tests and milestones; user receives brief what-changed/tested/learned reports.
 
@@ -291,7 +283,6 @@ At the beginning of a task, do **not** read every Markdown file. Use this routin
 | Sleep calculations and consistency | `AGENTS.md`, `DATA_PIPELINE.md`, `SCORING.md`, relevant tests |
 | Dashboard or charts | `AGENTS.md`, `DESIGN.md`, API contract in this document, `PRODUCT.md` relevant section |
 | Statistical explorer | `AGENTS.md`, analytics contract, `TESTING.md` relevant section |
-| AI integration | `AGENTS.md`, `PRODUCT.md` §3.6, `SECURITY.md`, AI acceptance tests |
 | Security, backup or deployment | `AGENTS.md`, `SECURITY.md`, relevant architecture decision, `TESTING.md` |
 | Planning/coordination | `AGENTS.md`, `DEVELOPMENT_PLAN.md`, `DECISIONS.md`; fetch other documents only for affected workstreams |
 
@@ -349,7 +340,6 @@ Chart reads and preset writes reject non-loopback clients, foreign Origin and cr
 - `GET /api/v1/dashboard[?night=YYYY-MM-DD]`: read-only model of one stored night (the latest when `night` is omitted). The response also carries `previous_night` and `next_night`: the nearest stored wake dates either side (unrecorded days skipped; null at the ends). `night` must be a valid date (422 otherwise); a valid date with no stored night returns 404 `No sleep was recorded for that night`. The 30-night trend ends on the requested night. Model of the night: source-local onset/wake strings and offsets, durations, efficiency, physiology values with sample counts (null when missing), stage intervals relative to session start, flags, score status/components/missing reasons/ceiling (null score object if never computed), a 30-calendar-night duration trend (null for unrecorded nights) and import counts. `latest` is null for an empty store. Same loopback, origin and `Cache-Control: no-store` boundary as the other chart routes (also for the `night` variant and its errors); 503 when no store is configured.
 - `POST /api/v1/analytics/export`: body `{metrics, range, start, end}` (same bounded range rules as charts; 1-15 distinct catalog metrics; unknown fields rejected). Returns `text/csv` attachment with a server-generated file name and `X-SleepIQ-Rows`. Resting heart rate is no longer in the catalog (U03): requests naming `rhr_mean` get 422 and saved presets listing it drop it on load (a preset left empty falls back to Total asleep). Columns: `wake_date`, one per metric with unit, `flags`, `score_status`, `derivation_version`, `score_version`. Needs the same-origin `X-SleepIQ-Request` header as other POSTs.
 
-## AI01 analysis contract (Phase 4)
-- `GET /api/v1/analysis/status`: read-only. `state` (`ready`, `disabled`, `not_configured`), model name, limits, local usage counts, and the disclosure text shown in the UI. Never contains the key.
-- `POST /api/v1/analysis`: body `{question (3-500 chars), metrics (1-6 distinct), range/start/end, confirm: true}`; unknown fields rejected. Builds the evidence in Python, refuses without contacting the provider when AI is off, unconfigured, over a daily/monthly limit, too large, without data or busy, otherwise reserves a count, makes one provider request and returns `{answer, model, evidence, usage}`. Same loopback, origin, header and no-store boundary as the chart routes.
-- Provider boundary (`app/ai/provider.py`): `Provider.complete(system, user, max_output_tokens)`; the OpenAI implementation posts to one fixed URL with no tools. Tests inject fakes or a mock transport.
+## AI01 analysis contract
+*Removed in P28 (2026-10-29): the AI assistant no longer exists; see `docs/DECISIONS.md` P28.*
+

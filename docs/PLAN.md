@@ -783,7 +783,7 @@ Owner-requested on 2026-10-29 after U05; choices in DECISIONS P28. Order: U06, t
 
 | ID | Status | Objective and bounded files | Acceptance |
 |---|---|---|---|
-| U06 | planned | **Remove the AI assistant completely.** Delete `backend/app/ai/`, `backend/tests/ai/`, `scripts/live-ai-check.py`, `frontend/src/ai.ts`, `ai.test.ts`, `Investigator.tsx`, `e2e/ai.spec.ts`; remove the AI wiring in `main.py`, `start.py`, `scripts/preview-charts.py`, the `/api/v1/analysis` boundary entry and the panel in `Analytics.tsx`. One idempotent start-up cleanup deletes only the `ai.usage.v1` settings row (owner-approved deletion; counts only, no health data). `httpx2` moves to dev dependencies (FastAPI's test client needs it). Docs: SECURITY, SETUP, OPERATIONS, ARCHITECTURE, PRODUCT, DESIGN, TESTING and AGENTS.md stop describing AI as a feature; A6 and P23 marked superseded. | U06-1 onward |
+| U06 | done (U06-8 pending owner relaunch) | **Remove the AI assistant completely.** Delete `backend/app/ai/`, `backend/tests/ai/`, `scripts/live-ai-check.py`, `frontend/src/ai.ts`, `ai.test.ts`, `Investigator.tsx`, `e2e/ai.spec.ts`; remove the AI wiring in `main.py`, `start.py`, `scripts/preview-charts.py`, the `/api/v1/analysis` boundary entry and the panel in `Analytics.tsx`. One idempotent start-up cleanup deletes only the `ai.usage.v1` settings row (owner-approved deletion; counts only, no health data). `httpx2` moves to dev dependencies (FastAPI's test client needs it). Docs: SECURITY, SETUP, OPERATIONS, ARCHITECTURE, PRODUCT, DESIGN, TESTING and AGENTS.md stop describing AI as a feature; A6 and P23 marked superseded. | U06-1 onward |
 | U07 | planned | **Text stays inside its card at every width.** KPI cards (and any other card found overflowing) adapt to their own width with CSS container queries: the graphic stacks above the value and type steps down when the card is narrow. Files: `style.css`, small markup changes in `Analytics.tsx`/`Dashboard.tsx` only if needed. | U07-1 onward |
 | U08 | planned | **Average line per selected metric on the main chart.** A thin dotted horizontal line in the metric's colour at its mean over the whole selected range (not the zoomed part), labelled "avg ..." at the right edge, plus an "Average" row in the tooltip; "Show averages" toggle, on by default. Normalized mode: one shared line at 0. Bedtime/wake: no average line. The mean comes from Python (`normalization.mean` in the timeseries response, observed nights only); the page only positions and formats it. | U08-1 onward |
 
@@ -815,3 +815,14 @@ Owner-requested on 2026-10-29 after U05; choices in DECISIONS P28. Order: U06, t
 - U08-7 [T] A metric with no readings in the range draws no average line and its tooltip average reads "no reading"; with "Zoom to fit" on, every average line stays inside the plot area.
 - U08-8 [T] Backend: `normalization.mean` in an actual-mode timeseries response equals the hand-calculated mean over observed nights only (missing nights excluded), independent of rolling settings.
 
+### U06 verification evidence
+
+| Check | Evidence |
+|---|---|
+| U06-1, U06-2 | `git ls-files` of the removed paths prints nothing; the `rg` of backend, frontend and scripts matches only the cleanup tests and `no-ai.spec.ts` (which assert absence) |
+| U06-3, U06-4 | `backend/tests/persistence/test_retired_settings.py` (3 tests): `ai.usage.v1` deleted once, preset row identical, second start and a store without the row unchanged, no `/api/v1/analysis` route and 404s even with fake `SLEEPIQ_AI_*` env. Cleanup is `app/db/cleanup.py`, called when the chart store opens |
+| U06-5 | `frontend/e2e/no-ai.spec.ts`: no heading or Analyze button on Dashboard, Analytics, Correlations; no analysis request while changing rolling and display modes |
+| U06-6 | `httpx2` now under dev dependencies; `uv lock` re-resolved and `uv lock --check` exit 0 |
+| U06-7 | `rg` over the listed docs: remaining matches are removal notes, the superseded A6 record and its approval line. A6/P23 already carried "Superseded by P28" |
+| G-1 | `check.ps1 -Suite Full` exit 0: Ruff, Mypy (41 files), 213 backend tests, 38 frontend unit tests, build, 35 Playwright tests, performance budgets, secret scan 169 files PASS, `pip-audit` and `npm audit` clean |
+| U06-8 | Pending: after the owner relaunches SleepIQ, run the read-only key-existence check on the real store |

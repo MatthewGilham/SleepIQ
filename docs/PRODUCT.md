@@ -9,7 +9,7 @@
 
 ## 1. Product vision
 
-SleepIQ is a private, PC-first sleep analytics application that automatically imports Apple Watch measurements through Apple Health, presents a clean, dark-themed overview of the latest night, and supports detailed investigation of long-term trends. It replaces routine manual sleep tracking and provides a transparent, owner-defined SleepIQ Score. An optional OpenAI-powered analysis panel explains *computed* trends and statistical relationships without making health or treatment recommendations.
+SleepIQ is a private, PC-first sleep analytics application that automatically imports Apple Watch measurements through Apple Health, presents a clean, dark-themed overview of the latest night, and supports detailed investigation of long-term trends. It replaces routine manual sleep tracking and provides a transparent, owner-defined SleepIQ Score.
 
 ### Primary success criteria
 
@@ -17,7 +17,7 @@ SleepIQ is a private, PC-first sleep analytics application that automatically im
 2. **Trustworthy calculations:** displayed values can be traced to imported source measurements and deterministic calculation definitions.
 3. **Useful analytics:** users can chart any supported metric, overlay multiple metrics, save comparison presets, and investigate correlations.
 4. **Flexible scoring:** the score formula can be changed after the app is built; the selected version can recompute all historical nights consistently.
-5. **Private and resilient:** health data is stored locally by default, can be exported and backed up, and the dashboard remains usable without the AI service.
+5. **Private and resilient:** health data is stored locally by default, can be exported and backed up.
 
 ## 2. Intended user and usage
 
@@ -90,14 +90,7 @@ Measurements that cannot be reliably calculated must be reported as missing or u
 - Computations run locally, without requiring an LLM call.
 
 ### 3.6 AI trend investigator
-
-- Embed the AI analysis panel **inside the analytics page**, not as a standalone general-purpose chatbot.
-- The user can ask natural-language questions about selected metrics, chart ranges and longer-term historical relationships.
-- Start with an economical OpenAI model such as **GPT-6 Luna**, with model selection configurable rather than hardwired.
-- AI receives minimal relevant, derived data and/or validated statistical tool results; it must not invent readings or perform unchecked arithmetic.
-- AI explains patterns, methods, uncertainty and sample sizes. **No health, diagnosis or treatment recommendations.**
-- Core dashboard, scoring, charts and statistical calculations remain functional if OpenAI is unreachable or API credentials are missing.
-- Data sent to third-party AI services must be transparent and constrained by documented privacy settings.
+*Removed in P28 (2026-10-29): the AI assistant no longer exists; see `docs/DECISIONS.md` P28.*
 
 ### 3.7 Export, backup and recovery
 
@@ -114,7 +107,7 @@ The following are **not part of SleepIQ**, unless the owner explicitly changes s
 - No training or workout diary.
 - No general daily notes or routine manual check-in.
 - No Apple proprietary Sleep Score ingestion, display or historical comparison.
-- No general-purpose AI chatbot or AI medical advice.
+- No AI assistant of any kind (removed in P28), chatbot or AI medical advice.
 - No automatic lifestyle recommendations or medical diagnosis.
 - No heatmap calendar, arbitrary before/after period comparison feature, unusual-night alerts, or personal-records/achievements feature in v1.
 - No mobile app, multi-user accounts, publicly accessible dashboard, autonomous actions, or trading features.
@@ -183,7 +176,7 @@ Before a consequential or difficult-to-reverse choice (architecture, dependencie
 5. Changing the active formula version recomputes all eligible historical nights without destroying source records or previous formula definitions.
 6. A user overlays sleep score, deep sleep and sleeping HR, changes date range, turns on a rolling average and saves the configuration as a preset.
 7. The correlation explorer reports a reproducible correlation and paired-night count, including sensible handling of sparse data.
-8. The AI panel can explain a verified statistical result without inventing measurements, and the charts work when the AI service is disabled.
+8. The charts and statistics need no external service.
 9. A backup can be restored into a test environment; an exported dataset can be opened without proprietary software.
 10. A Windows PC restart or delayed upload does not cause duplicated or corrupted records.
 

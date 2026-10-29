@@ -12,11 +12,9 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.responses import JSONResponse, Response
 
 from app import certstatus
-from app.ai.api import router as ai_router
-from app.ai.config import AiConfig
-from app.ai.provider import Provider
 from app.analytics.api import router
 from app.analytics.export import router as export_router
+from app.db.cleanup import remove_retired_settings
 from app.db.engine import open_engine
 from app.db.scheduler import BackupService
 
@@ -27,8 +25,6 @@ def create_app(
     backup_interval: float = 3600,
     chart_data: Path | None = None,
     chart_synthetic: bool = False,
-    ai_config: AiConfig | None = None,
-    ai_provider: Provider | None = None,
     certificate_status: Path | None = None,
 ) -> FastAPI:
     if backup_interval <= 0:
@@ -70,7 +66,6 @@ def create_app(
                 "/api/v1/presets",
                 "/api/v1/metrics",
                 "/api/v1/dashboard",
-                "/api/v1/analysis",
             )
         )
         if protected:
@@ -107,9 +102,9 @@ def create_app(
         if not database.is_file():
             raise ValueError("Initialized chart store required")
         engine = open_engine(database)
+        remove_retired_settings(engine)
         app.include_router(router(engine, chart_data, chart_synthetic))
         app.include_router(export_router(engine))
-        app.include_router(ai_router(engine, chart_data, ai_config or AiConfig(), ai_provider))
 
     @app.get("/api/v1/health")
     def health() -> dict[str, str]:
