@@ -37,3 +37,19 @@ def test_report_is_counts_only_and_explains_rejected_sleep_labels(scratch: Path)
         {"rows": 7, "label_has_apple_watch": True, "label_has_watch": True, "label_empty": False}
     ]
     assert summary["night_range"] == ("2026-01-03", "2026-01-03")
+
+
+def test_report_includes_certificate_expiry_only_as_days_and_state(tmp_path):
+    import json
+    from datetime import UTC, datetime, timedelta
+
+    data, engine = new_store(tmp_path)
+    engine.dispose()
+    assert report(data)["certificate"] == "not recorded"
+    (data / "security").mkdir()
+    expires = (datetime.now(UTC) + timedelta(days=20, hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    (data / "security" / "certificate-status.json").write_text(
+        json.dumps({"not_after_utc": expires, "last_result": "failed"}), encoding="utf-8"
+    )
+    cert = report(data)["certificate"]
+    assert cert["state"] == "due" and cert["days_left"] == 20 and cert["last_result"] == "failed"

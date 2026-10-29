@@ -623,7 +623,7 @@ Executed evidence (`powershell -NoProfile -File scripts/check.ps1 -Suite Full`, 
 
 Open items, not claimed done:
 1. Owner acceptance A1-A6 in OPERATIONS.md. Already observed earlier (Phase 2 evidence): one manual real export reached the receiver over TLS with authentication and `batches` rose 15 to 16. Still unobserved: scheduled/unattended runs, retry after downtime, a populated-snapshot restore drill, launcher acceptance, real-store dashboard review.
-2. **Certificate expires 2027-01-27**; renewal is documented but not integrated or demonstrated. Any scheduled-renewal automation touches certificate/credential policy and needs owner approval.
+2. **Certificate expires 2027-01-27**; automatic renewal is built (P25, see below) but not yet demonstrated or switched on.
 3. PC address 192.168.1.190 is not reserved (P12); an address change breaks uploads until DNS is updated.
 4. The receiver task does not run the backup scheduler; backups happen only while the dashboard is launched.
 5. Backups are on the same PC and unencrypted.
@@ -642,3 +642,10 @@ A1 real ingest (owner-reported 2026-10-29): `import-report.ps1` batch count rose
 A2 (owner-reported 2026-10-29): wrong-credential send passed (refused); no details supplied. A3 downtime/retry explicitly postponed by the owner; it is a deferral, not a pass, and remains a gate before relying on unattended sync. Owner asked about certificate renewal cost; decision still open (see next entry when recorded).
 
 Scheduled unattended ingest (owner-reported 2026-10-29): with Health Auto Export on a temporary 5-minute schedule and no manual upload, `import-report.ps1` batches rose from 17 to 18. This closes the "scheduled/unattended run" gap from the Phase 2 evidence. Downtime/retry (A3) remains deferred. The 5-minute schedule is for testing; the owner should set a longer interval afterwards.
+
+### Certificate renewal automation (P25, 2026-10-29)
+Owner chose automation and the numbered options 1/2/1 (standard token hardening; run at logon; expiry in report and header). Built: `scripts/certificate-tools.ps1`, `scripts/renew-certificate.ps1`, `scripts/renewal-task.ps1`, `backend/app/certstatus.py` (status in `/api/v1/status` and `import-report`), header label (`frontend/src/certificate.ts`), launcher refresh of the public expiry in `start.ps1`; docs in OPERATIONS.md, TESTING.md, DECISIONS P25. Design: renew in a private copy, validate, swap with previous files kept, restart receiver, roll back on failed health check, never print tool output.
+
+Executed evidence (`check.ps1 -Suite Full`, exit 0): Ruff, Mypy (45 files), **218 backend tests** (12 new certificate tests plus one report test), **36 frontend unit tests**, build, **21 Playwright tests**, performance budgets met, secret scan 168 files PASS, `pip-audit` and `npm audit` clean.
+
+**Not run, not claimed:** no real lego/Cloudflare/Let's Encrypt request was made by the agent; the renewal, receiver restart/rollback and scheduled-task installation are untested against the real services and the real receiver. No scheduled task is installed. Owner steps: set a Cloudflare token expiry, run the staging dry run, then approve `renewal-task.ps1 -Action Install`. Choice 2 limit: the task triggers only at logon.

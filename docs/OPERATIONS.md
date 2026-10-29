@@ -40,7 +40,13 @@ Health Auto Export keeps unsent data and retries. When the PC is back, the next 
 
 ## Certificate renewal
 
-**The current production certificate expires on 2027-01-27 and renewal is not yet integrated or demonstrated.** Re-run `scripts/request-certificate.ps1 -Environment Production` (details in [CERTIFICATE_SETUP.md](CERTIFICATE_SETUP.md)) well before then, and restart the receiver so it loads the new certificate. This is an open operational limitation recorded in PLAN.md. If iPhone uploads suddenly start failing with a certificate error, check expiry first. Never turn off certificate checking in the exporter.
+Certificates are free but last about 90 days. The current production certificate expires on 2027-01-27. Days remaining appear in the dashboard header (Certificate) and in `scripts/import-report.ps1`. Automatic renewal (P25) is built but **not yet switched on**:
+
+1. In Cloudflare, give the existing DNS token an expiry date more than a year away and put it in your calendar. (Optionally restrict it to your home IP only if that address is stable; a changed IP would make renewal fail.)
+2. Staging dry run (free test certificate, installs nothing): `powershell -File scripts/renew-certificate.ps1 -Environment Staging -AcceptTerms -ForceRenewal`. Expect "STAGING renewal succeeded and validated".
+3. When that works and you approve, `powershell -File scripts/renewal-task.ps1 -Action Install`. It runs five minutes after each logon, does nothing unless 30 days or fewer remain, and `-Action Status` shows the expiry and last result. `-Action Run` triggers it now (a real renewal only if due) and `-Action Remove` switches it off.
+
+If renewal fails, the live certificate is left alone, the header shows days left, and the status shows `failed` or `rolled_back`. The manual fallback is `scripts/renew-certificate.ps1 -Environment Production -AcceptTerms`. If uploads suddenly fail with a certificate error, check expiry first, and never turn off certificate checking in the exporter. If iPhone uploads suddenly start failing with a certificate error, check expiry first. Never turn off certificate checking in the exporter.
 
 ## Troubleshooting
 

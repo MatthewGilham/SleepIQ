@@ -7,6 +7,7 @@ from pathlib import Path
 
 from sqlalchemy import text
 
+from app import certstatus
 from app.db.engine import open_engine
 from app.ingest.parse import STAGES
 
@@ -28,6 +29,12 @@ def rejected_stage_labels(raw: Path) -> Counter[str]:
                     if label not in STAGES:
                         counts[label if label in KNOWN_LABELS else "other"] += 1
     return counts
+
+
+def certificate(data: Path) -> dict[str, object] | str:
+    """Public expiry only (days, state, last renewal result); never keys or tool output."""
+    status = data / "security" / "certificate-status.json"
+    return certstatus.read(status) if status.is_file() else "not recorded"
 
 
 def report(data: Path) -> dict[str, object]:
@@ -80,6 +87,7 @@ def report(data: Path) -> dict[str, object]:
                     )
                 ],
                 "rejected_sleep_labels_in_raw": dict(rejected_stage_labels(data / "raw")),
+                "certificate": certificate(data),
             }
     finally:
         engine.dispose()

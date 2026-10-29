@@ -2,6 +2,7 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot 'private-folders.ps1')
 $previousDataRoot = $env:SLEEPIQ_DATA_ROOT
 $previousBackupRoot = $env:SLEEPIQ_BACKUP_ROOT
+$previousCertStatus = $env:SLEEPIQ_CERT_STATUS
 Push-Location (Split-Path $PSScriptRoot -Parent)
 try {
     if (!(Test-Path frontend/dist/index.html)) { throw "Build the frontend first; see docs/SETUP.md." }
@@ -13,9 +14,21 @@ try {
         Assert-PrivateFolder $backupRoot
         $env:SLEEPIQ_DATA_ROOT = $dataRoot
         $env:SLEEPIQ_BACKUP_ROOT = $backupRoot
+        # Refresh the public expiry date for the header; failure must never stop the dashboard.
+        $env:SLEEPIQ_CERT_STATUS = $null
+        try {
+            . (Join-Path $PSScriptRoot 'certificate-tools.ps1')
+            $security = Join-Path $dataRoot 'security'
+            $crt = Join-Path $security 'acme-production/certificates/sync.mgilham.online.crt'
+            if (Test-Path -LiteralPath $crt) {
+                Write-CertificateStatus $security $crt
+                $env:SLEEPIQ_CERT_STATUS = Join-Path $security 'certificate-status.json'
+            }
+        } catch { Write-Output 'Certificate expiry could not be read; the header will omit it.' }
     } else {
         $env:SLEEPIQ_DATA_ROOT = $null
         $env:SLEEPIQ_BACKUP_ROOT = $null
+        $env:SLEEPIQ_CERT_STATUS = $null
     }
     # Foreground ownership: Ctrl+C stops this app's server without looking up or killing other PIDs.
     & .\.venv\Scripts\python.exe -m uvicorn app.start:app --app-dir backend --host 127.0.0.1 --port 8765 --no-access-log
@@ -23,5 +36,6 @@ try {
 } finally {
     $env:SLEEPIQ_DATA_ROOT = $previousDataRoot
     $env:SLEEPIQ_BACKUP_ROOT = $previousBackupRoot
+    $env:SLEEPIQ_CERT_STATUS = $previousCertStatus
     Pop-Location
 }

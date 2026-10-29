@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.responses import JSONResponse, Response
 
+from app import certstatus
 from app.ai.api import router as ai_router
 from app.ai.config import AiConfig
 from app.ai.provider import Provider
@@ -28,6 +29,7 @@ def create_app(
     chart_synthetic: bool = False,
     ai_config: AiConfig | None = None,
     ai_provider: Provider | None = None,
+    certificate_status: Path | None = None,
 ) -> FastAPI:
     if backup_interval <= 0:
         raise ValueError("Backup interval must be positive")
@@ -118,7 +120,10 @@ def create_app(
         state: dict[str, object] = {"status": "not_configured", "last_success": None, "error": None}
         if backup_service is not None:
             state = asdict(backup_service.state)
-        return {"backup": state}
+        result: dict[str, object] = {"backup": state}
+        if certificate_status is not None:
+            result["certificate"] = certstatus.read(certificate_status)
+        return result
 
     if frontend is not None and frontend.is_dir():
         app.mount("/", StaticFiles(directory=frontend, html=True), name="frontend")
