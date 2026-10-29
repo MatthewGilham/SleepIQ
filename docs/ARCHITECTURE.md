@@ -123,13 +123,13 @@ This is a **logical decomposition**, not approval to build eight particular tabl
 Illustrative interface families (proposals, not promises of exact paths):
 
 - `GET /api/v1/status`: import freshness, service health, current formula version.
-- `GET /api/v1/nights` and `GET /api/v1/nights/{date}`: nightly timeline and latest selected night, including unscored/partial states.
+- `GET /api/v1/nights` and `GET /api/v1/nights/{date}`: nightly timeline and latest selected night, including unscored/partial states (latest night implemented as `GET /api/v1/dashboard`; see the U01/X01 section).
 - `GET /api/v1/metrics/catalog`: supported metrics, units, scope and completeness.
-- `GET /api/v1/analytics/timeseries`: chosen metrics, date window and rolling-average options.
-- `GET /api/v1/analytics/correlation`: paired-night results computed in Python.
+- `GET /api/v1/analytics/timeseries`: chosen metrics, date window and rolling-average options (implemented as POST; see "U02 chart API and preset contract").
+- `GET /api/v1/analytics/correlation`: paired-night results computed in Python (implemented as POST; see the same section).
 - `GET/POST/PATCH/DELETE /api/v1/presets`: persistent graph presets.
 - `POST /api/v1/analysis`: AI statistical question scoped to selected metrics/date range, with explicit cost/privacy controls.
-- `GET /api/v1/export`: CSV/Excel output.
+- `POST /api/v1/analytics/export`: CSV of computed nightly metrics (implemented as POST; Excel not built, see P22 and the X01 section).
 - Inbound `POST /api/ingest`: **separate authentication and request restrictions** from the browser API.
 
 Avoid directly exposing raw measurements, database file paths or unrestricted query executors to browser requests. Browser API security needs review even though this is a single-user local app (including cross-origin and local-network attack surfaces).
@@ -331,3 +331,19 @@ Use docs/PLAN.md as the sole progress, task and phase-approval record. DEVELOPME
 ## B01 backup foundation
 
 `db/backup.py` implements verified self-contained daily snapshots with immutable manifest inventory and SQLite consistency checks. `db/backup_cli.py` provides daily/verify/restore-isolated commands. `scripts/setup-data.ps1` checks private folders and invokes a new-empty-store initializer and first backup; it never migrates an existing database. This leaves raw/DB import synchronization, normal launcher/runtime scheduling and owner-folder acceptance as explicit integration gates in PLAN.md.
+
+## U02 chart API and preset contract
+The loopback application optionally receives an explicitly configured `chart_data` directory; opening it never migrates the store. `start.py` uses the existing owner-configured data directory. `scripts/preview-charts.py` instead creates synthetic data only under `.cache/chart-preview`, serves on 127.0.0.1:8766 and persists preview presets across restarts. `--fresh` creates an independent synthetic store for each browser test run.
+
+- `GET /api/v1/metrics/catalog`: fixed configured nightly metric catalog with units/methods/clock eligibility.
+- `POST /api/v1/analytics/timeseries`: bounded Selection JSON (metrics, range 7/30/90/all/custom, start/end dates, actual/normalized mode). Read-only despite POST; avoids large query strings. Returns a dense calendar axis, explicit nulls, values/original values, sample counts, quality flags, clock offsets, normalization metadata and derivation/score versions. Synthetic preview responses explicitly identify synthetic data.
+- Relative ranges end at the latest stored wake date; custom endpoints are inclusive. Maximum 10000-day span. Active derive-1/pilot-1 versions only; newest unscored nights remain eligible. Efficiency fractions become percentages; stage seconds become minutes/hours. Python computes population z-scores over observed selected-range samples, not zoomed view. Constant/empty series normalize to unavailable; clock metrics cannot normalize.
+- A01: `Selection.rolling` is `off`/`7`/`30`. Each series then carries `rolling` {window, minimum, values, counts, reason}: trailing calendar-window means from `analytics/stats.py`, null below 4/7 or 15/30 observed nights, counts always present. Early windows may use stored nights before the range start. Clock metrics return null values with a reason. Normalized mode applies the selected-range z transform.
+- `POST /api/v1/analytics/correlation`: bounded `Pairing` JSON (two distinct non-clock metrics plus the same range fields). Returns same-wake-date pairs, n, exclusion counts (missing_x, missing_y, neither), days, Pearson r or a reason (<3 pairs, constant series, no nights), metric units/methods and versions. Read-only.
+- `GET /api/v1/presets`, `PUT /api/v1/presets/new`, `PUT /api/v1/presets/{id}`, `DELETE /api/v1/presets/{id}?revision=N`: bounded named chart selections in existing `app_settings` key `charts.presets.v1` (no migration). Maximum 100, case-insensitive unique names, one default, revision conflicts return 409. Changing defaults increments affected revisions. Mutations use the shared writer gate and a SQLite transaction. UI confirms overwrite/deletion. These endpoints never modify health records.
+
+Chart reads and preset writes reject non-loopback clients, foreign Origin and cross-site/same-site fetch requests. POST/PUT/DELETE require an exact same Origin and `X-SleepIQ-Request: charts`, with a streamed 16 KiB cap before parsing. Successful protected responses use no-store. No CORS, raw exports, filesystem paths or arbitrary queries are exposed. Existing LAN receiver routing is untouched.
+
+## U01 dashboard and X01 export contracts (Phase 3)
+- `GET /api/v1/dashboard`: read-only model of the latest stored night: source-local onset/wake strings and offsets, durations, efficiency, physiology values with sample counts (null when missing), stage intervals relative to session start, flags, score status/components/missing reasons/ceiling (null score object if never computed), a 30-calendar-night duration trend (null for unrecorded nights) and import counts. `latest` is null for an empty store. Same loopback, origin and `Cache-Control: no-store` boundary as the other chart routes; 503 when no store is configured.
+- `POST /api/v1/analytics/export`: body `{metrics, range, start, end}` (same bounded range rules as charts; 1-15 distinct catalog metrics; unknown fields rejected). Returns `text/csv` attachment with a server-generated file name and `X-SleepIQ-Rows`. Columns: `wake_date`, one per metric with unit, `flags`, `score_status`, `derivation_version`, `score_version`. Needs the same-origin `X-SleepIQ-Request` header as other POSTs.

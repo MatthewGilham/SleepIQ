@@ -11,4 +11,8 @@ backups = os.environ.get("SLEEPIQ_BACKUP_ROOT")
 if bool(data) != bool(backups):
     raise RuntimeError("Both private data and backup folders must be configured")
 service = BackupService(Path(data), Path(backups)) if data and backups else None
-app = create_app(Path(__file__).resolve().parents[2] / "frontend/dist", service)
+app = create_app(
+    Path(__file__).resolve().parents[2] / "frontend/dist",
+    service,
+    chart_data=Path(data) if data else None,
+)

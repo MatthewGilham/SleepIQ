@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { loadBackupStatus } from "./backup";
+import { backupLabel, loadBackupStatus } from "./backup";
 afterEach(() => vi.unstubAllGlobals());
 test("shows the verified local date", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
@@ -21,3 +21,9 @@ test.each([null, {}, {backup: null}, {backup: {status: "ok", last_success: null}
     await expect(loadBackupStatus(new AbortController().signal)).rejects.toThrow();
   }
 );
+test("header backup label never reports a failed or pending backup as healthy", () => {
+  expect(backupLabel("Backup verified for 2026-10-28.")).toBe("Verified");
+  expect(backupLabel("Backup storage is not configured.")).toBe("Not connected");
+  expect(backupLabel("Backup failed. Check your backup folder and available disk space.")).toBe("Needs attention");
+  expect(backupLabel("Backup verification is pending.")).toBe("Needs attention");
+});

@@ -18,3 +18,9 @@ export async function loadBackupStatus(signal: AbortSignal): Promise<string> {
   }
   throw new Error("Unexpected status");
 }
+/** Short header label for the longer owner-facing status message. */
+export function backupLabel(message: string): string {
+  if (message.startsWith("Backup verified")) return "Verified";
+  if (message.includes("not configured")) return "Not connected";
+  return "Needs attention";
+}
