@@ -249,7 +249,7 @@ This separates high-impact domain calculations from transport and UI. Avoid prol
 - **A: User launches with a simple script/shortcut (recommended initially):** easier to understand and debug. **Trade-off:** requires starting after reboot; receiver may be offline until launch.
 - **B: Start automatically with Windows:** better unattended sync availability. **Trade-off:** more permissions/service administration, more complex troubleshooting.
 
-**Owner decision — APPROVED (28 October 2026): A — Manual launch via a simple script/shortcut.** No automatic start with Windows for v1. **Exception P20 (29 October 2026):** the HTTPS ingest receiver only may start at the owner's logon via a per-user scheduled task; the dashboard stays manually launched.
+**Owner decision — APPROVED (28 October 2026): A — Manual launch via a simple script/shortcut.** No automatic start with Windows for v1. **Exception P20 (29 October 2026):** the HTTPS ingest receiver only may start at the owner's logon via a per-user scheduled task; the dashboard stays manually launched. **L01 (29 October 2026):** the manual launch is now a Desktop shortcut running `scripts/launch.ps1` (starts `start.ps1` if SleepIQ is not already answering on 127.0.0.1:8765, then opens the browser); still no autostart.
 
 ### A6. AI privacy and budget
 

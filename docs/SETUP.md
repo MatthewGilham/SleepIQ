@@ -17,6 +17,10 @@ powershell -File scripts/check.ps1 -Suite Foundation
 
 Do not claim reproducible installation until `uv.lock` and `frontend/package-lock.json` exist and have been verified. Frontend manifest `latest` values are temporary resolution inputs; pin resolved direct versions before completing F01. Review dependency audits, frontend tests and CI before marking the ticket complete. `scripts/setup.ps1` is for subsequent locked installs and intentionally fails if lockfiles are absent.
 
+## Desktop shortcut (L01)
+
+Run `powershell -File scripts/install-shortcut.ps1` once from the project folder. It puts a **SleepIQ** shortcut on your Desktop (no admin rights, no autostart, no execution-policy change). Clicking it runs `scripts/launch.ps1`: if SleepIQ is already answering it only opens the browser; otherwise it runs `start.ps1` in a visible window and opens Chrome (default browser if Chrome is not installed) once the app responds. Closing that window stops SleepIQ. `-Replace` recreates the shortcut after moving the project; `-Remove` deletes it.
+
 ## Manual launch
 
 After a successful build:

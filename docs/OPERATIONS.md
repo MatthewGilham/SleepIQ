@@ -6,7 +6,7 @@ For the owner, on the Windows PC that runs SleepIQ. Evidence of what has actuall
 
 | Task | How |
 |---|---|
-| Open the dashboard | `powershell -File scripts/start.ps1`, then `http://127.0.0.1:8765` in the PC browser. Keep the console open; stop with Ctrl+C. A second launch refuses to start and never kills the first. |
+| Open the dashboard | Double-click the **SleepIQ** desktop shortcut (create it once with `powershell -File scripts/install-shortcut.ps1`; `-Replace` recreates it, `-Remove` deletes it). A PowerShell window opens, SleepIQ starts and Chrome (or your default browser) opens `http://127.0.0.1:8765` when it is ready. **That window is the app: keep it open; close it or press Ctrl+C to stop SleepIQ.** Clicking the shortcut again while it runs just opens another tab. The shortcut carries no AI key, so AI stays off unless you launch from a window where you set the variables. Manual fallback: `powershell -File scripts/start.ps1`, then open the address yourself. A second launch refuses to start and never kills the first. |
 | Receive iPhone exports | The HTTPS receiver runs as a per-user scheduled task (P20): `scripts/receiver-task.ps1 -Action Status` (also `Start`, `Stop`, `Install`, `Remove`). The PC must be on, awake and on the home network. |
 | Turn on AI (optional) | Set `SLEEPIQ_AI_ENABLED=1` and `SLEEPIQ_OPENAI_API_KEY` in the launching window only. Off by default; every Analyze click is one billable request (20/day, 300/month caps). |
 | Import an export file by hand | `scripts/import-export.ps1 -ExportPath "<file>"` (takes a verified snapshot first). |
