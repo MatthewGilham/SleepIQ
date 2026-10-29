@@ -824,5 +824,6 @@ Owner-requested on 2026-10-29 after U05; choices in DECISIONS P28. Order: U06, t
 | U06-5 | `frontend/e2e/no-ai.spec.ts`: no heading or Analyze button on Dashboard, Analytics, Correlations; no analysis request while changing rolling and display modes |
 | U06-6 | `httpx2` now under dev dependencies; `uv lock` re-resolved and `uv lock --check` exit 0 |
 | U06-7 | `rg` over the listed docs: remaining matches are removal notes, the superseded A6 record and its approval line. A6/P23 already carried "Superseded by P28" |
+| G-2, G-3 | Staged list held only U06 source, tests and docs; commit `a0f314c` |
 | G-1 | `check.ps1 -Suite Full` exit 0: Ruff, Mypy (41 files), 213 backend tests, 38 frontend unit tests, build, 35 Playwright tests, performance budgets, secret scan 169 files PASS, `pip-audit` and `npm audit` clean |
 | U06-8 | Pending: after the owner relaunches SleepIQ, run the read-only key-existence check on the real store |
