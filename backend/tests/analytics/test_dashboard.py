@@ -71,6 +71,13 @@ def test_scored_night_stages_trend_and_missing_hrv(scratch: Path):
     assert trend["asleep_h"][-3] is not None
 
 
+def test_physiology_cards_exclude_resting_heart_rate(scratch: Path):
+    data, engine = new_store(scratch)
+    import_bytes(engine, data, nights_payload(date(2026, 10, 27), 2))
+    ids = [p["id"] for p in dashboard(engine, False)["latest"]["physiology"]]
+    assert ids == ["hr", "hrv", "resp", "temp"]
+
+
 def test_endpoint_is_local_only_and_not_cached(scratch: Path):
     data, engine = new_store(scratch)
     import_bytes(engine, data, nights_payload(date(2026, 10, 27), 2))

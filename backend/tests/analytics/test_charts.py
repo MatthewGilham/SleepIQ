@@ -1,5 +1,6 @@
 """Synthetic chart/preset integration and independent normalization references."""
 
+import json
 from datetime import date
 from pathlib import Path
 
@@ -162,3 +163,42 @@ def test_empty_store_and_unconfigured(scratch):
     engine.dispose()
     with TestClient(create_app(), base_url="http://localhost", client=("127.0.0.1", 1)) as c:
         assert c.get("/api/v1/presets").status_code == 503
+
+
+def test_resting_heart_rate_is_not_offered_or_accepted(store):
+    data, _ = store
+    with client(data) as c:
+        ids = [m["id"] for m in c.get("/api/v1/metrics/catalog").json()]
+        assert "rhr_mean" not in ids and "hr_mean" in ids
+        rejected = c.post(
+            "/api/v1/analytics/timeseries", json={"metrics": ["rhr_mean"]}, headers=HEADERS
+        )
+        assert rejected.status_code == 422
+
+
+def test_preset_saved_with_resting_heart_rate_loads_without_it(store):
+    data, engine = store
+    old = [
+        {
+            "id": "abc",
+            "name": "Old",
+            "metrics": ["asleep_s", "rhr_mean"],
+            "range": "30",
+            "start": None,
+            "end": None,
+            "mode": "actual",
+            "rolling": "off",
+            "default": False,
+            "revision": 1,
+        },
+        {"id": "only", "name": "Only", "metrics": ["rhr_mean"], "revision": 1},
+    ]
+    with engine.begin() as conn:
+        conn.execute(
+            text("INSERT INTO app_settings(key,value_json) VALUES(:k,:v)"),
+            {"k": "charts.presets.v1", "v": json.dumps(old)},
+        )
+    with client(data) as c:
+        loaded = {p["id"]: p for p in c.get("/api/v1/presets").json()}
+    assert loaded["abc"]["metrics"] == ["asleep_s"]
+    assert loaded["only"]["metrics"] == ["asleep_s"]  # never an empty chart

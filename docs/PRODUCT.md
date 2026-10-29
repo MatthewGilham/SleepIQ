@@ -48,7 +48,7 @@ Display available measurements with units, definitions and missing-data indicato
 - Core, Deep, REM, and Awake time; sleep efficiency derived using a documented convention.
 - Sleeping heart rate (bpm), derived from readings within the defined overnight sleep interval.
 - **Overnight HRV — SDNN (ms)**, derived from valid timestamped HRV readings within the sleep interval; avoid labelling daily HRV as overnight HRV.
-- Resting heart rate (bpm), clearly distinguished from sleeping heart rate.
+- ~~Resting heart rate (bpm)~~ — removed from the dashboard, charts and export by owner decision (P27, U03); still stored.
 - Respiratory rate (breaths/min), appropriately scoped to sleep when supported by sample timestamps.
 - Apple sleeping wrist temperature, where available, clearly labelled with its source and unit/meaning.
 - **Every supported metric in the configured Health Auto Export feed** should be available for inspection and graphing when meaningful; do not silently discard a provided metric. This includes all six categories confirmed in the supplied example and relevant future metrics the owner enables. **Do not expand scope to the full Apple Health catalogue** or unrelated categories without owner approval. Newly encountered field shapes require explicit validation before being marked supported.

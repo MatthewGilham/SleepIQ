@@ -13,7 +13,6 @@ PHYSIOLOGY = (
     ("hr", "Sleeping heart rate"),
     ("hrv", "Overnight HRV"),
     ("resp", "Respiratory rate"),
-    ("rhr", "Resting heart rate"),
     ("temp", "Sleeping wrist temperature"),
 )
 

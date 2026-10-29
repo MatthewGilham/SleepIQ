@@ -666,7 +666,7 @@ Owner-requested UI improvements after Phase 5 (2026-10-29). Choices are recorded
 
 | ID | Status | Objective and bounded files | Acceptance |
 |---|---|---|---|
-| U03 | planned | **Remove resting heart rate** from the dashboard card grid (`analytics/dashboard.py` PHYSIOLOGY, `Dashboard.tsx`, `dashboardModel.ts`, synthetic preview in `App.tsx`) and from the Analytics/export catalog (`analytics/catalog.py`, `api.py` coverage map). Saved presets that list `rhr_mean` drop it silently on load. The stored `rhr_mean`/`rhr_n` columns and derivation stay untouched (no migration). | Criteria U03-1 onward, below |
+| U03 | done (2026-10-29) | **Remove resting heart rate** from the dashboard card grid (`analytics/dashboard.py` PHYSIOLOGY, `Dashboard.tsx`, `dashboardModel.ts`, synthetic preview in `App.tsx`) and from the Analytics/export catalog (`analytics/catalog.py`, `api.py` coverage map). Saved presets that list `rhr_mean` drop it silently on load. The stored `rhr_mean`/`rhr_n` columns and derivation stay untouched (no migration). | Criteria U03-1 onward, below |
 | U04 | planned | **Night-by-night navigation on the dashboard.** `GET /api/v1/dashboard?night=YYYY-MM-DD` (validated date; omitted = latest) returns that stored night plus `previous_night`/`next_night` (nearest stored wake dates, gaps skipped) and the 30-night trend ending on that night. UI: ← date → buttons, "Latest" button, Left/Right arrow keys when focus is not in a form field, `?night=` in the address so refresh keeps the place, buttons disabled at the ends, previous content kept (dimmed) while loading so the page does not jump. | Criteria U04-1 onward, below |
 | U05 | planned (after U03/U04) | **Analytics redesign** to the approved preview: KPI row (average sleep, average score gauge with 92.5 marker, average HRV, nights-recorded ring, each "vs previous period"); main interactive chart; stage composition ring; per-metric tiles (click to focus); stacked nightly stage bars; bedtime/wake strip. **Deep sleep, REM and Awake time** get their own tiles and are selectable in the main chart (Core is not added, per owner). **Same-unit grouping:** metrics sharing a unit share one axis, at most two axes (left/right) and up to six lines, e.g. total sleep + deep + REM on a shared duration axis with sleeping heart rate on the right. All sleep durations (total, deep, REM, awake) use one hours axis, honest scale by default, with a "zoom to fit" toggle for that axis (P27). More than two units → normalised mode (existing). Keep every current capability: presets, 7/30/90/all/custom, normalised mode, rolling averages, clock metrics, data table, keyboard access, gaps never bridged, AI panel at the foot. New summary figures (period averages, vs-previous deltas, stage composition, typical bedtime/wake quartiles) computed in Python by one new endpoint `POST /api/v1/analytics/summary`; the page only formats. Multi-colour palette (Afterburn reds plus gold and ice-blue) kept. | Criteria U05-1 onward, below |
 
@@ -721,3 +721,17 @@ A task is `done` only when **every** criterion below passes and its evidence (co
 - U05-17 [O] Owner opens Analytics on their own data and confirms it matches the approved preview's layout and colours, listing any changes wanted. Pass = owner says it is accepted.
 
 Owner answered the P27 questions on 2026-10-29; wrist temperature stays (present on 326 of 393 nights). Order: U03, then U04, then U05.
+
+### U03 evidence (2026-10-29)
+Built: resting heart rate removed from the dashboard physiology list, metric catalog, series count map and synthetic preview; `RETIRED` set in `analytics/api.py` drops `rhr_mean` from saved presets on read (a preset left empty falls back to Total asleep, so a chart is never blank). Stored `rhr_mean`/`rhr_n` columns, migrations and `backend/app/domain/` untouched. Found by the new U03-5 test: at 390 px the 30-bar trend panel overflowed the page by 30 px (pre-existing; the older test only checked the 7-bar view). Fixed in `style.css` (`minmax(0,1fr)` bottom grid, 3 px bar gap at 560 px and below).
+
+| Criterion | Result |
+|---|---|
+| U03-1 | `test_physiology_cards_exclude_resting_heart_rate` passes |
+| U03-2 | `test_resting_heart_rate_is_not_offered_or_accepted` passes (catalog lacks it; timeseries 422) |
+| U03-3 | `test_export_has_no_resting_heart_rate_column` passes (full exact header list) |
+| U03-4 | `test_preset_saved_with_resting_heart_rate_loads_without_it` passes |
+| U03-5 | Playwright "metrics grid has five cards..." passes at 1440 and 390 px |
+| U03-6 | `git diff --name-only` shows no migration or `backend/app/domain/` file |
+| G-1 | `check.ps1 -Suite Full` exit 0: Ruff, Mypy (45 files), 231 backend tests, 36 frontend unit tests, build, 22 Playwright tests, performance budgets, secret scan 173 files PASS, `pip-audit` and `npm audit` clean |
+| G-4 | DESIGN.md, PRODUCT.md, SCORING.md, ARCHITECTURE.md updated |

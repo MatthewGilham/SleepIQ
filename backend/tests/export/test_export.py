@@ -104,6 +104,32 @@ def test_formula_characters_are_neutralised_in_text_but_numbers_stay_numeric(sto
     assert rows[3][2].startswith("'=HYPERLINK")
 
 
+def test_export_has_no_resting_heart_rate_column(store):
+    _, engine = store
+    header = parse(nightly_csv(engine, ExportRequest(metrics=list(BY_ID), range="all"))[1])[0]
+    assert header == [
+        "wake_date",
+        "Total asleep (h)",
+        "Recorded awake (min)",
+        "Core (min)",
+        "Deep (min)",
+        "REM (min)",
+        "Sleep efficiency (%)",
+        "Sleeping heart rate (bpm)",
+        "Overnight HRV (ms)",
+        "Respiratory rate (breaths/min)",
+        "Sleeping wrist temperature (°C)",
+        "SleepIQ score (/100)",
+        "Consistency (/100)",
+        "Sleep onset (HH:MM source-local)",
+        "Wake time (HH:MM source-local)",
+        "flags",
+        "score_status",
+        "derivation_version",
+        "score_version",
+    ]
+
+
 def test_no_source_label_path_or_secret_field_is_exported(store):
     data, engine = store
     with engine.connect() as conn:

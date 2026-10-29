@@ -14,7 +14,7 @@
 - **Sleep consistency must be an overall-score component**, and also have its own separate **0–100 consistency score**.
 - Compare actual sleep onset and final wake times with **preceding 30 calendar days**, not the current scored night or later data. A missing day must not count as a zero-quality night.
 - Begin implementation with a **simple, explicitly provisional scoring formula**. Refine and owner-approve changes later.
-- Source metrics include sleep duration, Core/Deep/REM/Awake, stage-based efficiency, sleeping HR, overnight HRV (recorded SDNN summary), respiratory rate, resting HR, wrist temperature and relevant future enabled metrics. Not every graphable metric has to be a score input without owner approval.
+- Source metrics include sleep duration, Core/Deep/REM/Awake, stage-based efficiency, sleeping HR, overnight HRV (recorded SDNN summary), respiratory rate, wrist temperature and relevant future enabled metrics. Not every graphable metric has to be a score input without owner approval.
 - Genuine absent values remain **Missing data**, not backfilled or estimated. **S4 approved: withhold overall score as “Insufficient data” whenever a required component is absent; do not impute.**
 - Score definitions, coefficients, baselines and nightly calculations are versioned so all historical nights can be recalculated consistently. Changing a scoring definition never overwrites raw input data.
 - Scores are explanatory self-tracking estimates, **not diagnostic or clinically validated indicators**.

@@ -4,8 +4,8 @@ export type Component = {score:number;weight:number;neutral:boolean};
 export type DashboardScore = {status:"scored"|"insufficient_data";overall:number|null;consistency:number|null;version:string;ceiling:number;missing:string[];components:Record<string,Component>;consistency_detail:{available?:boolean;reason?:string|null;baseline_nights?:number;provisional?:boolean;onset_deviation_min?:number|null;wake_deviation_min?:number|null}};
 export type Latest = {wake_date:string;source:string;onset_local:string;wake_local:string;start_offset_min:number;end_offset_min:number;session_s:number;asleep_s:number;core_s:number;deep_s:number;rem_s:number;awake_s:number;efficiency:number;physiology:Physiology[];flags:string[];stages:{stage:Stage;start_s:number;duration_s:number}[];score:DashboardScore|null};
 export type DashboardData = {synthetic:boolean;versions:string[];import:{batches:number;last_received_utc:number|null;nights:number};latest:Latest|null;trend:{dates:string[];asleep_h:(number|null)[]}};
-export const units:Record<string,string>={hr:"bpm",hrv:"ms",resp:"breaths/min",rhr:"bpm",temp:"°C"};
-export const physiologyDetail:Record<string,string>={hr:"Unweighted mean · overnight samples",hrv:"Mean SDNN · overnight samples",resp:"Overnight mean",rhr:"Daily measurement",temp:"Overnight mean"};
+export const units:Record<string,string>={hr:"bpm",hrv:"ms",resp:"breaths/min",temp:"°C"};
+export const physiologyDetail:Record<string,string>={hr:"Unweighted mean · overnight samples",hrv:"Mean SDNN · overnight samples",resp:"Overnight mean",temp:"Overnight mean"};
 const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],days=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 export function duration(seconds:number):string{const m=Math.round(seconds/60);return `${Math.floor(m/60)}h ${String(m%60).padStart(2,"0")}m`;}
 // Local strings are source-local "YYYY-MM-DDTHH:MM"; they are sliced, never re-zoned by the browser.

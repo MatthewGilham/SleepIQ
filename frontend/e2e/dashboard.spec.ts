@@ -30,7 +30,7 @@ test("dashboard keyboard: stage bars and trend bars are focusable with text equi
 });
 const night={wake_date:"2026-10-28",source:"Watch",onset_local:"2026-10-27T23:00",wake_local:"2026-10-28T07:00",start_offset_min:0,end_offset_min:0,session_s:28800,asleep_s:26400,core_s:14400,deep_s:3600,rem_s:4200,awake_s:1200,efficiency:0.9565,flags:["revised"],
  stages:[{stage:"Core",start_s:0,duration_s:14400},{stage:"Awake",start_s:14400,duration_s:1200}],
- physiology:[{id:"hr",label:"Sleeping heart rate",value:54,n:6},{id:"hrv",label:"Overnight HRV",value:null,n:0},{id:"resp",label:"Respiratory rate",value:null,n:0},{id:"rhr",label:"Resting heart rate",value:0,n:1},{id:"temp",label:"Sleeping wrist temperature",value:null,n:0}],
+ physiology:[{id:"hr",label:"Sleeping heart rate",value:54,n:6},{id:"hrv",label:"Overnight HRV",value:null,n:0},{id:"resp",label:"Respiratory rate",value:null,n:0},{id:"temp",label:"Sleeping wrist temperature",value:null,n:0}],
  score:{status:"insufficient_data",overall:null,consistency:null,version:"pilot-1",ceiling:92.5,missing:["overnight_hrv","consistency:insufficient_history"],components:{duration:{score:100,weight:30,neutral:false},deep:{score:75,weight:10,neutral:true}},consistency_detail:{available:false,reason:"insufficient_history",baseline_nights:3}}};
 const body={synthetic:false,versions:["derive-1","pilot-1"],import:{batches:1,last_received_utc:1793000000,nights:3},latest:night,trend:{dates:["2026-10-27","2026-10-28"],asleep_h:[null,7.33]}};
 test("partial, unscored night stays visible with missing data labelled, not zero",async({page})=>{
@@ -39,7 +39,7 @@ test("partial, unscored night stays visible with missing data labelled, not zero
  await expect(page.locator(".score-ring")).toContainText("Insufficient");
  await expect(page.getByText("No overall score because of missing: overnight HRV, enough history for consistency.").first()).toBeVisible();
  await expect(page.locator(".metric",{hasText:"Overnight HRV"})).toContainText("Missing data");
- await expect(page.locator(".metric",{hasText:"Resting heart rate"})).toContainText("0 bpm");
+ await expect(page.locator(".metric",{hasText:"Resting heart rate"})).toHaveCount(0);
  await expect(page.getByText("Flags: revised")).toBeVisible();
  await expect(page.locator(".trend-bars span").first()).toHaveAttribute("title","2026-10-27: no recording");
  await expect(page.getByText("Not enough history yet (3 prior nights; needs at least 7)")).toBeVisible();
@@ -58,4 +58,19 @@ test("a failing dashboard request shows a retryable error, then recovers",async(
 test("without a configured store the labelled synthetic design preview remains",async({page})=>{
  await page.route("**/api/v1/dashboard",r=>r.fulfill({status:503,json:{detail:"Chart store not configured"}}));await page.goto("/");
  await expect(page.getByText("Synthetic examples - no personal health data")).toBeVisible();await expect(page.getByText("87.5")).toBeVisible();
+});
+
+test("metrics grid has five cards, none for resting heart rate, fully visible at desktop and phone widths",async({page})=>{
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:900});await page.goto("/");
+  const grid=page.getByLabel("Nightly metrics");
+  await expect(grid.locator(".metric")).toHaveCount(5);
+  await expect(page.getByText("Resting heart rate")).toHaveCount(0);
+  const cards=grid.locator(".metric");
+  for(let i=0;i<5;i++){
+   const box=await cards.nth(i).boundingBox();expect(box).not.toBeNull();
+   expect(box!.x).toBeGreaterThanOrEqual(0);expect(box!.x+box!.width).toBeLessThanOrEqual(width);expect(box!.height).toBeGreaterThan(40);
+  }
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);
+ }
 });

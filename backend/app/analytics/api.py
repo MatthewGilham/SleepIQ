@@ -20,6 +20,8 @@ from app.db.coordinator import write_guard
 from app.domain.config import DERIVE, SCORE
 
 KEY = "charts.presets.v1"
+# Metrics removed from the catalog; old saved presets drop them silently on load (U03).
+RETIRED = frozenset({"rhr_mean"})
 CORRELATION_METHOD = (
     "Pearson r over nights where both metrics were recorded (same wake date); "
     "exploratory only: no significance test and not evidence of cause"
@@ -185,7 +187,6 @@ def series(engine: Engine, selection: Selection) -> dict[str, Any]:
                 "hr_mean": "hr_n",
                 "hrv_mean": "hrv_n",
                 "resp_mean": "resp_n",
-                "rhr_mean": "rhr_n",
                 "temp_mean": "temp_n",
             }.get(key)
             details.append(
@@ -303,7 +304,11 @@ def router(engine: Engine, data: Path, synthetic: bool = False) -> APIRouter:
         value = conn.execute(
             text("SELECT value_json FROM app_settings WHERE key=:key"), {"key": KEY}
         ).scalar()
-        return json.loads(value) if value else []
+        items: list[dict[str, Any]] = json.loads(value) if value else []
+        for item in items:
+            kept = [m for m in item["metrics"] if m not in RETIRED]
+            item["metrics"] = kept or ["asleep_s"]
+        return items
 
     @api.get("/presets")
     def presets() -> list[dict[str, Any]]:
