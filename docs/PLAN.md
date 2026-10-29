@@ -784,7 +784,7 @@ Owner-requested on 2026-10-29 after U05; choices in DECISIONS P28. Order: U06, t
 | ID | Status | Objective and bounded files | Acceptance |
 |---|---|---|---|
 | U06 | done | **Remove the AI assistant completely.** Delete `backend/app/ai/`, `backend/tests/ai/`, `scripts/live-ai-check.py`, `frontend/src/ai.ts`, `ai.test.ts`, `Investigator.tsx`, `e2e/ai.spec.ts`; remove the AI wiring in `main.py`, `start.py`, `scripts/preview-charts.py`, the `/api/v1/analysis` boundary entry and the panel in `Analytics.tsx`. One idempotent start-up cleanup deletes only the `ai.usage.v1` settings row (owner-approved deletion; counts only, no health data). `httpx2` moves to dev dependencies (FastAPI's test client needs it). Docs: SECURITY, SETUP, OPERATIONS, ARCHITECTURE, PRODUCT, DESIGN, TESTING and AGENTS.md stop describing AI as a feature; A6 and P23 marked superseded. | U06-1 onward |
-| U07 | planned | **Text stays inside its card at every width.** KPI cards (and any other card found overflowing) adapt to their own width with CSS container queries: the graphic stacks above the value and type steps down when the card is narrow. Files: `style.css`, small markup changes in `Analytics.tsx`/`Dashboard.tsx` only if needed. | U07-1 onward |
+| U07 | done (U07-4 owner view pending) | **Text stays inside its card at every width.** KPI cards (and any other card found overflowing) adapt to their own width with CSS container queries: the graphic stacks above the value and type steps down when the card is narrow. Files: `style.css`, small markup changes in `Analytics.tsx`/`Dashboard.tsx` only if needed. | U07-1 onward |
 | U08 | planned | **Average line per selected metric on the main chart.** A thin dotted horizontal line in the metric's colour at its mean over the whole selected range (not the zoomed part), labelled "avg ..." at the right edge, plus an "Average" row in the tooltip; "Show averages" toggle, on by default. Normalized mode: one shared line at 0. Bedtime/wake: no average line. The mean comes from Python (`normalization.mean` in the timeseries response, observed nights only); the page only positions and formats it. | U08-1 onward |
 
 ### Acceptance criteria (round 2)
@@ -827,3 +827,14 @@ Owner-requested on 2026-10-29 after U05; choices in DECISIONS P28. Order: U06, t
 | G-2, G-3 | Staged list held only U06 source, tests and docs; commit `a0f314c` |
 | G-1 | `check.ps1 -Suite Full` exit 0: Ruff, Mypy (41 files), 213 backend tests, 38 frontend unit tests, build, 35 Playwright tests, performance budgets, secret scan 169 files PASS, `pip-audit` and `npm audit` clean |
 | U06-8 | Owner-reported pass (2026-10-29): after relaunching SleepIQ, "That check has passed" (`ai.usage.v1` absent from the real store; agent did not read the store) |
+
+### U07 verification evidence
+
+| Check | Evidence |
+|---|---|
+| Cause | Above 1100 px the KPI row has four columns; at 1200-1440 px each card is about 228 px wide, too narrow for a 110 px graphic beside a 28 px no-wrap value, so values and captions ran past the right edge. Other cards (tiles, Dashboard metrics and panels) were checked by the same test and did not overflow |
+| Fix | `style.css`: `.kpi-card` is a size container; below 300 px of card width the graphic stacks above the value (graphic max 90 px), the value scales with the card (`clamp(20px, 11cqi, 28px)`) and the text column may shrink. No markup change |
+| U07-1, U07-3 | `frontend/e2e/layout.spec.ts`: at 390, 900, 1000, 1100, 1200, 1366, 1440, 1720 and 1920 px, on the Dashboard and Analytics (30 days and All), all text inside `.an-card`, `.tile`, `.metric` and `.panel` lies in its card (1 px tolerance) and no element's `scrollWidth` exceeds its `clientWidth`; at 390 px no horizontal page scroll. Before the fix the 1200, 1366 and 1440 px cases failed on the KPI cards; after it all pass. The hidden tooltip, screen-reader-only text and the opt-in scrolling table are excluded |
+| U07-2 | Same file: mocked summary showing "10h 59m", "100.0 /100", "250 ms", "1000 of 1000" and "▲ 120 min vs previous 1000 days" at 1000 px passes |
+| G-1 | `check.ps1 -Suite Full` exit 0: Ruff, Mypy (41 files), 213 backend tests, 38 frontend unit tests, build, 45 Playwright tests, performance budgets, secret scan 170 files PASS, `pip-audit` and `npm audit` clean |
+| U07-4 | Pending: owner views Analytics at half and full screen |

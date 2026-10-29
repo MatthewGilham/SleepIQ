@@ -1093,7 +1093,10 @@
 .an .glow{filter:drop-shadow(0 0 5px currentColor)}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
 .kpi{display:flex;align-items:center;gap:16px;margin-top:10px}.kpi svg{flex:0 0 auto;max-width:110px;height:auto}
-.kpi-value{font-size:28px;letter-spacing:-1px;white-space:nowrap}.kpi-sub{font-size:11px;color:var(--an-muted);margin-top:4px}
+.kpi-value{font-size:clamp(20px,11cqi,28px);letter-spacing:-1px;white-space:nowrap}.kpi-sub{font-size:11px;color:var(--an-muted);margin-top:4px}
+/* U07: KPI cards respond to their own width, not the window's: narrow cards stack the graphic above the value. */
+.kpi-card{container-type:inline-size}.kpi>div{min-width:0}
+@container (max-width:300px){.kpi{flex-direction:column;align-items:flex-start;gap:8px}.kpi svg{max-width:90px}}
 .an .up{color:#ffc45a}.an .down{color:#7fd3ff}
 .an-focus{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px}
 .main-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}.main-head h2{font-size:13px;font-weight:500}
