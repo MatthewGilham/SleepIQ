@@ -202,3 +202,22 @@ def test_preset_saved_with_resting_heart_rate_loads_without_it(store):
         loaded = {p["id"]: p for p in c.get("/api/v1/presets").json()}
     assert loaded["abc"]["metrics"] == ["asleep_s"]
     assert loaded["only"]["metrics"] == ["asleep_s"]  # never an empty chart
+
+
+def test_average_is_mean_of_observed_nights_whatever_the_rolling_setting(store):
+    # U08-8: the chart's average line uses normalization.mean. Hand reference over 24-28 Oct:
+    # HR nights 50, 60, 70 -> 60; HRV 40, (missing on 26 Oct), 60 -> 50; 25 and 27 Oct unrecorded.
+    data, _ = store
+    body = {"metrics": ["hr_mean", "hrv_mean"], "range": "custom", "start": "2026-10-24"}
+    body["end"] = "2026-10-28"
+    with client(data) as c:
+        for rolling in ("off", "7", "30"):
+            got = c.post(
+                "/api/v1/analytics/timeseries", json={**body, "rolling": rolling}, headers=HEADERS
+            ).json()
+            by_id = {s["id"]: s for s in got["series"]}
+            assert len(got["dates"]) == 5
+            assert by_id["hr_mean"]["normalization"]["mean"] == pytest.approx(60)
+            assert by_id["hr_mean"]["normalization"]["n"] == 3
+            assert by_id["hrv_mean"]["normalization"]["mean"] == pytest.approx(50)
+            assert by_id["hrv_mean"]["normalization"]["n"] == 2

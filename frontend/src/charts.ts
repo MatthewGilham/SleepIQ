@@ -116,6 +116,13 @@ export function display(m:Pick<Metric,"id"|"unit"|"clock">,v:number|null,normali
  const a=toAxis(m,v)!;if(DURATIONS.has(m.id))return hoursText(a);
  return `${a.toFixed(DIGITS[m.unit]??2)} ${m.unit}`;
 }
+/** Average label for the main chart, tooltip and table (U08). The mean comes from Python over the whole selected range;
+ * normalized series all average 0 by construction, and clock times have no average. */
+export function averageText(s:Pick<Series,"id"|"unit"|"clock"|"normalization">,normalized=false):string|null{
+ if(s.clock)return null;
+ if(s.normalization.mean===null)return "no reading";
+ return normalized?"average (0)":`avg ${display(s,s.normalization.mean)}`;
+}
 export type MetricSummary={mean:number|null;n:number;min:number|null;max:number|null;previous_mean:number|null;previous_n:number;delta:number|null};
 export type ClockSummary={n:number;q1:number|null;median:number|null;q3:number|null};
 export type Summary={synthetic?:boolean;start:string|null;end:string|null;days:number;nights:number;ceiling:number;previous:{start:string;end:string;days:number;nights:number}|null;

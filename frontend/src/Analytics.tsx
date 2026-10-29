@@ -1,7 +1,7 @@
 import {useEffect,useRef,useState} from "react";
 import type {ReactNode} from "react";
 
-import {axisUnit,chartRequest,clockText,curveRuns,display,fitMetrics,hoursText,initialSelection,refusal,rollingNote,runPath,sliceSeries,toAxis,unitName,withDefaults} from "./charts";
+import {averageText,axisUnit,chartRequest,clockText,curveRuns,display,fitMetrics,hoursText,initialSelection,refusal,rollingNote,runPath,sliceSeries,toAxis,unitName,withDefaults} from "./charts";
 import {shortDay} from "./dashboardModel";
 import type {ChartData,Metric,Preset,Selection,Series,Summary} from "./charts";
 
@@ -83,14 +83,16 @@ function axisDomain(unit:string,values:number[],fit:boolean):[number,number]{
 }
 function tickLabel(unit:string,v:number,span:number){return unit==="local time"?clockText(v):v.toFixed(span<10?1:0);}
 
-function MainChart({series,dates,normalized,fit,recorded,onReset}:{series:Series[];dates:string[];normalized:boolean;fit:boolean;recorded:Set<string>|null;onReset:()=>void}){
+function MainChart({series,dates,normalized,fit,averages,recorded,onReset}:{series:Series[];dates:string[];normalized:boolean;fit:boolean;averages:boolean;recorded:Set<string>|null;onReset:()=>void}){
  const [cursor,setCursor]=useState<number|null>(null);const svg=useRef<SVGSVGElement>(null),box=useRef<HTMLDivElement>(null);
  const n=dates.length,c=cursor!==null&&cursor<n?cursor:null;
  const value=(s:Series,v:number|null)=>normalized?v:toAxis(s,v);
+ // U08: dotted mean over the whole selected range (Python's normalization.mean), so zooming never moves it. Normalized series all average 0.
+ const mean=(s:Series)=>!averages||s.clock||s.normalization.mean===null?null:normalized?0:toAxis(s,s.normalization.mean);
  const units:string[]=[];series.forEach(s=>{const u=axisUnit(s,normalized);if(!units.includes(u))units.push(u);});
  const axes=units.map((unit,k)=>{
   const members=series.filter(s=>axisUnit(s,normalized)===unit);
-  const all=members.flatMap(s=>[...s.values.map(v=>value(s,v)),...(s.rolling?.values??[]).map(v=>value(s,v))]).filter(finite);
+  const all=members.flatMap(s=>[...s.values.map(v=>value(s,v)),...(s.rolling?.values??[]).map(v=>value(s,v)),mean(s)]).filter(finite);
   const [lo,hi]=axisDomain(unit,all,fit);
   return {unit,side:k===0?"left":"right",lo,hi,ink:color(members[0].id),y:(v:number)=>T+IH-(v-lo)/(hi-lo||1)*IH};
  });
@@ -111,6 +113,8 @@ function MainChart({series,dates,normalized,fit,recorded,onReset}:{series:Series
      <Lines values={s.values.map(v=>value(s,v))} color={color(s.id)} x={x} y={a.y} area={T+IH} className="series-line"/>
      {s.rolling?.values&&<Lines values={s.rolling.values.map(v=>value(s,v))} color="#f4eded" x={x} y={a.y} dashed className="rolling-line"/>}
     </g>;})}
+    {normalized?(()=>{const s=series.find(v=>mean(v)!==null);return s?<AverageLine key="z" y={axisOf(s).y(0)} ink="#f4eded" text="average (0)"/>:null;})()
+     :series.map(s=>{const m=mean(s);return m===null?null:<AverageLine key={`avg-${s.id}`} metric={s.id} y={axisOf(s).y(m)} ink={color(s.id)} text={averageText(s)!}/>;})}
     {dates.map((d,i)=>(i%step===0&&n-1-i>=step*0.6)||i===n-1?<text key={d} x={x(i)} y={H-8} textAnchor="middle" className="tick dim-tick">{shortDay(d)}</text>:null)}
     {c!==null&&<g className="crosshair"><line x1={x(c)} x2={x(c)} y1={T} y2={T+IH}/>{series.map(s=>{const v=value(s,s.values[c]);return v===null?null:<circle key={s.id} cx={x(c)} cy={axisOf(s).y(v)} r="5" stroke={color(s.id)}/>;})}</g>}
     <rect x={L} y={T} width={IW} height={IH} fill="transparent" className="hit"
@@ -120,6 +124,7 @@ function MainChart({series,dates,normalized,fit,recorded,onReset}:{series:Series
    <div className="chart-tip" role="status" aria-live="polite" hidden={c===null} style={c===null?undefined:tipLeft>62?{right:`calc(${100-tipLeft}% + 14px)`}:{left:`calc(${tipLeft}% + 14px)`}}>
     {c!==null&&<><b>{shortDay(dates[c])} <time dateTime={dates[c]}>{dates[c]}</time></b>
      {series.map(s=><div key={s.id} className="tip-row" data-metric={s.id}><span style={{color:color(s.id)}}>● {s.label}</span><span>{display(s,s.values[c],normalized)}</span></div>)}
+     {averages&&series.filter(s=>!s.clock).map(s=><div key={`a-${s.id}`} className="tip-row average" data-average={s.id}><span>{s.label} average</span><span>{averageText(s,normalized)}</span></div>)}
      {series.filter(s=>s.rolling).map(s=><div key={`r-${s.id}`} className="tip-row rolling"><span>{s.label}</span><span>{rollingNote(s.rolling!,c,v=>display(s,v,normalized))}</span></div>)}
      {recorded&&!recorded.has(dates[c])&&<div className="tip-row"><span>No recorded sleep this night</span></div>}</>}
    </div>
@@ -127,6 +132,12 @@ function MainChart({series,dates,normalized,fit,recorded,onReset}:{series:Series
  </div>;
 }
 
+function AverageLine({y,ink,text,metric}:{y:number;ink:string;text:string;metric?:string}){
+ // The label sits just above the line at the right edge of the plot, or below it near the top.
+ const above=y-T>14;
+ return <g className="average" data-average={metric}><line x1={L} x2={W-R} y1={y} y2={y} stroke={ink} strokeWidth="1.6" strokeDasharray="1 5" strokeLinecap="round" className="average-line"/>
+  <text x={W-R-6} y={above?y-6:y+14} textAnchor="end" fill={ink} className="tick average-label">{text}</text></g>;
+}
 function Brush({series,n,zoom,setZoom,normalized}:{series:Series|undefined;n:number;zoom:[number,number]|null;setZoom:(z:[number,number]|null)=>void;normalized:boolean}){
  const svg=useRef<SVGSVGElement>(null);const [drag,setDrag]=useState<[number,number]|null>(null);const h=54;
  const values=series?series.values.map(v=>normalized?v:toAxis(series,v)):[];const ok=values.filter(finite);const lo=Math.min(...ok),hi=Math.max(...ok);
@@ -209,7 +220,7 @@ export function Analytics(){
  const [error,setError]=useState(""),[busy,setBusy]=useState(false),[winBusy,setWinBusy]=useState(false),[ready,setReady]=useState(false),[retry,setRetry]=useState(0);
  const [name,setName]=useState(""),[current,setCurrent]=useState(""),[isDefault,setDefault]=useState(false),[saving,setSaving]=useState(false),[notice,setNotice]=useState("");
  const [confirmation,setConfirmation]=useState<"save"|"delete"|null>(null),[zoom,setZoom]=useState<[number,number]|null>(null);
- const [refused,setRefused]=useState(""),[fit,setFit]=useState(false),[table,setTable]=useState(false);
+ const [refused,setRefused]=useState(""),[fit,setFit]=useState(false),[table,setTable]=useState(false),[averages,setAverages]=useState(true);
  const generation=useRef(0),main=useRef<HTMLElement>(null);
  const byId=Object.fromEntries(catalog.map(m=>[m.id,m]));
  const unitFor=(mode:Selection["mode"])=>(id:string)=>byId[id]?axisUnit(byId[id],mode==="normalized"):id;
@@ -291,16 +302,19 @@ export function Analytics(){
      {!selection.metrics.length&&<p role="status">Choose at least one metric.</p>}
      {data&&!data.dates.length&&<div><h2>No recorded nights yet</h2><p>Charts will appear after a successful import. Missing data is never filled in.</p></div>}
      {data&&data.dates.length>0&&<>
-      <MainChart series={sliced} dates={dates} normalized={normalized} fit={fit} recorded={recorded} onReset={()=>setZoom(null)}/>
+      <MainChart series={sliced} dates={dates} normalized={normalized} fit={fit} averages={averages} recorded={recorded} onReset={()=>setZoom(null)}/>
       <Brush series={data.series[0]} n={total} zoom={zoom} setZoom={setZoom} normalized={normalized}/>
       <div className="chart-toolbar zoom-row"><label>Zoom start<input type="range" aria-label="Zoom start" min={0} max={Math.max(0,total-1)} value={za} onChange={e=>setZoom([Math.min(Number(e.target.value),zb),zb])}/></label><label>Zoom end<input type="range" aria-label="Zoom end" min={0} max={Math.max(0,total-1)} value={zb} onChange={e=>setZoom([za,Math.max(Number(e.target.value),za)])}/></label><button onClick={()=>setZoom(null)}>Reset zoom</button>
        {hasHours&&<label className="inline"><input type="checkbox" checked={fit} onChange={e=>setFit(e.target.checked)}/>Zoom to fit hours axis</label>}
+       <label className="inline"><input type="checkbox" checked={averages} onChange={e=>setAverages(e.target.checked)}/>Show averages</label>
        <button aria-expanded={table} onClick={()=>setTable(t=>!t)}>{table?"Hide table":"Show as table"}</button></div>
       <p className="hint">Hover or focus the chart and use Left/Right for exact values · drag in the strip to zoom · double-click to reset · zoom keeps the range and normalization baseline</p>
       {table&&<div className="chart-table"><table><caption className="sr-only">{title}, values shown in the chart</caption><thead><tr><th>Wake date</th>{sliced.map(s=><th key={s.id}>{s.label}</th>)}{sliced.filter(s=>s.rolling).map(s=><th key={`r-${s.id}`}>{s.label} {s.rolling!.window}-day mean</th>)}</tr></thead>
-       <tbody>{dates.map((d,i)=><tr key={d}><td>{d}</td>{sliced.map(s=><td key={s.id}>{display(s,s.values[i],normalized)}</td>)}{sliced.filter(s=>s.rolling).map(s=><td key={`r-${s.id}`}>{rollingNote(s.rolling!,i,v=>display(s,v,normalized))}</td>)}</tr>)}</tbody></table></div>}
+       <tbody>{dates.map((d,i)=><tr key={d}><td>{d}</td>{sliced.map(s=><td key={s.id}>{display(s,s.values[i],normalized)}</td>)}{sliced.filter(s=>s.rolling).map(s=><td key={`r-${s.id}`}>{rollingNote(s.rolling!,i,v=>display(s,v,normalized))}</td>)}</tr>)}</tbody>
+       {averages&&<tfoot><tr><th scope="row">Average</th>{sliced.map(s=><td key={s.id} data-average={s.id}>{averageText(s,normalized)??"not shown for clock times"}</td>)}{sliced.filter(s=>s.rolling).map(s=><td key={`r-${s.id}`}/>)}</tr></tfoot>}</table></div>}
      </>}
      <p className="muted">{normalized?"Z-score = (value − mean) / population standard deviation over the selected range. Constant series are unavailable; clock times are excluded.":"Metrics that share a unit share an axis (all sleep durations in hours), with at most two axes and six lines. Clock times use source-local wall time; midnight crossings are not elapsed durations."}</p>
+     {averages&&<p className="muted">Dotted line: {normalized?"the average, which is 0 for every normalized metric":"each metric's average over the whole selected range, not just the zoomed part; nights without a reading are left out. Clock times have no average"}.</p>}
      {selection.rolling!=="off"&&<p className="muted">Dashed line: trailing {selection.rolling}-day calendar mean, shown only when at least {selection.rolling==="7"?4:15} of those {selection.rolling} nights were recorded. Missing nights are skipped, never counted as zero; early windows may include recorded nights before the range starts. Not available for clock times.</p>}
     </section>
     {win&&win.summary.nights>0&&<Composition summary={win.summary}/>}

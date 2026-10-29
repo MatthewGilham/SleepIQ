@@ -1,5 +1,5 @@
 ﻿import {expect,test} from "vitest";
-import {bezierAt,chartSegments,curveRuns,display,fileNameFrom,fitMetrics,formatValue,groupAxes,refusal,rollingNote,scatterLayout,sliceSeries,toAxis,withDefaults} from "./charts";
+import {averageText,bezierAt,chartSegments,curveRuns,display,fileNameFrom,fitMetrics,formatValue,groupAxes,refusal,rollingNote,scatterLayout,sliceSeries,toAxis,withDefaults} from "./charts";
 import type {Pt} from "./charts";
 import type {Series} from "./charts";
 test("rolling notes always show coverage and never invent a mean",()=>{
@@ -71,4 +71,12 @@ test("durations are shown in hours and missing values say so",()=>{
  expect(display(hr,0)).toBe("0.0 bpm");expect(display(hr,null)).toBe("no reading");
  expect(display({id:"onset_minute",unit:"local time",clock:true},1439.6)).toBe("00:00");
  expect(display(hr,0.5,true)).toBe("0.50 z");
+});
+test("average labels format Python's whole-range mean and skip clock times",()=>{
+ const norm=(mean:number|null)=>({n:3,mean,sd:1,reason:null,method:"z"});
+ expect(averageText({id:"asleep_s",unit:"h",clock:false,normalization:norm(415/60)})).toBe("avg 6h 55m");
+ expect(averageText({id:"hrv_mean",unit:"ms",clock:false,normalization:norm(44.4)})).toBe("avg 44 ms");
+ expect(averageText({id:"hrv_mean",unit:"ms",clock:false,normalization:norm(44.4)},true)).toBe("average (0)");
+ expect(averageText({id:"temp_mean",unit:"°C",clock:false,normalization:norm(null)})).toBe("no reading");
+ expect(averageText({id:"onset_minute",unit:"local time",clock:true,normalization:norm(1400)})).toBeNull();
 });
