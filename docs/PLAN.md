@@ -631,3 +631,6 @@ Open items, not claimed done:
 7. Performance numbers are from one PC with synthetic data; real-store timings are unmeasured.
 
 Phase 5 checkpoint commit: `64a8e68` "Phase 5: full release gate, performance calibration and operations guide" (8 files: rebuild fix and test, check/perf scripts, docs only; no data, secrets, builds or screenshots). Not pushed. R01 stays `awaiting_approval` until the owner confirms A1-A6 in OPERATIONS.md. There is no Phase 6; no further phase is planned.
+
+### Phase 5 owner acceptance log (2026-10-29)
+Owner-reported, not agent-observed: A5 (launcher: launch, duplicate refusal, Ctrl+C stop) passed; A6 (real-store dashboard, charts, correlations, export) passed. While reviewing real data the owner noticed nights 2025-09-29 to 2025-10-06 had no overall score or consistency and that sleeping heart rate differed from the Health app; the owner concluded this is calculation difference (simple mean of in-window readings, D6/P4; scoring needs heart rate, HRV and at least 7 prior nights) and asked for no investigation. The agent did not open the store, so the cause of the unscored week was not confirmed. Still open: A1-A4 (real scheduled ingest, downtime/retry, populated restore drill) and the certificate-renewal decision (expires 2027-01-27).

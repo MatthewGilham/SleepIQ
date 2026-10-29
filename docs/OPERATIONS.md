@@ -65,5 +65,5 @@ These cannot be done by the agent. Tick each only when you have seen it work, th
 - [ ] **A2 Wrong credential is refused.** (Optional, from the phone) a request with a wrong credential is rejected and nothing is stored.
 - [ ] **A3 Downtime and retry.** Stop the receiver (or switch the PC off) across at least one scheduled export, restart, and confirm that the missed data arrives with no duplicates (compare night counts before and after with `scripts/import-report.ps1`).
 - [ ] **A4 Restore drill.** The steps above on a populated snapshot, both commands succeeding.
-- [ ] **A5 Launcher.** `scripts/start.ps1` opens the dashboard; launching it a second time is refused; Ctrl+C stops it; no autostart entry other than the receiver task exists.
-- [ ] **A6 Real-store dashboard.** The latest real night, charts for all configured metrics, Correlations and CSV export open without errors on your own data (nothing here sends data anywhere).
+- [x] **A5 Launcher.** (owner confirmed 2026-10-29) `scripts/start.ps1` opens the dashboard; launching it a second time is refused; Ctrl+C stops it; no autostart entry other than the receiver task exists.
+- [x] **A6 Real-store dashboard.** (owner confirmed 2026-10-29) The latest real night, charts for all configured metrics, Correlations and CSV export open without errors on your own data (nothing here sends data anywhere).
