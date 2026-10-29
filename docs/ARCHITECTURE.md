@@ -249,7 +249,7 @@ This separates high-impact domain calculations from transport and UI. Avoid prol
 - **A: User launches with a simple script/shortcut (recommended initially):** easier to understand and debug. **Trade-off:** requires starting after reboot; receiver may be offline until launch.
 - **B: Start automatically with Windows:** better unattended sync availability. **Trade-off:** more permissions/service administration, more complex troubleshooting.
 
-**Owner decision — APPROVED (28 October 2026): A — Manual launch via a simple script/shortcut.** No automatic start with Windows for v1.
+**Owner decision — APPROVED (28 October 2026): A — Manual launch via a simple script/shortcut.** No automatic start with Windows for v1. **Exception P20 (29 October 2026):** the HTTPS ingest receiver only may start at the owner's logon via a per-user scheduled task; the dashboard stays manually launched.
 
 ### A6. AI privacy and budget
 

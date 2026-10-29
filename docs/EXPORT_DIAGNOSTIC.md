@@ -17,3 +17,6 @@ Presence of an ID does not prove that it remains stable across exports, and a si
 The actual exporter adapter supports only validated field shapes. Unknown or malformed blocks in a report are reasons for a controlled adapter review, not permission to drop measurements or broaden scope. Test evidence/progress is maintained only in PLAN.md.
 
 The report's malformed_samples count checks for non-object entries, not numeric/stage/clinical validity. Expected-unit matches apply to metric blocks, not every reading. Field presence does not establish field value/type correctness or equality of timestamp aliases. If all recognized ID fields are absent, zero repeated/changed identity counts are inconclusive. This diagnostic does not prove that records are the original Apple Health granularity or that every night is complete. Heartbeat-series presence is not validation of its contents.
+
+
+**Update (Phase 2):** the importer now exists. To import a real export use `scripts/import-export.ps1` (see SETUP.md); this diagnostic remains a read-only structure check and still never writes the database.

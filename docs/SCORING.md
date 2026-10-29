@@ -140,7 +140,7 @@ Never turn missing physiological readings into zeros. Do not manufacture histori
 ## 9. Remaining questions for later (not permission to implement silently)
 
 - Future activation of Deep/REM targets requires a new approved version and numeric mapping; pilot constants and tails are approved in P2.
-- P3 approves source-local wake date and 30-minute gap. Tie, nap-only, mixed-offset and baseline-degeneracy behavior still need contracts.
+- P3 approves source-local wake date and 30-minute gap. Tie, nap-only, mixed-offset and baseline-degeneracy behavior are resolved by P18 and implemented (see the Phase 2 note above).
 - Whether and how score changes should preserve old-version scores visibly for comparisons.
 - Score labels/colors and incomplete-score presentation need design approval; P2 fixes overall display at one decimal.
 

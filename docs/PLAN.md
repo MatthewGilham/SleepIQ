@@ -8,7 +8,7 @@ This is the **single source of truth for implementation progress**: phase/task s
 
 **Current phase: 2 - ingest/domain/scoring, implemented and verified on synthetic data (see Phase 2 evidence); phase-end commit and Phase 3 approval pending.** Phase 1 was committed as fb23f79; the Phase 1 text below describing its commit as blocked is historical.
 
-**Phase 1 note:** Owner confirmed Phase 1 entry: "Yes i did approve this" (2026-10-28). Foundation exit review passed with P16's explicit phone-test deferral. P17 adds a successful checked local commit to the phase-end checkpoint; it has not occurred. Phase 2 remains unapproved, with no importer implementation or real-data ingestion authorized.
+**Phase 1 note:** Owner confirmed Phase 1 entry: "Yes i did approve this" (2026-10-28). Foundation exit review passed with P16's explicit phone-test deferral. P17's checked local commit was made as fb23f79. (Historical: Phase 2 was later approved and completed; see the Phase 2 sections at the end of this file.)
 
 Historic feasibility: documentation reports a successful manual plaintext iPhone POST. This workspace contains no receiver or original experiment artifacts. That evidence is not a secure-ingestion test and is not counted as implementation completion here.
 
@@ -37,7 +37,7 @@ Estimate: five working weeks at roughly 20–25 focused development hours/week, 
 |---|---|---|---|
 | 0 — Plan and reconcile (1–2 days) | done; documentation update authorized 2026-10-28; D-V02/D-V03 passed | P01; synchronized decisions/specifications and this plan | Documentation checks and traceability pass; request Phase 1 approval |
 | 1 — Foundation/security (remainder week 1) | in_progress: implementation/checks passed; P17 final commit blocked | F01, D01, B01, S01, E01; isolated environment, schema, launcher, secure synthetic upload, backup/restore | Foundation gates passed with P16; complete checked local commit per P17, then request Phase 2 approval. Actual exporter authentication/delivery remains a before-real-use gate |
-| 2 — Ingest/domain/scoring (week 2) | done pending commit; owner approved entry 2026-10-29 ("Complete phase 2") | I01, D02, C01; six metrics, corrections/backfill, sessions, versioned metrics/scores | Domain fixtures exact; incremental rebuild equals clean rebuild; missingness/no-future-leakage gates pass; request Phase 3 approval |
+| 2 — Ingest/domain/scoring (week 2) | done; committed 45eddae (follow-ups through 2c96203); owner approved entry 2026-10-29 ("Complete phase 2") | I01, D02, C01; six metrics, corrections/backfill, sessions, versioned metrics/scores | Domain fixtures exact; incremental rebuild equals clean rebuild; missingness/no-future-leakage gates pass; request Phase 3 approval |
 | 3 — UI/analytics (weeks 3–4) | planned; no entry authorization | U01, U02, A01, X01; approved design, charts/presets, statistics, exports | Browser workflows, numerical references, keyboard/missing-data tests pass; request Phase 4 approval |
 | 4 — Optional AI (early week 5) | planned; no entry authorization | AI01; local evidence, explicit Analyze, provider boundary | Zero calls without action; approved payload/budget; mocked failures safe. Live validation requires separate spend/disclosure approval; request Phase 5 approval |
 | 5 — Hardening/delivery (rest week 5) | planned; no entry authorization | R01; security/performance/regression, real-device delivery/retry, restore drill, Windows guide | Full checks pass; owner demonstrations and operational approval recorded |
@@ -197,7 +197,7 @@ Official API pricing checked during planning on 2026-10-28: standard short-conte
 - Full regression: `powershell -File scripts/check.ps1 -Suite Foundation` PASS (15 backend tests, 7 frontend tests, Ruff/Mypy, build); serial secret scan PASS for 45 source files, no findings. No dependency versions changed since the owner-reported audit.
 - B01 needs owner choice of actual backup folder and raw-file recovery strategy as reserved in P5, SECURITY.md and this plan. Proposed checkpoint: full daily self-contained DB+raw snapshot (simpler restore, more disk use) versus daily DB plus shared content-addressed raw archive (less duplication, more implementation/recovery complexity). No real snapshot/deletion/retention operation performed.
 
-## Next action and handoff
+## Next action and handoff (Phase 1 exit; HISTORICAL, superseded by the Phase 2 sections and the current-state section at the end)
 
 Phase 1 exit review passed, incorporating P16. Do not ask owner to build the optional Shortcut or run the credential viewer. Present foundation deliverables, final 72 backend/13 frontend tests and remaining integration limits, then request explicit Phase 2 approval. Proposed Phase 2: synthetic importer/deduplication, domain/session calculations and scoring under approved rules; resolve consequential domain contracts before implementing them. Include actual Health Auto Export authentication/delivery and operational renewal integration before routine real-data use. Real uploads, production migration and credential disclosure retain their separate gates. Router reservation deferred per P12. Do not begin Phase 2 until approval.
 
@@ -483,3 +483,11 @@ Owner chose option 2. Built `scripts/receiver-task.ps1` (Install/Remove/Start/St
 ## Always-on receiver owner verification (2026-10-29)
 
 Owner ran `receiver-task.ps1` Install/Start/Status and the phone export and reported "seems to be working nice". Owner-reported evidence only: exact Status output and the new batch count were not pasted; the post-reboot automatic start and a scheduled (unattended) phone run are not yet confirmed. A mistyped report command (`import-report.ps1. batches`) failed harmlessly with ValueError and was a typo, not a defect. Auto-sync is considered operational pending a reboot check and a day or two of scheduled runs. Phase 2 and its operational follow-ups are complete; Phase 3 remains unapproved.
+
+## Current state and next action (2026-10-29, end of Phase 2 follow-ups)
+
+- **Phase 2 done and committed** (45eddae, plus tooling/ops commits through 2c96203). I01, D02, C01 done. The remaining phase-end limits are listed in the Phase 2 evidence section: restart/unattended-run confirmation of the receiver task, certificate renewal (expires 2027-01-27), no reserved PC address (P12).
+- **Operational state:** owner's live store is at schema 0002 with 393 nights (2025-09-29 to 2026-10-29) from the real history; auto-sync verified on one manual phone run (owner-reported); the receiver runs as a per-user scheduled task (P20).
+- **Owner-run scripts** (all print counts only, never readings): `import-export.ps1`, `import-report.ps1`, `split-export.ps1`, `rebuild-derived.ps1`, `receiver-task.ps1`, `start-probe.ps1 -Activate -EnableIngest`.
+- **Latest verification:** Foundation suite PASS at 55d42de: 143 backend + 13 frontend tests, Ruff, Mypy, build; secret scan PASS (119 files).
+- **Next:** Phase 3 (U01/U02/A01/X01) requires explicit owner approval; first deliverable is one visual proposal. No approval recorded.

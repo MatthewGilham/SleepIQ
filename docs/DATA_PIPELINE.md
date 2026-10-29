@@ -146,7 +146,7 @@ The owner approved D1–D9 on 28 October 2026. The choices below are binding, wh
 ## 7. Remaining implementation decision gates
 
 - **Historical import:** what maximum historical range should the initial backfill attempt, and how does the Health Auto Export app handle API export history and chunking? Owner approved importing as much history as possible, but procedure/capability not yet verified.
-- **Main-session policy P3:** configurable maximum gap 30 minutes; greatest recorded sleep per source-local wake date; flag ambiguity. Gaps are neither sleep nor awake. Tie, nap-only and completion-evidence rules remain to specify.
+- **Main-session policy P3:** configurable maximum gap 30 minutes; greatest recorded sleep per source-local wake date; flag ambiguity. Gaps are neither sleep nor awake. Tie, nap-only and completion-evidence rules are resolved by P18 (see "Phase 2 implemented contracts").
 - **Travel P3:** source-local wake date and local clock time for consistency; retain offsets, no forced home-zone conversion. Define mixed-offset edge behavior before implementation.
 - **Granular metric alignment:** hourly vs nightly average respiratory rate, daily RHR attribution and wrist-temperature observation semantics; present options during detailed metric design.
 - **Data retention/security:** precise local path, encrypted storage at rest if desired, backups and source metadata retention; consistent with `SECURITY.md`.
@@ -169,7 +169,7 @@ The owner approved D1–D9 on 28 October 2026. The choices below are binding, wh
 - Implementing graph/reporting: read the nightly output contract §4, API contract in `ARCHITECTURE.md`, `DESIGN.md` charts section and tests.
 - Planning any nontrivial policy change: first surface options with pros/cons, wait for owner selection, then change this document and `DECISIONS.md` before coding.
 
-**Next action:** Proceed to `SCORING.md`. Before implementing the pipeline, resolve the precise D3 gap threshold/session heuristic and D6 timestamp-coverage and HRV aggregation methodology with the owner; do not silently choose these consequential semantics.
+**Status:** the gap threshold, session heuristic, HR method and HRV aggregation were resolved by P3/P4/P18 and implemented in Phase 2. Time-weighted HR is deferred until interval-style HR data exists. Mixed-offset behaviour: onset/wake use the offsets of the first and last segment rows.
 
 ## Documentation package completion
 

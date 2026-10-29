@@ -64,3 +64,11 @@ P10 selects complete database-plus-raw-JSON daily snapshots in C:\Users\Matth\Sl
 Private-folder provisioning checks ACLs without changing them and refuses other-account grants/reparse roots. The initializer refuses existing databases; no live migration occurs. Before real ingestion, verify folder privacy, restore, importer/write synchronization and runtime daily scheduling. Agents must not run private health data through test fixtures or echo it into context.
 
 Runtime backup configuration is opt-in from the private-folder-checking manual launcher; generic app/test factories do not auto-discover real data. Periodic status contains no database paths, readings or exception bodies. The shared Windows writer lock must cover future import commit/raw publication, and backup failures remain visible without stopping local read-only health/status access. Owner-created empty baseline was independently verified/restored only into an isolated workspace directory; that does not grant general health-export access.
+
+## Phase 2 ingestion controls (P18-P20)
+
+- Real health ingestion is **off by default**: `/api/ingest` returns 503 unless the receiver is launched with `start-probe.ps1 -Activate -EnableIngest` (owner approval P19). Authentication, TLS, host/source/origin checks and rate limits are unchanged and apply before any body is parsed; the ingest body cap rises to 32 MiB only when enabled.
+- The receiver may run as a hidden **per-user scheduled task** (P20): limited privileges, no admin, no service, no SYSTEM, removable with one command. Credentials stay DPAPI-protected for the owner's account, so it only runs while that user is logged in.
+- Import is atomic under the shared writer gate; rejected rows are counted with a fixed vocabulary of reasons and never echo input; HTTP errors are generic and carry no payload text; raw JSON is stored content-addressed under the private data folder.
+- Owner-run scripts print counts only. Agents never read real exports; tests use synthetic data. The 74 MB history and 30-day exports were handled locally by the owner; no health data was sent to any model or external service.
+- The receiver performs the daily backup check while running (same writer gate), so backups no longer depend on opening the dashboard.

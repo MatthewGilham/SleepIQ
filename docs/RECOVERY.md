@@ -2,7 +2,7 @@
 
 P10 approves self-contained daily snapshots in `C:\Users\Matth\SleepIQ-Backups`, retaining the latest 14 successful dates. Source data belongs under `%LOCALAPPDATA%\SleepIQ`. Provisioning and private-folder checks precede live use; no real data is initialized or read merely by importing backup code. Operational status and actual evidence belong in PLAN.md.
 
-Each published date folder contains `database.sqlite3`, original JSON exports under `raw/`, and `manifest.json` with SHA-256 hashes. SQLite's backup API creates a consistent database snapshot, including committed WAL data; copying a live database file directly is unsafe. The caller must pause importer/raw-file writes throughout backup so file references agree with the database snapshot. There is no importer yet; integrate that synchronization before real ingestion.
+Each published date folder contains `database.sqlite3`, original JSON exports under `raw/`, and `manifest.json` with SHA-256 hashes. SQLite's backup API creates a consistent database snapshot, including committed WAL data; copying a live database file directly is unsafe. The caller must pause importer/raw-file writes throughout backup so file references agree with the database snapshot. The importer (Phase 2) acquires the same writer gate for raw publication and database commit, so it cannot run during a backup.
 
 Backups build in a unique `.pending-*` directory on the destination filesystem. Only an inventory/checksum/SQLite-integrity-verified snapshot is renamed to its date. Failed staging folders remain for local inspection and never count as successful daily backups. They may contain private data and inherit the backup folder's permissions. There is no automatic deletion of failed/unknown folders.
 
@@ -36,7 +36,7 @@ Restore a chosen snapshot into a **new** isolated directory whose parent already
 
 This restores both database and JSON files and verifies their checksums/integrity before publication. The command refuses existing targets. No command replaces a live database; that requires a separate owner-approved recovery action with the app stopped. Never point the test at the live data folder. Secret configuration and API/certificate credentials are excluded because only the database and dedicated raw-export directory are copied.
 
-Same-PC backups protect against some application/data failures; they do not protect against loss of the PC or its disk. They are not encrypted by this module; private-folder permissions must be verified before health data is stored. Daily launch integration and real-folder restore demonstration are required before routine ingestion.
+Same-PC backups protect against some application/data failures; they do not protect against loss of the PC or its disk. They are not encrypted by this module; private-folder permissions must be verified before health data is stored. Daily launch integration is implemented; a real-folder restore demonstration of the populated store (not only the empty baseline) is still recommended before relying on backups.
 
 ## First-time private storage provisioning
 
@@ -49,3 +49,7 @@ This operation has not been run by the agent against the owner's real folders. A
 The normal start.ps1 validates private folders and explicitly opts in app.start with the approved data/backup paths. The app verifies or catches up the daily snapshot on launch, then checks hourly while running for a new local date or a retry. Shutdown stops the periodic task. No Windows autostart/service/scheduled task is installed, and no missed-day snapshots are invented. Test/app factories without explicit backup configuration do not read private folders. Restart the manually launched app to activate newly installed runtime code.
 
 The readonly status API and setup page show verified date or a sanitized failure. Backup failure does not disable the browser health endpoint. The shared Windows writer gate coordinates backups across processes and threads; future ingestion must acquire the same gate for database commits and raw-file publication. Direct low-level create_daily callers must still pause writes. Manual daily CLI uses that gate too. Isolated verification/restore do not replace a live database.
+
+## Phase 2 additions
+
+Raw exports are stored content-addressed as `raw/<sha256>.json` and included in every snapshot. The always-on receiver (P20) and the dashboard both run the daily backup check; the import and rebuild commands take a verified snapshot first (reusing today's if one exists). Derived tables (nightly metrics, general metrics, scores) can always be recomputed from stored observations with `scripts/rebuild-derived.ps1`, so a restore only needs the observations and raw files to be intact. The owner's store now holds real history, so an isolated restore drill of a populated snapshot is the next recovery check to run.

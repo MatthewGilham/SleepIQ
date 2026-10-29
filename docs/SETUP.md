@@ -1,6 +1,6 @@
 # Local foundation setup
 
-Status: Python/frontend dependencies installed; TypeScript/Vite build and in-process HTTP smoke checks passed. Owner confirmed the manual setup page works; foundation checks now pass. Remaining launcher/CI/security acceptance is tracked in PLAN.md. Follow progress in PLAN.md. No ingestion endpoint or health storage is implemented.
+Status: Python/frontend dependencies installed; TypeScript/Vite build and in-process HTTP smoke checks passed. Owner confirmed the manual setup page works; foundation checks now pass. Remaining launcher/CI/security acceptance is tracked in PLAN.md. Follow progress in PLAN.md. Health storage and an authenticated ingestion path are implemented (Phase 2) but the ingestion path is off unless explicitly enabled; see SECURE_SETUP.md.
 
 The backend uses Python 3.13 in the project's own `.venv`; the existing Python selected by your shell belongs to another project. Use explicit `.venv` commands rather than installing packages globally. Dependency caches stay under `.cache` in this project.
 
@@ -25,6 +25,16 @@ After a successful build:
 powershell -File scripts/start.ps1
 ```
 
-Open `http://127.0.0.1:8765` in the PC browser. The setup page should report the local service connection. Keep the console open. Stop with Ctrl+C in that same console. A second launch must fail if the port is occupied; it must not terminate the existing application. No startup task or Windows service is registered.
+Open `http://127.0.0.1:8765` in the PC browser. The setup page should report the local service connection. Keep the console open. Stop with Ctrl+C in that same console. A second launch must fail if the port is occupied; it must not terminate the existing application. The dashboard has no startup task or service. (The separate HTTPS receiver can optionally run as a per-user scheduled task under P20; see SECURE_SETUP.md.)
 
-The implemented launcher uses a foreground console so server ownership and stopping are explicit; no separate background controller is required for F01. The browser service binds only to loopback. The separate HTTPS receiver is currently a synthetic test probe; Health Auto Export ingestion awaits Phase 2 implementation and the relevant owner gates.
+The implemented launcher uses a foreground console so server ownership and stopping are explicit; no separate background controller is required for F01. The browser service binds only to loopback. The separate HTTPS receiver is a synthetic probe unless started with `-EnableIngest`, which turns on Health Auto Export ingestion (P19).
+
+## Owner-run data scripts (Phase 2)
+
+Run from the project folder, in a normal PowerShell, on one line each. All print counts only.
+
+- `scripts/import-export.ps1 -ExportPath "<file>" [-Migrate]` imports one export (after a verified snapshot). `-Migrate` upgrades an older store to the current schema.
+- `scripts/split-export.ps1 -ExportPath "<file>" -OutputFolder "<new folder>"` splits a large export into monthly files.
+- `scripts/import-report.ps1` summarises stored data and night/score counts.
+- `scripts/rebuild-derived.ps1` recomputes nights and scores from stored readings (after a verified snapshot).
+- `scripts/receiver-task.ps1 -Action Install|Start|Stop|Remove|Status` manages the always-on receiver.
