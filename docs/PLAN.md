@@ -6,7 +6,7 @@ Last updated: 2026-10-29.
 
 This is the **single source of truth for implementation progress**: phase/task statuses, dependencies, blockers, approvals and actual verification evidence. [DECISIONS.md](DECISIONS.md) remains authoritative for owner choices; specialist documents specify behavior. [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) defines workflow. Do not create a second task log.
 
-**Current phase: 3 - UI/analytics (all four tasks U01, U02, A01, X01 done on synthetic data; phase-end checks run; see "Phase 3 completion" at the end of this file). Phase 4 is NOT approved and has not been started.**
+**Current phase: 3 - UI/analytics (all four tasks U01, U02, A01, X01 done on synthetic data; phase-end checks run; see "Phase 3 completion" at the end of this file). Committed locally as a0c7860 (not pushed). Phase 4 approval is requested and NOT yet given; no Phase 4 work has started.**
 
 **Phase 1 note:** Owner confirmed Phase 1 entry: "Yes i did approve this" (2026-10-28). Foundation exit review passed with P16's explicit phone-test deferral. P17's checked local commit was made as fb23f79. (Historical: Phase 2 was later approved and completed; see the Phase 2 sections at the end of this file.)
 
@@ -38,7 +38,7 @@ Estimate: five working weeks at roughly 20–25 focused development hours/week, 
 | 0 — Plan and reconcile (1–2 days) | done; documentation update authorized 2026-10-28; D-V02/D-V03 passed | P01; synchronized decisions/specifications and this plan | Documentation checks and traceability pass; request Phase 1 approval |
 | 1 — Foundation/security (remainder week 1) | in_progress: implementation/checks passed; P17 final commit blocked | F01, D01, B01, S01, E01; isolated environment, schema, launcher, secure synthetic upload, backup/restore | Foundation gates passed with P16; complete checked local commit per P17, then request Phase 2 approval. Actual exporter authentication/delivery remains a before-real-use gate |
 | 2 — Ingest/domain/scoring (week 2) | done; committed 45eddae (follow-ups through 2c96203); owner approved entry 2026-10-29 ("Complete phase 2") | I01, D02, C01; six metrics, corrections/backfill, sessions, versioned metrics/scores | Domain fixtures exact; incremental rebuild equals clean rebuild; missingness/no-future-leakage gates pass; request Phase 3 approval |
-| 3 — UI/analytics (weeks 3–4) | in_progress; owner directed Phase 3 work task by task on 2026-10-29 (design preview, then U02 and A01 assignments); see sections at end of file | U01, U02, A01, X01; approved design, charts/presets, statistics, exports | Browser workflows, numerical references, keyboard/missing-data tests pass; request Phase 4 approval |
+| 3 — UI/analytics (weeks 3–4) | done; committed a0c7860 on 2026-10-29 (owner directed "Complete the remaining parts of phase 3"); evidence in "Phase 3 completion" at end of file | U01, U02, A01, X01; approved design, charts/presets, statistics, exports | Browser workflows, numerical references, keyboard/missing-data tests pass; request Phase 4 approval |
 | 4 — Optional AI (early week 5) | planned; no entry authorization | AI01; local evidence, explicit Analyze, provider boundary | Zero calls without action; approved payload/budget; mocked failures safe. Live validation requires separate spend/disclosure approval; request Phase 5 approval |
 | 5 — Hardening/delivery (rest week 5) | planned; no entry authorization | R01; security/performance/regression, real-device delivery/retry, restore drill, Windows guide | Full checks pass; owner demonstrations and operational approval recorded |
 
@@ -585,3 +585,5 @@ Executed evidence:
 - Screenshots `.cache/dashboard-desktop.png`, `dashboard-mobile.png`, `export-mobile.png` generated from synthetic data (ignored, not committed); desktop view inspected.
 
 Limitations: no live store was opened. The real-store dashboard and export are untested against the owner's data until the owner launches the app. Header Backup shows "Not connected" when the launcher is run without backup folders. `ruff format --check` still lists 5 older files under `backend/tests/security/` (not part of the gate). The agent stopped a stale synthetic preview server (port 8766) so browser tests could run.
+
+Phase 3 checkpoint commit: `a0c7860` "Phase 3: dashboard, charts, analytics and CSV export" (41 files; staged list reviewed: source, tests, docs, scripts/preview-charts.py only; no data, secrets, builds or screenshots). Next scope if approved: Phase 4 (AI01, optional AI) with provider, spend cap and data-disclosure choices needed first. Awaiting explicit owner approval; none recorded.
