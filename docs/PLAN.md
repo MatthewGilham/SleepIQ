@@ -750,5 +750,6 @@ Built: `GET /api/v1/dashboard?night=YYYY-MM-DD` (validated `date` query; omitted
 | U04-6 to U04-11 | `frontend/e2e/night-nav.spec.ts` (8 tests) pass; expected nights and values come from an independent TypeScript re-derivation of the synthetic store (asleep = 390 + i%40 minutes), not from the app. Also 2 new Vitest tests for the address and arrow-key helpers |
 | G-1 | `check.ps1 -Suite Full` exit 0: Ruff, Mypy (45 files), 236 backend tests, 38 frontend unit tests, build, 30 Playwright tests, performance budgets, secret scan 174 files PASS, `pip-audit` and `npm audit` clean |
 | G-4 | ARCHITECTURE.md (dashboard contract), DESIGN.md (navigation), TESTING.md (`-- night-nav` filter) updated |
+| G-2, G-3 | Staged list contained only U04 source, tests and docs; commit `6db7aaa` (this hash line added in a follow-up docs-only commit) |
 
 Not agent-tested: the feature on the owner's real 393-night store.
