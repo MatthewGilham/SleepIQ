@@ -11,6 +11,9 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.responses import JSONResponse, Response
 
+from app.ai.api import router as ai_router
+from app.ai.config import AiConfig
+from app.ai.provider import Provider
 from app.analytics.api import router
 from app.analytics.export import router as export_router
 from app.db.engine import open_engine
@@ -23,6 +26,8 @@ def create_app(
     backup_interval: float = 3600,
     chart_data: Path | None = None,
     chart_synthetic: bool = False,
+    ai_config: AiConfig | None = None,
+    ai_provider: Provider | None = None,
 ) -> FastAPI:
     if backup_interval <= 0:
         raise ValueError("Backup interval must be positive")
@@ -58,7 +63,13 @@ def create_app(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         protected = request.url.path.startswith(
-            ("/api/v1/analytics", "/api/v1/presets", "/api/v1/metrics", "/api/v1/dashboard")
+            (
+                "/api/v1/analytics",
+                "/api/v1/presets",
+                "/api/v1/metrics",
+                "/api/v1/dashboard",
+                "/api/v1/analysis",
+            )
         )
         if protected:
             if not request.client or request.client.host not in ("127.0.0.1", "::1"):
@@ -96,6 +107,7 @@ def create_app(
         engine = open_engine(database)
         app.include_router(router(engine, chart_data, chart_synthetic))
         app.include_router(export_router(engine))
+        app.include_router(ai_router(engine, chart_data, ai_config or AiConfig(), ai_provider))
 
     @app.get("/api/v1/health")
     def health() -> dict[str, str]:

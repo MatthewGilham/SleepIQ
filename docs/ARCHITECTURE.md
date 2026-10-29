@@ -128,7 +128,7 @@ Illustrative interface families (proposals, not promises of exact paths):
 - `GET /api/v1/analytics/timeseries`: chosen metrics, date window and rolling-average options (implemented as POST; see "U02 chart API and preset contract").
 - `GET /api/v1/analytics/correlation`: paired-night results computed in Python (implemented as POST; see the same section).
 - `GET/POST/PATCH/DELETE /api/v1/presets`: persistent graph presets.
-- `POST /api/v1/analysis`: AI statistical question scoped to selected metrics/date range, with explicit cost/privacy controls.
+- `GET /api/v1/analysis/status` and `POST /api/v1/analysis`: AI statistical question scoped to selected metrics/date range, with explicit cost/privacy controls (implemented; see the AI01 section).
 - `POST /api/v1/analytics/export`: CSV of computed nightly metrics (implemented as POST; Excel not built, see P22 and the X01 section).
 - Inbound `POST /api/ingest`: **separate authentication and request restrictions** from the browser API.
 
@@ -347,3 +347,8 @@ Chart reads and preset writes reject non-loopback clients, foreign Origin and cr
 ## U01 dashboard and X01 export contracts (Phase 3)
 - `GET /api/v1/dashboard`: read-only model of the latest stored night: source-local onset/wake strings and offsets, durations, efficiency, physiology values with sample counts (null when missing), stage intervals relative to session start, flags, score status/components/missing reasons/ceiling (null score object if never computed), a 30-calendar-night duration trend (null for unrecorded nights) and import counts. `latest` is null for an empty store. Same loopback, origin and `Cache-Control: no-store` boundary as the other chart routes; 503 when no store is configured.
 - `POST /api/v1/analytics/export`: body `{metrics, range, start, end}` (same bounded range rules as charts; 1-15 distinct catalog metrics; unknown fields rejected). Returns `text/csv` attachment with a server-generated file name and `X-SleepIQ-Rows`. Columns: `wake_date`, one per metric with unit, `flags`, `score_status`, `derivation_version`, `score_version`. Needs the same-origin `X-SleepIQ-Request` header as other POSTs.
+
+## AI01 analysis contract (Phase 4)
+- `GET /api/v1/analysis/status`: read-only. `state` (`ready`, `disabled`, `not_configured`), model name, limits, local usage counts, and the disclosure text shown in the UI. Never contains the key.
+- `POST /api/v1/analysis`: body `{question (3-500 chars), metrics (1-6 distinct), range/start/end, confirm: true}`; unknown fields rejected. Builds the evidence in Python, refuses without contacting the provider when AI is off, unconfigured, over a daily/monthly limit, too large, without data or busy, otherwise reserves a count, makes one provider request and returns `{answer, model, evidence, usage}`. Same loopback, origin, header and no-store boundary as the chart routes.
+- Provider boundary (`app/ai/provider.py`): `Provider.complete(system, user, max_output_tokens)`; the OpenAI implementation posts to one fixed URL with no tools. Tests inject fakes or a mock transport.

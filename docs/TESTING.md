@@ -78,3 +78,6 @@ Run `npm --prefix frontend run test:e2e` after building. Playwright uses install
 
 ## Phase 3 UI/analytics/export commands
 `python -m pytest backend/tests/analytics backend/tests/export -q` (dashboard read model, charts, statistics, CSV export); `npm --prefix frontend test` (unit/server-render); `npm --prefix frontend run test:e2e` (Edge against an isolated synthetic store; port 8766 must be free; filter with `-- dashboard`, `-- export`, `-- analytics`, `-- charts presets`). All run synthetic data only. `scripts/check.ps1 -Suite Foundation` covers lint, types, backend, unit tests and the build; browser tests are run separately.
+
+## Phase 4 AI commands
+`python -m pytest backend/tests/ai -q` (mock provider and mock HTTP transport only) and `npm --prefix frontend run test:e2e -- ai` (canned local provider in `scripts/preview-charts.py`). These never contact an AI service. A live validation is a separate owner-approved step.

@@ -38,3 +38,6 @@ Run from the project folder, in a normal PowerShell, on one line each. All print
 - `scripts/import-report.ps1` summarises stored data and night/score counts.
 - `scripts/rebuild-derived.ps1` recomputes nights and scores from stored readings (after a verified snapshot).
 - `scripts/receiver-task.ps1 -Action Install|Start|Stop|Remove|Status` manages the always-on receiver.
+
+## Optional AI analysis (Phase 4)
+Off by default. To turn it on, set both environment variables in the window that launches SleepIQ (never in a file in the repository): `SLEEPIQ_AI_ENABLED=1` and `SLEEPIQ_OPENAI_API_KEY=<your key>`; optionally `SLEEPIQ_AI_MODEL` (default `gpt-6-luna`). Each Analyze click is one billable request, limited locally to 20 per day and 300 per month. The first real request needs your explicit approval of the cost and data disclosure shown in the panel; see DECISIONS.md P23.

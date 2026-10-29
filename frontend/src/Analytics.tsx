@@ -2,6 +2,7 @@ import {useEffect,useRef,useState} from "react";
 
 import {chartRequest,chartSegments,formatValue,initialSelection,rollingNote,sliceSeries,withDefaults} from "./charts";
 
+import {Investigator} from "./Investigator";
 import type {ChartData,Metric,Preset,Selection,Series} from "./charts";
 
 const inks=["#ff8c80","#8bd7ee","#edcb72","#b2d591","#c1aff0","#e7b5a6"];
@@ -123,6 +124,7 @@ export function Analytics(){
 
  <div className="section-heading"><h2>Individual metric charts</h2><span>{data.versions.join(" · ")}</span></div>{data.series.map(s=><section className="panel" key={s.id}><h2>{s.label}</h2><p className="muted">{s.method} · {shown==="normalized"?`n=${s.normalization.n}; mean=${s.normalization.mean?.toFixed(2)??"—"}; SD=${s.normalization.sd?.toFixed(2)??"—"}`:s.unit}</p><Plot items={[s]} dates={data.dates} normalized={shown==="normalized"} label={`${s.label} chart`}/><details><summary>Accessible data table</summary><div className="chart-table"><table><thead><tr><th>Wake date</th><th>Value</th><th>Sample count</th>{s.rolling&&<th>{s.rolling.window}-day mean</th>}</tr></thead><tbody>{data.dates.map((d,i)=><tr key={d}><td>{d}</td><td>{shown==="normalized"?(s.values[i]===null?"Normalization unavailable / missing":`${s.values[i]!.toFixed(3)} z`):formatValue(s.values[i],s)}</td><td>{s.details[i].n??"—"}</td>{s.rolling&&<td>{rollingNote(s.rolling,i,r=>shown==="normalized"?`${r.toFixed(3)} z`:formatValue(r,s))}</td>}</tr>)}</tbody></table></div></details></section>)}</div>}
 
+ <Investigator selection={selection}/>
  </div>;
 
 }

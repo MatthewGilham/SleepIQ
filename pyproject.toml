@@ -2,10 +2,10 @@
 name = "sleepiq"
 version = "0.1.0"
 requires-python = ">=3.13,<3.14"
-dependencies = ["fastapi", "uvicorn", "sqlalchemy", "alembic"]
+dependencies = ["fastapi", "uvicorn", "sqlalchemy", "alembic", "httpx2"]
 
 [dependency-groups]
-dev = ["pytest", "httpx2", "ruff", "mypy", "pip-audit", "detect-secrets"]
+dev = ["pytest", "ruff", "mypy", "pip-audit", "detect-secrets"]
 
 [tool.pytest.ini_options]
 pythonpath = ["backend", "scripts"]

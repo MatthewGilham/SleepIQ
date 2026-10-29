@@ -32,6 +32,7 @@
 - AI investigator is **opt-in per query**, no background calls (A6). Backend calculates correlations, sample counts and windows first; model receives only needed summaries, metric descriptions, date spans and user question.
 - UI states which information leaves the PC and that calls incur API charges; keep API key local. No diagnoses, treatment recommendations or fabricated statistical results.
 - Store minimal sanitized question/history only if explicitly approved; logging prompt bodies and raw measurements is off by default. Handle timeouts and quotas without breaking non-AI dashboard.
+- **Implemented (P23):** AI is off unless `SLEEPIQ_AI_ENABLED=1` and `SLEEPIQ_OPENAI_API_KEY` are present in the launching environment; the key is never stored, logged, returned or sent anywhere except the fixed HTTPS provider endpoint. The model gets one bundle of statistics plus nightly values for the selected metrics only, no tools. Local caps: 15,000 input and 2,000 output tokens, 20 per day, 300 per month, 6 metrics; questions and answers are not stored or logged.
 - Model identifier is a configurable provider parameter, not hard-coded to a possibly changing marketing name; initial preference is an affordable capable OpenAI model, subject to owner budget/availability approval.
 
 ## 5. Backups, retention, deletion

@@ -85,3 +85,6 @@ The Correlations navigation destination is the correlation explorer. It has X/Y 
 
 ## Loading without layout shift
 While analytics or correlation data reloads, the previous results stay in place, dimmed (no fade under reduced motion), with loading text in a reserved toolbar slot. Results are never unmounted for a reload, because collapsing the page made the browser jump the scroll position. Results clear only for errors, invalid ranges or an empty selection.
+
+## 9. AI panel (Phase 4)
+"Ask about these nights" sits at the foot of Analytics and uses the metrics and range currently selected. It shows what is sent and the cost limits before the question box, usage (today and month), an Analyze button that stays disabled until the question and selection are valid, the answer as plain text, and a table of the evidence that was sent. Off, unconfigured, limit reached, failed and timed-out states have their own copy and never affect the charts.
