@@ -62,8 +62,8 @@ Runs, in order: Ruff, Mypy, all backend tests, frontend unit tests, strict TypeS
 These cannot be done by the agent. Tick each only when you have seen it work, then tell the agent so it can record the evidence in PLAN.md.
 
 - [x] **A1 Real encrypted ingest.** (owner-reported 2026-10-29: import-report batches rose 16 to 17) Health Auto Export on the iPhone, on home Wi-Fi, sends a real export to `https://sync.mgilham.online:8443/api/ingest`; the receiver accepts it and the dashboard shows the new night.
-- [ ] **A2 Wrong credential is refused.** (Optional, from the phone) a request with a wrong credential is rejected and nothing is stored.
-- [ ] **A3 Downtime and retry.** Stop the receiver (or switch the PC off) across at least one scheduled export, restart, and confirm that the missed data arrives with no duplicates (compare night counts before and after with `scripts/import-report.ps1`).
+- [x] **A2 Wrong credential is refused.** (owner-reported passed 2026-10-29) (Optional, from the phone) a request with a wrong credential is rejected and nothing is stored.
+- [ ] **A3 Downtime and retry.** (DEFERRED by owner 2026-10-29; still required before relying on unattended sync) Stop the receiver (or switch the PC off) across at least one scheduled export, restart, and confirm that the missed data arrives with no duplicates (compare night counts before and after with `scripts/import-report.ps1`).
 - [x] **A4 Restore drill.** (owner ran 2026-10-29 on the 2026-10-29 snapshot; both commands succeeded) The steps above on a populated snapshot, both commands succeeding.
 - [x] **A5 Launcher.** (owner confirmed 2026-10-29) `scripts/start.ps1` opens the dashboard; launching it a second time is refused; Ctrl+C stops it; no autostart entry other than the receiver task exists.
 - [x] **A6 Real-store dashboard.** (owner confirmed 2026-10-29) The latest real night, charts for all configured metrics, Correlations and CSV export open without errors on your own data (nothing here sends data anywhere).
