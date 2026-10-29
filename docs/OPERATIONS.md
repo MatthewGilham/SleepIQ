@@ -61,7 +61,7 @@ Runs, in order: Ruff, Mypy, all backend tests, frontend unit tests, strict TypeS
 
 These cannot be done by the agent. Tick each only when you have seen it work, then tell the agent so it can record the evidence in PLAN.md.
 
-- [ ] **A1 Real encrypted ingest.** Health Auto Export on the iPhone, on home Wi-Fi, sends a real export to `https://sync.mgilham.online:8443/api/ingest`; the receiver accepts it and the dashboard shows the new night.
+- [x] **A1 Real encrypted ingest.** (owner-reported 2026-10-29: import-report batches rose 16 to 17) Health Auto Export on the iPhone, on home Wi-Fi, sends a real export to `https://sync.mgilham.online:8443/api/ingest`; the receiver accepts it and the dashboard shows the new night.
 - [ ] **A2 Wrong credential is refused.** (Optional, from the phone) a request with a wrong credential is rejected and nothing is stored.
 - [ ] **A3 Downtime and retry.** Stop the receiver (or switch the PC off) across at least one scheduled export, restart, and confirm that the missed data arrives with no duplicates (compare night counts before and after with `scripts/import-report.ps1`).
 - [x] **A4 Restore drill.** (owner ran 2026-10-29 on the 2026-10-29 snapshot; both commands succeeded) The steps above on a populated snapshot, both commands succeeding.
