@@ -453,3 +453,9 @@ Not done / limits (explicit): no real export has been read or imported; the owne
 ## Phase 2 checkpoint commit and handoff (2026-10-29)
 
 Local commit 45eddae "Phase 2: ingest, sleep-session domain and versioned scoring" created after all checks above passed (staged list reviewed: source, tests, docs, scripts/import-export.ps1 only; no data, secrets, builds or screenshots). Not pushed. I01, D02 and C01 are done on synthetic data. Phase 3 (UI/analytics) is NOT approved; the owner-run real-export import and enabling `/api/ingest` remain separate owner steps. Awaiting explicit Phase 3 approval.
+
+## Phase 2 post-commit real-import verification (2026-10-29)
+
+Owner ran `scripts/import-export.ps1 -Migrate` on one real 30-day export (path outside the repo; contents never seen by the agent) and the counts-only report. Reported counts: status imported; 13,091 new observations; 2 exact duplicates; 7 flagged conflicts (all `heart_rate`, outside any sleep window, so no night flagged revised); 7 rejected `sleep_analysis` rows with the unspecified "Asleep" label (unused by design); no unmapped metrics. Derived: 31 nights (2026-09-29 to 2026-10-29), 24 scored, 7 insufficient (fewer than 7 prior nights, expected); no night missing HR or HRV. Live store migrated 0001 -> 0002 after a verified snapshot.
+
+Finding: all nights were flagged `non_preferred_source` because the single sleep source label contains "watch" but not "apple watch". Default `preferred_source` changed to "watch" (flag only; no metric or score changed). Added `scripts/import-report.ps1` (counts-only summary, anonymous source breakdown) and `scripts/rebuild-derived.ps1` (verified snapshot, then clean rebuild of derived data from stored observations). Foundation suite rerun: PASS, 134 backend + 13 frontend tests, Ruff, Mypy, build; secret scan PASS (113 files). Owner still needs to run the rebuild script to refresh the stored flags. Phase 3 and live auto-sync remain unapproved.

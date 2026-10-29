@@ -10,7 +10,7 @@ class DeriveConfig:
     version: str = "derive-1"
     gap_seconds: int = 30 * 60  # P3: maximum gap joined into one session
     min_night_asleep_seconds: int = 3 * 3600  # shorter blocks are naps (D2), kept but ignored
-    preferred_source: str = "apple watch"  # D4: case-insensitive substring of the source label
+    preferred_source: str = "watch"  # D4: case-insensitive substring of the source label
     qty_tolerance_seconds: int = 120  # stage `qty` hours vs timestamps cross-check
     completion_lookahead_seconds: int = 30 * 60  # later data must start this long after wake
 
