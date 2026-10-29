@@ -629,3 +629,5 @@ Open items, not claimed done:
 5. Backups are on the same PC and unencrypted.
 6. `ruff format --check` still lists 5 older files under `backend/tests/security/` (not part of the gate).
 7. Performance numbers are from one PC with synthetic data; real-store timings are unmeasured.
+
+Phase 5 checkpoint commit: `64a8e68` "Phase 5: full release gate, performance calibration and operations guide" (8 files: rebuild fix and test, check/perf scripts, docs only; no data, secrets, builds or screenshots). Not pushed. R01 stays `awaiting_approval` until the owner confirms A1-A6 in OPERATIONS.md. There is no Phase 6; no further phase is planned.
