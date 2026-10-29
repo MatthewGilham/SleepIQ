@@ -1,0 +1,29 @@
+name: Source checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  foundation:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Install package manager
+        run: python -m pip install uv==0.12.23
+      - name: Create isolated environment
+        run: uv --cache-dir .cache/uv venv --python 3.13 --no-python-downloads .venv
+      - name: Install locked dependencies
+        run: |
+          uv --cache-dir .cache/uv sync --locked --python .venv/Scripts/python.exe
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          npm.cmd --prefix frontend ci --ignore-scripts
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Foundation checks
+        run: powershell -File scripts/check.ps1 -Suite Foundation
+      - name: Source and dependency security
+        run: powershell -File scripts/security.ps1

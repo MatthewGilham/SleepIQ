@@ -1,0 +1,32 @@
+# S01 certificate setup checkpoint
+
+Status: option A approved as P13 on 2026-10-29; execution/verification tracked in PLAN.md. P1 approves public HTTPS/DNS validation; P11 covers only the existing sync A record; P12 explicitly defers router reservation. This checkpoint covers certificate tooling/credentials and DNS challenge changes, not firewall/listener activation.
+
+## Choices
+
+**A — scoped token and automatic DNS validation (recommended):** use local lego to create/remove the temporary TXT proof at `_acme-challenge.sync.mgilham.online` and request/renew a certificate only for `sync.mgilham.online`. Restrict the Cloudflare token to Zone Read and DNS Edit on `mgilham.online` only. It is not the global API key and grants no other zones. Cloudflare's permission is nevertheless zone-wide: a stolen token could alter this domain's other DNS records, including mail-related records. The wrapper's intended actions are only the challenge record. Windows user encryption and private directories reduce exposure; they do not protect against malware already running as that user. Routine renewal needs less owner work.
+
+**B — manual DNS proof:** use the same certificate tool without a saved Cloudflare token; the owner adds/removes the supplied TXT value for each required validation. Avoids storing DNS-edit credentials on the PC but requires repeated owner steps and increases the chance of a missed renewal. This manual path is not implemented yet; do not run the token wrapper if B is selected.
+
+## Exact proposed A scope
+
+- Download only the official immutable lego v5.5.2 Windows x64 archive from `https://github.com/go-acme/lego/releases/download/v5.5.2/lego_v5.5.2_windows_amd64.zip`. Validate SHA-256 `fc544130a2716329cad73a47b674e3aeea019c4753c3963d259bd45d946bbd34` before extraction. Place it under project-local ignored `.tools/lego/5.5.2`. No administrator install or PATH/system change.
+- `scripts/install-lego.ps1` implements that bounded download/check/extraction; an optional already-downloaded archive is subject to the same hash check. The installer refuses an existing tool directory. It does not execute a downloaded installer or request a certificate.
+- The owner creates the scoped token in their own dashboard and enters it into `scripts/save-cloudflare-token.ps1` using a hidden prompt. Never paste it into chat, a command argument, a screenshot or Git. The script stores a Windows user-encrypted DPAPI blob under `%LOCALAPPDATA%\SleepIQ\security\cloudflare-token.dpapi`, checks private ACLs, and refuses silent replacement of an existing stored token. That security directory is outside the raw-data/SQLite backup inventory.
+- `scripts/request-certificate.ps1` requests only the fixed hostname; default environment Staging. It requires explicit `-AcceptTerms` after the owner reviews [Let's Encrypt terms](https://letsencrypt.org/repository/). Contact email is sent to the CA for account/recovery use; hostname/certificate issuance metadata becomes public in certificate-transparency logs. No readings or raw exports are sent.
+- Child-process environment gets only the selected zone token as provider credentials; inherited global keys, provider URLs and lego validation overrides are removed from the child. Existing proxy/network restrictions are preserved. Token/email are not command arguments; BSTR memory is released, output/error streams are captured without writing raw logs, and the owned process has a three-minute timeout. No token is printed. PowerShell/native API exceptions remain fail-closed.
+- Staging and production use distinct private `security/acme-staging` and `security/acme-production` folders. A staging certificate is deliberately untrusted; do not use it for normal syncing, add a root certificate or bypass iPhone TLS validation. After staging validation, request the production certificate and verify hostname/chain/key/expiry before LAN tests.
+- Future renewal uses the same bounded DNS-01 path while the app is manually running, with visible expiry/failure handling; no automatic Windows startup/service/task. Actual client behavior/renewal needs verification before routine sync. No account purchase, paid API, certificate revocation or root/mail/A-record changes are included.
+- No firewall rule or LAN listener will be enabled by these scripts. Separate concrete approval plus real TLS/iPhone tests are still required. The synthetic transport app is not an importer and does not acknowledge health imports as stored.
+
+## Execution status and verification boundaries
+
+Track actual installation, credential storage and staging/production issuance evidence in PLAN.md. PowerShell parsing and a synthetic bad-archive test cover syntax and checksum rejection before extraction/execution. Owner-run client completion is distinct from inspecting the resulting certificate, validating a production chain and demonstrating trusted iPhone TLS; do not infer those results from source inspection or a staging success message.
+
+After A approval, guide one step at a time: install/check tool, create/store zone token locally, staging validation, production certificate, then plan receiver/firewall activation. If the session cannot reach GitHub/CA/Cloudflare, use the same reviewed script in the owner's normal terminal; never change proxy/security controls to evade a restriction.
+
+Sources checked 2026-10-29: [official immutable release assets and digests](https://github.com/go-acme/lego/releases/expanded_assets/v5.5.2), [lego Cloudflare permissions](https://go-acme.github.io/lego/dns/cloudflare/), [current CLI flags](https://go-acme.github.io/lego/references/ref-flags/), [Cloudflare scoped tokens](https://developers.cloudflare.com/fundamentals/api/get-started/create-token/), [certificate transparency](https://letsencrypt.org/docs/ct-logs/). These establish documented capabilities, not successful local deployment.
+
+## Exposed-token recovery
+
+If any token appears in chat, screenshots or command output, revoke it in Cloudflare immediately and create a same-zone/same-permission replacement. Do not use the exposed token for certificate requests. Run save-cloudflare-token.ps1 -Rotate and enter only the replacement into its hidden prompt; the script atomically replaces the encrypted blob without keeping the old credential. Never paste Cloudflare's curl Authorization example into chat. The token itself is never recorded in PLAN.md or any project document. Certificate work pauses until revocation/replacement is confirmed.

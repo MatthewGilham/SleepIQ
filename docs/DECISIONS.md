@@ -1,0 +1,93 @@
+# SleepIQ — Decision Register
+
+**Status:** v1.0 consolidated from owner answers through 28 October 2026. **Authority:** explicit owner approval in conversation; in case of conflicting documents, ask owner and update the relevant source. Do **not** silently elevate defaults to approved requirements. New approvals are appended here with date, rationale, changed files, and any superseded decision.
+
+## Product and workflow
+- Local Windows browser-based, premium dark personal sleep analytics app; Apple Watch → Apple Health → Health Auto Export → FastAPI → SQLite; React/TypeScript UI. Initial ingestion proof succeeded via manual HTTP POST; secure permanent ingress still to build.
+- Owner makes consequential decisions; agents teach concepts in concise plain language, offer options/pros/cons/recommendation, ask whenever ambiguity/contradiction/improvement affects behavior or security. **Avoid excessive granular questions.** Prefer one grouped checkpoint per phase. Task-specific progressive disclosure and economical prompts/agent usage.
+- Latest-night overview, custom 0–100 SleepIQ + consistency, individual charts for configured metrics, arbitrary metric overlay in real/normalized view, 7/30/90/all/custom range, rolling 7/30 trend, presets/default persisted SQLite, paired correlation explorer, AI analyst embedded in Analytics only on request, exports, backups.
+- Include **all configured Health Auto Export metrics** (currently Sleep Analysis, Heart Rate, Heart Rate Variability, Respiratory Rate, Resting Heart Rate, Sleeping Wrist Temperature) and relevant future additions; **not** the entire Apple Health catalog.
+- No nocturia features, daily manual entry, training logs, notes, Apple official Sleep Score, general chatbot, heatmap, period-vs-period comparison, anomaly detection or personal records.
+- Configurable scoring initially via Python code; first algorithm deliberately simple and replaceable; historical rescore after approved formula changes. Import as much historical Apple Health data as possible; Excel may contribute underlying measurements only.
+
+## Architecture A1–A7 (all approved)
+| ID | Approved decision |
+|---|---|
+| A1 | FastAPI backend plus React/TypeScript frontend |
+| A2 | Store individual readings **and** nightly summaries in SQLite |
+| A3 | Retain raw JSON exports with configurable retention |
+| A4 | Secure authenticated **encrypted direct LAN connection first**, not the temporary HTTP receiver |
+| A5 | **Manually launch** application with shortcut/script; no automatic Windows startup |
+| A6 | AI analysis **only on user request** |
+| A7 | Daily SQLite backups on PC, keep latest **14 successful daily backups**; catch up on next launch |
+
+## Data semantics D1–D9 (all approved)
+| ID | Approved decision |
+|---|---|
+| D1 | Attribute overnight sleep to **wake-up local date** |
+| D2 | Ignore naps in nightly analytics and scoring; preserve raw input |
+| D3 | Join nearby sleep intervals via **configurable gap threshold**; 30-minute default approved in P3 |
+| D4 | Apple Watch authoritative for sleep stages; avoid unnecessary multi-device complexity |
+| D5 | Initially label/calculates **stage-based** efficiency; modular replacement |
+| D6 | Prefer **time-weighted sleeping HR** when defensible; otherwise simple mean and visible limitation; overnight HRV uses SDNN samples |
+| D7 | Missing measurements appear as **Missing data**, no estimates; no expectation of daily coverage |
+| D8 | Idempotent upload merging, corrections and historical backfill |
+| D9 | Preserve raw JSON **indefinitely during development**, with future configurable retention |
+
+## Score decisions S1–S20 (approved details)
+- S1: initially include duration, consistency, efficiency, Deep, REM and sleeping HR/HRV components; pilot is not clinically calibrated.
+- S2/S9: weights **duration 30%, consistency 25%, efficiency 15%, Deep 10%, REM 10%, combined HR/HRV 10%**.
+- S3/S10/S14/S20: duration <7 h poor, 7–<8 h satisfactory, ≥8 h good. **Smooth** duration anchors: 6 h →40/100; **7 h →75/100**; 8 h →100/100; ≥8 h remains at 100 in pilot. Lower-tail extrapolation approved in P2.
+- S4: if a **required input** is missing, show **Insufficient data**, no partial/estimated overall score.
+- S5/S11/S13: consistency is equal bedtime/wake weighting; **10 points penalty per 20 minutes** circular-clock deviation on each part (continuous), 0–100 bounded.
+- S6/S7: preceding **30 calendar days**, at least **7 prior eligible nights**, no future leakage, use historical sleep-onset and wake-time baselines separately, provisional until history expands.
+- S8: separate editable Python config/module, versioning and historical recalculation.
+- S12/S16: physiological component **neutral in pilot**, but **sleeping HR AND overnight HRV must both be present** for an overall score; no physiological target calibration initially.
+- S15 initially favored personal baselines for stage scoring, **superseded by later S17 custom targets and S18 neutral pilot**.
+- S17: personally defined stage targets for descriptive classification: **Deep 1 h adequate, 1 h 30 min+ great; REM 2 h adequate/good, below two hours progressively poor**. These targets exist in config but **do not activate in pilot overall score** without new owner approval.
+- S18: **Deep and REM are neutral pilot contributions** (currently fixed placeholders); P2 fixes each neutral subscore at 75.
+- S19: smooth efficiency scoring example selected: **80% →60, 90% →85, ≥95% →100**; tails approved in P2.
+- S20: ≥8 h duration scores 100, even when unusually long, until owner requests refinement.
+
+**Checkpoint resolved:** P1–P8 below supersede the provisional wording above for score constants/tails, gap threshold, transport and travel approach. Remaining evidence-dependent rules and concrete infrastructure actions retain their gates.
+
+## Planning checkpoint P1–P8 — approved 28 October 2026
+
+Owner selected `1. B  2.A  3. A  4. A  5. A  6. A  7. A` and required a single progress plan and explicit approval between phases. This authorizes the documentation update, not blanket implementation or deployment.
+
+| ID | Approved decision and rationale | Impacts and boundaries |
+|---|---|---|
+| P1 | Publicly trusted HTTPS certificate with DNS-based validation; direct LAN-only ingress. Avoid installing a private root on the phone. Generated 256-bit ingest credential; dedicated ingest listener; browser/admin loopback only. | ARCHITECTURE.md, SECURITY.md. Domain/DNS provider, hostname resolution, renewal and concrete certificate/firewall actions need a reviewable setup proposal and authorization. No purchase or public ingress authorized. |
+| P2 | Deep, REM and combined physiology each neutral at 75; existing weights and mandatory HR/HRV unchanged. Duration below 6 h: max(0, 40 + 35 × (hours − 6)); existing 6/7/8-hour anchors and >=8-hour plateau. Efficiency: linear interpolation through (0%,0), (80%,60), (90%,85), (95%,100), capped thereafter. Preserve calculation precision; display overall score to one decimal. | SCORING.md, PRODUCT.md, DESIGN.md, TESTING.md. Supersedes nearest-slope efficiency tail and internal-rounding proposal. Disclose pilot ceiling 92.5; theoretical eligible floor 22.5. Worked synthetic scores 92.5 and 80.25 before display rounding; absent HRV means Insufficient data. |
+| P3 | Source-local wake date; configurable maximum gap 30 minutes; choose candidate with greatest recorded sleep per wake date and flag ambiguity. Gaps are neither sleep nor awake. Retain offsets; local clock times for consistency. Latest selected night visible even if unscored, with separate partial/conflicted status. | DATA_PIPELINE.md, PRODUCT.md, DESIGN.md, ARCHITECTURE.md. Supersedes hiding a newer unscored night behind an older complete/scored night. Age alone does not prove completeness. Tie, nap-only and mixed-offset edge rules remain to specify. |
+| P4 | Owner-supervised local validation reporting field presence, identity/revision availability, units, interval patterns and counts only. Exact repeats deduplicate; verified identity and revision ordering may resolve corrections; ambiguous changes retained/flagged without silent overwrite. Weighted HR only with defensible intervals/overlaps, otherwise labelled mean fallback. Mean overnight SDNN with >=1 valid sample and sample count. Preserve daily RHR and temperature interval scope. | DATA_PIPELINE.md, SECURITY.md, TESTING.md. Select the specific private input and arrange supervision before access. Real exports, readings and identifying metadata stay outside Git/model context. HR coverage/overlap and other evidence-dependent rules remain gated. |
+| P5 | SQLAlchemy + Alembic; private data under %LOCALAPPDATA%\SleepIQ; separate same-PC backup folder; secrets excluded; permission checks. Consistent database snapshots plus raw-file recovery manifest. Keep 14 successful daily snapshots; one current catch-up after downtime, no invented historical copies. | ARCHITECTURE.md, SECURITY.md, TESTING.md. Backup and isolated restore before routine real ingestion. Exact backup path/raw recovery procedure still to specify; a manifest alone is not a raw backup. Do not assume disk encryption. |
+| P6 | Pearson correlation on paired nightly observations, unavailable with <3 pairs or constant series; show n and limitations. Per-series z-scores over selected range. Rolling averages use calendar windows with observed-night counts. | DESIGN.md, TESTING.md. Low-coverage display, zero-variance normalization and clock-metric eligibility need contracts before analytics implementation. No significance/causation claim. |
+| P7 | Economical model allocation, premium reviews at high-risk boundaries. AI disabled until its dedicated approval gate. | DEVELOPMENT_PLAN.md, SECURITY.md. No live API spend, health-data egress or automatic agent delegation authorized. |
+| P8 | docs/PLAN.md is sole implementation progress record; update task status and verification evidence as work proceeds and synchronize affected docs. Explicit owner approval before every phase transition. | AGENTS.md, DEVELOPMENT_PLAN.md, ASTRA_PLANNING_PROMPT.md, TESTING.md, docs/PLAN.md. Replaces proposed docs/TASKS.md and competing status logs. DECISIONS.md remains decision authority. |
+
+2026-10-28 | P1–P8 | Owner choices and phase-approval policy above | Affected documents listed per row | Explicit conversation approval.
+
+## Required agent follow-up behavior
+2026-10-29 | P9: scoped dependency downloads/install authorization | Owner requested permission for terminal downloads of these project packages, limited to those tasks. Agents may resolve/lock/download/install/update ordinary project-local application, database/migration, testing/build and security dependencies in an approved phase from established registries; package-metadata-only audits allowed. No repeated consent required. Global/admin installs, arbitrary scripts, infrastructure, paid services, private-data disclosure and architectural choices retain their gates. Tool sandbox/network controls remain binding. | AGENTS.md, SECURITY.md, PLAN.md | Explicit owner request in conversation.
+
+Planner reviews decisions for contradictions, risky assumptions, opportunities to improve. It is expressly allowed and encouraged to ask owner **any relevant high-impact question** with alternatives/pros/cons. It must not implement unresolved alternatives without approval. When approved, append `YYYY-MM-DD | decision | options/rationale | impacts | owner approval` and update relevant docs/tests. Don't reopen settled rules just to ask questions.
+
+## Change log
+- 2026-10-28 — Consolidated decisions above into a single register; outstanding scoring numeric parameters kept provisional for coding-agent planning rather than delaying doc completion.
+
+2026-10-29 | P10: complete daily backups | Owner approved option 1: self-contained daily SQLite + original JSON snapshots in C:\Users\Matth\SleepIQ-Backups, keep latest 14 successful daily backups. Simpler independent restores accepted despite greater disk use. Validate isolated synthetic implementation first; never overwrite live DB during a restore drill. Existing real-data and filesystem access gates still apply. | PLAN.md, SECURITY.md, ARCHITECTURE.md, backup implementation | Explicit owner response: I approve option 1.
+
+2026-10-29 | P11: specific LAN DNS record | Owner explicitly approved adding a NEW DNS-only A record sync.mgilham.online -> 192.168.1.190, TTL Auto. Preserve wildcard CNAME/root/mail records; if explicit sync exists, stop before replacing it. Scope is this record only, not certificate/API-token/firewall changes. PC address reservation and phone resolution still need validation. | SECURE_SETUP.md, PLAN.md | Owner response: Yes i approve adding this.
+
+2026-10-29 | P12: defer router address reservation | Owner explicitly asked to keep a note and not configure it now. Continue Phase 1 HTTPS preparation using current 192.168.1.190; if DHCP changes it, DNS and listener/firewall binding must be revalidated. No router settings or certificate-warning exceptions are authorized by this deferral. Revisit stable addressing before relying on regular sync. | PLAN.md, SECURE_SETUP.md | Explicit owner instruction in conversation.
+
+2026-10-29 | P13: automatic DNS certificate validation | Owner selected A in CERTIFICATE_SETUP.md: pinned/checksum-verified local lego v5.5.2 Windows x64; Cloudflare Zone Read/DNS Edit token scoped only to mgilham.online, Windows-user-encrypted local storage, automatic temporary TXT proof and staged/production certificate request for sync.mgilham.online. No global API key, token in chat, privileged install, router change, firewall/listener activation or health-data egress. Explicit CA terms acceptance still required by the request command. | PLAN.md, CERTIFICATE_SETUP.md, SECURE_SETUP.md | Explicit owner response: A.
+
+2026-10-29 | P14: trusted home Windows network profile | Owner approved option 1 and reports changing only the home connection from Public to Private through Windows Settings. Existing Private-profile firewall/discovery rules may apply. This does not authorize new firewall rules, file sharing, a LAN listener or changes to other networks. | PLAN.md, SECURE_SETUP.md | Owner: Yes how do i change; then Its now private.
+
+2026-10-29 | P15: bounded synthetic HTTPS activation and phone test | Owner approves the prepared SECURE_SETUP.md setup: one named inbound TCP8443 rule limited to 192.168.1.190, Private home interface, remote 192.168.1.0/24 and project Python, edge traversal blocked; foreground synthetic-only receiver with production TLS and Windows-encrypted generated 256-bit credential; supervised iPhone tests and documented stop/single-rule removal rollback. No real health uploads, UI/admin exposure, router changes, public ingress or Phase 2 work. | PLAN.md, SECURE_SETUP.md, scripts/probe-firewall.ps1, scripts/start-probe.ps1 | Owner: Yes i approve this setup and phone test.
+
+2026-10-29 | P16: omit redundant test Shortcut | Owner declines the optional Shortcuts test and accepts deferring phone authenticated-upload verification to the actual Health Auto Export integration when the importer is ready. Existing iPhone HTTPS health and real PC authenticated/negative tests remain valid; do not claim an authenticated phone/exporter upload passed. Keep actual exporter authentication/TLS/delivery verification mandatory before routine real ingestion. Prefer testing the product's actual workflow over additional owner-operated test scaffolding. This does not waive other security gates or approve Phase 2 entry. | PLAN.md, SECURE_SETUP.md, TESTING.md | Owner: Id rather not do it, lets just do the things that matter.
+
+2026-10-29 | P17: checked phase-end local commits | Owner authorizes scoped local staging/commits at the end of each approved phase only after required checks pass, staged changes are reviewed and documentation/evidence is current. Failed/unavailable required checks block the commit; existing evidence may be reused only for unaffected checks with explanation. Record any previously approved deferrals honestly. Report successful commit hash; blocked Git writes leave the checkpoint pending. No push, history rewrite, unrelated/private files, automatic phase advancement or sandbox/ACL bypass. The host must separately grant technical Git write access; AGENTS.md cannot grant it. | AGENTS.md, DEVELOPMENT_PLAN.md, PLAN.md | Explicit owner request in conversation.
