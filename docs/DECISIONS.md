@@ -18,7 +18,7 @@
 | A3 | Retain raw JSON exports with configurable retention |
 | A4 | Secure authenticated **encrypted direct LAN connection first**, not the temporary HTTP receiver |
 | A5 | **Manually launch** application with shortcut/script; no automatic Windows startup |
-| A6 | AI analysis **only on user request** |
+| A6 | ~~AI analysis **only on user request**~~ Superseded by P28: AI assistant removed |
 | A7 | Daily SQLite backups on PC, keep latest **14 successful daily backups**; catch up on next launch |
 
 ## Data semantics D1–D9 (all approved)
@@ -107,7 +107,7 @@ Owner chose option 1: constant series have normalization unavailable; source-loc
 ## P22 Export format for X01 (2026-10-29)
 Agent default, not an owner choice: PRODUCT 3.7 says "CSV and/or Excel", and PLAN said CSV first. X01 ships CSV only. A CSV opens directly in Excel (the file carries a UTF-8 BOM), and native XLSX would add a new library dependency and a second formula-escaping surface. Exported content is computed nightly metrics, not raw readings; raw readings are preserved in the daily backups. The owner may ask for XLSX later as a separate task.
 
-## P23 Phase 4 AI controls (2026-10-29)
+## P23 Phase 4 AI controls (2026-10-29) — superseded by P28 (AI assistant removed)
 Owner approved Phase 4 entry ("Lets get started with phase 4. Once completed stop.") and chose, from numbered options: (1) **summaries plus nightly values**: per selected metric, summary statistics, correlations between selected metrics, and per-night values with dates (latest 90 nights per metric); no other metrics, raw readings, source names, paths or credentials; (2) **looser caps**: at most 15,000 estimated input tokens and 2,000 output tokens per request, 20 analyses per day, 300 per month, enforced locally before any request; at most 6 metrics per analysis; (3) **no history**: questions and answers are never stored or logged, only a local counter of requests and token totals; (4) **one bundle, no tools**: Python computes the evidence once, the model only explains it, with no tool calls, SQL or write access.
 Agent defaults (not separately approved; owner may change): model `gpt-6-luna` via `SLEEPIQ_AI_MODEL`; key only from `SLEEPIQ_OPENAI_API_KEY`; AI is on only when `SLEEPIQ_AI_ENABLED=1` **and** a key exists (a key alone is not consent); fixed endpoint `https://api.openai.com/v1/chat/completions`, `store:false`, 45 s timeout, no retries; one analysis at a time; every attempt counts toward the limits, including failed ones; `httpx2` moved from dev to runtime dependency (already installed and audited). One live validation request on synthetic data was approved and succeeded on 2026-10-29 (see PLAN.md, Phase 4 live validation). **Sending real health data to the provider is still not authorized**; the first real-data Analyze click is the owner's own action in the app, after reading the disclosure.
 
@@ -138,3 +138,11 @@ Questions as asked:
 2. Also add Core and Awake time as tiles and chart lines, or only Deep and REM?
 3. Resting heart rate also removed from the CSV export (default yes)?
 4. Sleeping wrist temperature: check its coverage with the counts-only report and remove it the same way if it is always empty?
+
+## P28 Remove AI, card overflow fix, average lines (2026-10-29)
+Owner request: remove the AI insight assistant from backend and frontend ("clunky and I'm never going to use it") and update the docs; fix text overflowing cards on Analytics at less than full-screen width; add an average line per selected metric on the main chart. U05 accepted by the owner the same day.
+
+Owner answers from numbered options: (1) **delete** the local AI usage counter (`ai.usage.v1`, counts only); (2a) record removal as this decision, mark A6/P23 superseded, and update the live docs **including AGENTS.md**; (4a) overflow seen only in the KPI row, but check all cards; (3) average lines: (i-a) mean over the **whole selected range**, not the zoomed part; (ii-b) a **"Show averages" toggle, on by default**; (iii-a) Normalized mode shows **one shared line at 0**; (iv-a) **no average line for bedtime/wake** clock metrics.
+
+Agent defaults recorded for visibility: the averages toggle is not saved in presets; `httpx2` stays as a dev dependency because FastAPI's test client needs it; backups taken before the cleanup are left as they are and rotate out normally. Owner action: revoke any OpenAI key and remove it from `.env` or the launching environment (the agent does not read `.env`). Tasks U06-U08 in PLAN.md "Improvements, round 2".
+

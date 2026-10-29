@@ -668,7 +668,7 @@ Owner-requested UI improvements after Phase 5 (2026-10-29). Choices are recorded
 |---|---|---|---|
 | U03 | done (2026-10-29) | **Remove resting heart rate** from the dashboard card grid (`analytics/dashboard.py` PHYSIOLOGY, `Dashboard.tsx`, `dashboardModel.ts`, synthetic preview in `App.tsx`) and from the Analytics/export catalog (`analytics/catalog.py`, `api.py` coverage map). Saved presets that list `rhr_mean` drop it silently on load. The stored `rhr_mean`/`rhr_n` columns and derivation stay untouched (no migration). | Criteria U03-1 onward, below |
 | U04 | done (2026-10-29) | **Night-by-night navigation on the dashboard.** `GET /api/v1/dashboard?night=YYYY-MM-DD` (validated date; omitted = latest) returns that stored night plus `previous_night`/`next_night` (nearest stored wake dates, gaps skipped) and the 30-night trend ending on that night. UI: ← date → buttons, "Latest" button, Left/Right arrow keys when focus is not in a form field, `?night=` in the address so refresh keeps the place, buttons disabled at the ends, previous content kept (dimmed) while loading so the page does not jump. | Criteria U04-1 onward, below |
-| U05 | awaiting_approval (owner check U05-17) | **Analytics redesign** to the approved preview: KPI row (average sleep, average score gauge with 92.5 marker, average HRV, nights-recorded ring, each "vs previous period"); main interactive chart; stage composition ring; per-metric tiles (click to focus); stacked nightly stage bars; bedtime/wake strip. **Deep sleep, REM and Awake time** get their own tiles and are selectable in the main chart (Core is not added, per owner). **Same-unit grouping:** metrics sharing a unit share one axis, at most two axes (left/right) and up to six lines, e.g. total sleep + deep + REM on a shared duration axis with sleeping heart rate on the right. All sleep durations (total, deep, REM, awake) use one hours axis, honest scale by default, with a "zoom to fit" toggle for that axis (P27). More than two units → normalised mode (existing). Keep every current capability: presets, 7/30/90/all/custom, normalised mode, rolling averages, clock metrics, data table, keyboard access, gaps never bridged, AI panel at the foot. New summary figures (period averages, vs-previous deltas, stage composition, typical bedtime/wake quartiles) computed in Python by one new endpoint `POST /api/v1/analytics/summary`; the page only formats. Multi-colour palette (Afterburn reds plus gold and ice-blue) kept. | Criteria U05-1 onward, below |
+| U05 | done (2026-10-29) | **Analytics redesign** to the approved preview: KPI row (average sleep, average score gauge with 92.5 marker, average HRV, nights-recorded ring, each "vs previous period"); main interactive chart; stage composition ring; per-metric tiles (click to focus); stacked nightly stage bars; bedtime/wake strip. **Deep sleep, REM and Awake time** get their own tiles and are selectable in the main chart (Core is not added, per owner). **Same-unit grouping:** metrics sharing a unit share one axis, at most two axes (left/right) and up to six lines, e.g. total sleep + deep + REM on a shared duration axis with sleeping heart rate on the right. All sleep durations (total, deep, REM, awake) use one hours axis, honest scale by default, with a "zoom to fit" toggle for that axis (P27). More than two units → normalised mode (existing). Keep every current capability: presets, 7/30/90/all/custom, normalised mode, rolling averages, clock metrics, data table, keyboard access, gaps never bridged, AI panel at the foot. New summary figures (period averages, vs-previous deltas, stage composition, typical bedtime/wake quartiles) computed in Python by one new endpoint `POST /api/v1/analytics/summary`; the page only formats. Multi-colour palette (Afterburn reds plus gold and ice-blue) kept. | Criteria U05-1 onward, below |
 
 ### Acceptance criteria
 
@@ -770,8 +770,48 @@ Agent choices within the approved scope (owner may change): range buttons say "d
 | U05-7 | `charts.test.ts` "same-unit metrics share an axis..." passes |
 | U05-8 to U05-14, U05-16 | `frontend/e2e/analytics-redesign.spec.ts` (9 tests) pass; expected values re-derived from the synthetic fixture formula. Limitation: the average-score reference averages stored nightly scores from the per-night series endpoint rather than re-deriving the scoring engine |
 | U05-15 | Updated `charts-presets.spec.ts`, `analytics.spec.ts`, `ai.spec.ts` and unchanged `export.spec.ts` pass. The no-jump test now clicks with `dispatchEvent` so Playwright's own scroll-to-control is not mistaken for an app jump |
-| U05-17 | **Pending owner check** on real data |
+| U05-17 | Owner-reported pass (2026-10-29): after restarting the outdated server, "U05 is satisfactory" |
+| G-2, G-3 | Staged list contained only U05 source, tests and docs; commit `801f0f8` |
 | G-1 | `check.ps1 -Suite Full` exit 0: Ruff, Mypy (46 files), 240 backend tests, 41 frontend unit tests, build, 39 Playwright tests, performance budgets, secret scan 177 files PASS, `pip-audit` and `npm audit` clean |
 | G-4 | DESIGN.md ("U05 implemented Analytics", section 3), ARCHITECTURE.md (summary contract), TESTING.md (budget, filter) updated |
 
-Owner check (U05-17): launch SleepIQ, open Analytics on your own data, compare with the approved preview's layout and colours, and say "accepted" or list changes.
+Owner check (U05-17): first attempt showed most sections missing because the running server predated the new endpoint (summary returned 405, checked by status code only); after a restart the owner confirmed the page.
+
+## Improvements, round 2 (P28)
+
+Owner-requested on 2026-10-29 after U05; choices in DECISIONS P28. Order: U06, then U07, then U08. Common gates G-1 to G-4 above apply to each, each ends with its own scoped local commit, and phase-boundary rules are unchanged.
+
+| ID | Status | Objective and bounded files | Acceptance |
+|---|---|---|---|
+| U06 | planned | **Remove the AI assistant completely.** Delete `backend/app/ai/`, `backend/tests/ai/`, `scripts/live-ai-check.py`, `frontend/src/ai.ts`, `ai.test.ts`, `Investigator.tsx`, `e2e/ai.spec.ts`; remove the AI wiring in `main.py`, `start.py`, `scripts/preview-charts.py`, the `/api/v1/analysis` boundary entry and the panel in `Analytics.tsx`. One idempotent start-up cleanup deletes only the `ai.usage.v1` settings row (owner-approved deletion; counts only, no health data). `httpx2` moves to dev dependencies (FastAPI's test client needs it). Docs: SECURITY, SETUP, OPERATIONS, ARCHITECTURE, PRODUCT, DESIGN, TESTING and AGENTS.md stop describing AI as a feature; A6 and P23 marked superseded. | U06-1 onward |
+| U07 | planned | **Text stays inside its card at every width.** KPI cards (and any other card found overflowing) adapt to their own width with CSS container queries: the graphic stacks above the value and type steps down when the card is narrow. Files: `style.css`, small markup changes in `Analytics.tsx`/`Dashboard.tsx` only if needed. | U07-1 onward |
+| U08 | planned | **Average line per selected metric on the main chart.** A thin dotted horizontal line in the metric's colour at its mean over the whole selected range (not the zoomed part), labelled "avg ..." at the right edge, plus an "Average" row in the tooltip; "Show averages" toggle, on by default. Normalized mode: one shared line at 0. Bedtime/wake: no average line. The mean comes from Python (`normalization.mean` in the timeseries response, observed nights only); the page only positions and formats it. | U08-1 onward |
+
+### Acceptance criteria (round 2)
+
+**U06 Remove the AI assistant**
+- U06-1 [C] `git ls-files backend/app/ai backend/tests/ai scripts/live-ai-check.py frontend/src/ai.ts frontend/src/ai.test.ts frontend/src/Investigator.tsx frontend/e2e/ai.spec.ts` prints nothing.
+- U06-2 [C] `rg -n -i "openai|SLEEPIQ_AI|app\.ai|Investigator|/api/v1/analysis|ai_provider|ai_config" backend frontend/src frontend/e2e scripts` prints nothing apart from the U06-4 cleanup and its test.
+- U06-3 [T] Backend: no route of a configured app starts with `/api/v1/analysis`; `GET /api/v1/analysis/status` and `POST /api/v1/analysis` return 404; with `SLEEPIQ_AI_ENABLED=1` and a fake `SLEEPIQ_OPENAI_API_KEY` in the environment the app still builds and exposes no AI route.
+- U06-4 [T] Backend: a store holding `ai.usage.v1` plus a saved preset loses only `ai.usage.v1` at start-up; the preset row is byte-identical; a second start is a no-op; a store without the row is unchanged.
+- U06-5 [T] Playwright: Analytics shows no "Ask about these nights" heading and no Analyze button; using Dashboard, Analytics (range, rolling, display, chips, tiles) and Correlations sends no request to any `/api/v1/analysis` URL.
+- U06-6 [C] `pyproject.toml` lists `httpx2` only under dev dependencies, `uv.lock` matches (`uv lock --check` exits 0) and the full gate passes.
+- U06-7 [C] `rg -n -i "openai|SLEEPIQ_AI|Analyze|AI analysis|AI egress" AGENTS.md docs/SECURITY.md docs/SETUP.md docs/OPERATIONS.md docs/ARCHITECTURE.md docs/PRODUCT.md docs/DESIGN.md docs/TESTING.md`: every remaining match is a removal or superseded note; DECISIONS A6 and P23 carry "Superseded by P28".
+- U06-8 [C] After the owner relaunches SleepIQ, a read-only check on the real store prints only `ai.usage.v1: absent` (key existence, no values). Backups made before the change keep their copy until normal rotation; they are not edited.
+
+**U07 Text stays inside its card**
+- U07-1 [T] Playwright `layout.spec.ts`: at viewport widths 390, 900, 1000, 1100, 1200, 1366, 1440, 1720 and 1920 px, on Analytics (30 days and All) and the Dashboard, every text-bearing element inside each card (`.an-card`, `.tile`, `.metric`, `.panel`) lies within its card's box (1 px tolerance) and no element's `scrollWidth` exceeds its `clientWidth`.
+- U07-2 [T] Same check at 1000 px with a mocked worst-case summary: "10h 59m", "100.0 /100", "250 ms", "1000 of 1000", "▲ 120 min vs previous 1000 days".
+- U07-3 [T] No horizontal page overflow at 390 px (existing checks still pass).
+- U07-4 [O] Owner views Analytics with the browser at half screen and full screen and confirms no text leaves its box. Pass = owner says so.
+
+**U08 Average lines**
+- U08-1 [T] Playwright: with Total asleep and Overnight HRV over 30 days there are exactly two `.average-line` elements, each horizontal (y1 = y2), in its metric's colour, dotted (distinct from the dashed rolling line), at the y of the independently derived mean on that metric's axis (within 1 px); labels read `avg <mean>` with the values derived from the synthetic fixture formula.
+- U08-2 [T] Zooming with the strip changes neither the label text nor the value the line marks (it averages the whole selected range).
+- U08-3 [T] "Show averages" is checked by default; unchecking removes every average line and label; checking restores them. (Not saved in presets; it resets to on when the page loads.)
+- U08-4 [T] Normalized mode shows exactly one average line, at z = 0, labelled "average (0)", whatever the number of metrics.
+- U08-5 [T] Sleep onset and Wake time get no average line; other selected metrics keep theirs.
+- U08-6 [T] The tooltip and the "Show as table" view show each metric's average with the same text as its label.
+- U08-7 [T] A metric with no readings in the range draws no average line and its tooltip average reads "no reading"; with "Zoom to fit" on, every average line stays inside the plot area.
+- U08-8 [T] Backend: `normalization.mean` in an actual-mode timeseries response equals the hand-calculated mean over observed nights only (missing nights excluded), independent of rolling settings.
+
