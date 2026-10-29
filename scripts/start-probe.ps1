@@ -37,13 +37,18 @@ $pointer = [IntPtr]::Zero
 $oldToken = $env:SLEEPIQ_PROBE_TOKEN
 $oldCertificates = $env:SLEEPIQ_PROBE_CERTIFICATES
 $oldIngest = $env:SLEEPIQ_INGEST_DATA
+$oldBackup = $env:SLEEPIQ_BACKUP_ROOT
+$env:SLEEPIQ_BACKUP_ROOT = $null
 $env:SLEEPIQ_INGEST_DATA = $null
 if ($EnableIngest) {
     # Real health uploads are accepted ONLY with this explicit switch (P19). Store must be provisioned.
     $dataRoot = Join-Path $env:LOCALAPPDATA 'SleepIQ'
     Assert-PrivateFolder $dataRoot
     Assert-PrivateFolder (Join-Path $dataRoot 'raw')
+    $backupRoot = 'C:\Users\Matth\SleepIQ-Backups'
+    Assert-PrivateFolder $backupRoot
     $env:SLEEPIQ_INGEST_DATA = $dataRoot
+    $env:SLEEPIQ_BACKUP_ROOT = $backupRoot
 }
 Push-Location (Join-Path $root 'backend')
 try {
@@ -58,6 +63,7 @@ try {
     $env:SLEEPIQ_PROBE_TOKEN = $oldToken
     $env:SLEEPIQ_PROBE_CERTIFICATES = $oldCertificates
     $env:SLEEPIQ_INGEST_DATA = $oldIngest
+    $env:SLEEPIQ_BACKUP_ROOT = $oldBackup
     if ($pointer -ne [IntPtr]::Zero) { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer) }
     Pop-Location
 }

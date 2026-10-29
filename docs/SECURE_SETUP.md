@@ -109,3 +109,16 @@ Phone (Health Auto Export, REST API automation; field names may differ slightly 
 - First run: a manual run inside the automation with a short range, then `powershell -File scripts/import-report.ps1` to confirm counts increased.
 
 Limits: syncs only while the PC is on and the receiver window is open on the home Wi-Fi; the PC address is not reserved (P12); the certificate expires 2027-01-27 and renewal is not yet automated.
+
+
+## Always-on receiver (P20)
+
+Install once, in a normal (non-admin) PowerShell, project folder, after stopping any manual receiver window (Ctrl+C):
+
+```powershell
+powershell -File scripts/receiver-task.ps1 -Action Install
+powershell -File scripts/receiver-task.ps1 -Action Start
+powershell -File scripts/receiver-task.ps1 -Action Status
+```
+
+Status shows the task state, the last result code (267009 means still running) and a local `/health` check. Other actions: `Stop`, `Remove`. Do not run a manual receiver at the same time (the port is taken). The receiver runs hidden, restarts up to 10 times a minute apart if it fails (for example before Wi-Fi is up), and also performs the daily backup check. The dashboard (`scripts/start.ps1`) remains manual.
