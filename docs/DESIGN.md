@@ -5,7 +5,7 @@
 ## 1. Experience
 Build a **premium, dark, desktop-first local web application** for a single user. It should feel precise, fast and calm: generous spacing, subtle contrast, restrained accent color, strong typographic hierarchy, and readable charts. Avoid a generic admin dashboard, overwhelming neon, gamification, clinical claims, or crowded cards. Responsive at laptop/tablet widths, usable on mobile but desktop is primary. Respect reduced-motion and keyboard accessibility.
 
-**Layout:** Persistent left navigation (Dashboard / Analytics / Correlations / Data & Settings), compact top status bar (last successful sync, backup health, active score version). The first viewport answers “how was my latest recorded night?”; advanced exploration comes lower on the page or through Analytics. No daily logging or editable diary.
+**Layout:** Persistent left navigation (Dashboard / Analytics / Correlations / Data & Settings), compact top status bar (last successful sync, backup health, active score version). A banner under the status bar names the data source on every page: "Design preview" (no store configured; built-in examples), "Synthetic preview" (generated test data) or "Local <page>: Your stored nights; calculated locally". The first viewport answers “how was my latest recorded night?”; advanced exploration comes lower on the page or through Analytics. No daily logging or editable diary.
 
 ## 2. Dashboard — latest recorded night
 - Date label uses the **wake-up calendar date**, with local sleep onset and wake time prominently shown.

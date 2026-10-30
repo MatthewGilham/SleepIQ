@@ -145,3 +145,19 @@ test("phone width: no sideways scroll, readable ticks, reduced motion stops anim
  await page.emulateMedia({reducedMotion:"reduce"});
  await expect.poll(()=>page.locator(".cx-pt").first().evaluate((e:Element)=>getComputedStyle(e).transitionDuration)).toBe("0s");
 });
+
+test("the page banner follows the data source, never claiming a design preview for stored nights",async({page})=>{
+ // The test store is synthetic, so it is labelled as such on Correlations too.
+ await open(page);
+ await expect(page.locator("main > .preview-banner").first()).toContainText("Synthetic preview");
+ await expect(page.getByText("Design preview")).toHaveCount(0);
+ // A store holding the owner's nights (synthetic flag false) reads as local data on every page.
+ await page.route("**/api/v1/dashboard*",async(route:any)=>{const body=await(await route.fetch()).json();await route.fulfill({json:{...body,synthetic:false}});});
+ await page.goto("/");
+ for(const [nav,label] of [["Correlations","Local correlations"],["Analytics","Local analytics"],["Data & Settings","Local data & settings"],["Dashboard","Local dashboard"]]){
+  await page.getByRole("button",{name:new RegExp(`^${nav}`)}).click();
+  const banner=page.locator("main > .preview-banner").first();
+  await expect(banner).toContainText(label);await expect(banner).toContainText("Your stored nights; calculated locally");
+  await expect(banner).not.toContainText(/preview|Synthetic examples/);
+ }
+});

@@ -1050,3 +1050,13 @@ U14 and U15 are built and pass their automated criteria; U15-5 (owner check on r
 | G-4 | ARCHITECTURE.md (correlation `fit`, matrix endpoint, `"365"`), DESIGN.md (section 4, A01 note, round-3 note), TESTING.md (spec, budget) |
 | G-2, G-3 | Staged list held only U17 source, tests and docs; commit `194c52d` (hash added in a follow-up docs-only commit) |
 | U18 | Pending: owner uses Correlations on real data and accepts it |
+
+**U17 follow-up: page banner (2026-10-30)**
+
+| Check | Evidence |
+|---|---|
+| Owner report | On real data the Correlations page said "Design preview  Synthetic examples - no personal health data" |
+| Cause | `App.tsx` chose the banner by page: only the Dashboard looked at the data source; Correlations and Data & Settings always fell through to the Phase 3 design-preview text, and Analytics always claimed "Configured local chart store", even for synthetic data |
+| Fix | `sourceBanner(page, live)` in `App.tsx` uses the actual source for every page: no store configured gives "Design preview" (built-in examples), the synthetic test store gives "Synthetic preview", the owner's store gives "Local correlations" (or dashboard / analytics / data & settings) "Your stored nights; calculated locally"; while loading "Checking the local store…" |
+| Tests | `App.test.tsx` "every page's banner follows the real data source...": all four pages for preview, synthetic and stored data, loading and error. `correlations.spec.ts` "the page banner follows the data source...": synthetic store reads "Synthetic preview" on Correlations; with the synthetic flag off, all four pages read "Local ..." with no preview wording. Existing "without a configured store the labelled synthetic design preview remains" still passes |
+| G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-30): Ruff, Mypy (41 files), 218 backend tests, 47 frontend unit tests, build, 73 Playwright tests, performance budgets, secret scan 171 files PASS, `pip-audit` and `npm audit` clean |

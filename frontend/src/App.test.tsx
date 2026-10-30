@@ -1,6 +1,7 @@
 ﻿import { expect, test } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { App, metricValue } from "./App";
+import { App, metricValue, sourceBanner } from "./App";
+import type { DashboardData } from "./dashboardModel";
 import { arrowDirection, nightFromSearch, searchForNight } from "./dashboardModel";
 
 test("missing measurements remain missing, including legitimate zero values", () => {
@@ -66,4 +67,18 @@ test("arrow keys navigate only without modifiers and outside form fields", () =>
   expect(arrowDirection({ key: "ArrowLeft", target: { tagName: "DIV", isContentEditable: true } })).toBe(0);
   expect(arrowDirection({ key: "ArrowLeft", target: body, altKey: true })).toBe(0);
   expect(arrowDirection({ key: "ArrowUp", target: body })).toBe(0);
+});
+test("every page's banner follows the real data source, never the page name", () => {
+  const ready = (synthetic: boolean) => ({ kind: "ready" as const, data: { synthetic } as DashboardData });
+  for (const page of ["Dashboard", "Analytics", "Correlations", "Data & Settings"]) {
+    expect(sourceBanner(page, { kind: "preview" })).toEqual(["Design preview", "Synthetic examples - no personal health data"]);
+    expect(sourceBanner(page, ready(true))).toEqual(["Synthetic preview", "Generated test data - not your health records"]);
+    const real = sourceBanner(page, ready(false));
+    expect(real[1]).toBe("Your stored nights; calculated locally");
+    expect(real.join(" ")).not.toMatch(/preview|synthetic|Synthetic/);
+  }
+  expect(sourceBanner("Correlations", ready(false))[0]).toBe("Local correlations");
+  expect(sourceBanner("Data & Settings", ready(false))[0]).toBe("Local data & settings");
+  expect(sourceBanner("Correlations", { kind: "loading" })).toEqual(["Local correlations", "Checking the local store…"]);
+  expect(sourceBanner("Analytics", { kind: "error", message: "x" })[1]).toBe("Store status unavailable");
 });
