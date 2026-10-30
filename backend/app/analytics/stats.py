@@ -41,3 +41,17 @@ def pearson(xs: list[float], ys: list[float]) -> tuple[float | None, str | None]
     if sxx <= 0 or syy <= 0:
         return None, "Unavailable: a metric has no variation across the paired nights"
     return max(-1.0, min(1.0, sxy / math.sqrt(sxx * syy))), None
+
+
+def least_squares(xs: list[float], ys: list[float]) -> dict[str, float] | None:
+    """Ordinary least-squares line y = slope * x + intercept over paired nights (U17).
+
+    Drawn only where Pearson r exists, so it shares r's minimum pairs and variation rules.
+    """
+    if pearson(xs, ys)[0] is None:
+        return None
+    mx, my = fsum(xs) / len(xs), fsum(ys) / len(ys)
+    slope = fsum((x - mx) * (y - my) for x, y in zip(xs, ys, strict=True)) / fsum(
+        (x - mx) ** 2 for x in xs
+    )
+    return {"slope": slope, "intercept": my - slope * mx}

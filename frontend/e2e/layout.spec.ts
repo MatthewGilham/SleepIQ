@@ -1,7 +1,7 @@
 import {expect,test} from "@playwright/test";
 // U07: every piece of text stays inside its card at every width (DECISIONS P28).
 const WIDTHS=[390,900,1000,1100,1200,1366,1440,1720,1920];
-const CARDS=".an-card, .tile, .metric, .panel";
+const CARDS=".an-card, .tile, .metric, .panel, .cx-card";
 
 // Returns one line per problem: text outside its card (1 px tolerance) or an element wider than its own box.
 async function overflow(page:any):Promise<string[]>{
@@ -11,7 +11,8 @@ async function overflow(page:any):Promise<string[]>{
   for(const card of Array.from(document.querySelectorAll(selector))){
    const box=card.getBoundingClientRect();if(!box.width)continue;
    for(const el of [card,...Array.from(card.querySelectorAll("*"))]){
-    if(el.closest(".sr-only,[hidden],.chart-table"))continue;
+    // The every-pair grid scrolls inside its card on narrow screens by design; the hidden tooltip is not shown.
+    if(el.closest(".sr-only,[hidden],.chart-table,.cx-grid-scroll,.cx-tip:not(.on)"))continue;
     const own=Array.from(el.childNodes).some(n=>n.nodeType===3&&n.textContent!.trim());
     if(own&&el!==card){const r=el.getBoundingClientRect();
      if(r.width&&(r.left<box.left-1||r.right>box.right+1||r.top<box.top-1||r.bottom>box.bottom+1))problems.push(`${name(el)} outside ${name(card).slice(0,60)}`);}
@@ -32,6 +33,8 @@ for(const width of WIDTHS)test(`text stays inside cards at ${width}px`,async({pa
  await expect(page.locator(".metric").first()).toBeVisible();
  expect(await overflow(page),"Dashboard").toEqual([]);
  for(const range of ["30 days","All"]){await analytics(page,range);expect(await overflow(page),`Analytics ${range}`).toEqual([]);}
+ await nav(page,"Correlations");await expect(page.locator(".cx-scatter")).toBeVisible();await expect(page.locator(".cx-main")).toHaveAttribute("aria-busy","false");
+ expect(await overflow(page),"Correlations").toEqual([]);
  if(width===390)expect(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);
 });
 

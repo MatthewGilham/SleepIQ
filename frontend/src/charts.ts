@@ -1,5 +1,5 @@
 export type Metric = {id:string;label:string;unit:string;method:string;clock:boolean};
-export type Range = "7"|"30"|"90"|"all"|"custom";
+export type Range = "7"|"30"|"90"|"365"|"all"|"custom";
 export type Selection = {metrics:string[];range:Range;start:string|null;end:string|null;mode:"actual"|"normalized";rolling:"off"|"7"|"30"};
 export type Preset = Selection & {id:string;name:string;default:boolean;revision:number};
 // Python computes rolling means over trailing calendar windows; null values mean below the observed-night minimum.
@@ -7,7 +7,9 @@ export type Rolling = {window:number;minimum:number;values:(number|null)[]|null;
 export type Series = Metric & {values:(number|null)[];raw:(number|null)[];details:{n:number|null;flags:string[];offset_minutes:number|null}[];normalization:{n:number;mean:number|null;sd:number|null;reason:string|null;method:string};rolling:Rolling|null};
 export type ChartData = {synthetic?:boolean;dates:string[];start:string|null;end:string|null;series:Series[];versions:string[]};
 export type Pair = {date:string;x:number;y:number};
-export type Correlation = {synthetic?:boolean;x:Metric;y:Metric;start:string|null;end:string|null;days:number;pairs:Pair[];n:number;excluded:{missing_x:number;missing_y:number;neither:number};r:number|null;reason:string|null;method:string;versions:string[]};
+export type Correlation = {synthetic?:boolean;x:Metric;y:Metric;start:string|null;end:string|null;days:number;pairs:Pair[];n:number;excluded:{missing_x:number;missing_y:number;neither:number};r:number|null;fit:{slope:number;intercept:number}|null;reason:string|null;method:string;versions:string[]};
+export type GridCell={x:string;y:string;r:number|null;n:number;reason:string|null};
+export type CorrelationGrid={synthetic?:boolean;metrics:Pick<Metric,"id"|"label"|"unit">[];cells:GridCell[];start:string|null;end:string|null;days:number;method:string;versions:string[]};
 export async function chartRequest<T>(path:string, method="GET", body?:unknown, signal?:AbortSignal):Promise<T>{
  const response=await fetch(`/api/v1/${path}`,{method,signal,headers:method==="GET"?{}:{"Content-Type":"application/json","X-SleepIQ-Request":"charts"},body:body===undefined?undefined:JSON.stringify(body)});
  if(!response.ok){throw new Error(response.status===409?"Preset changed or name already exists. Reload presets before retrying.":response.status===503?"Chart store is not configured. Open the local chart preview or configured application.":`Request failed (${response.status}). Check your selection and local service.`);}
@@ -127,3 +129,45 @@ export type MetricSummary={mean:number|null;n:number;min:number|null;max:number|
 export type ClockSummary={n:number;q1:number|null;median:number|null;q3:number|null};
 export type Summary={synthetic?:boolean;start:string|null;end:string|null;days:number;nights:number;ceiling:number;previous:{start:string;end:string;days:number;nights:number}|null;
  metrics:Record<string,MetricSummary>;stages:Record<"deep"|"rem"|"core"|"awake",{minutes:number|null;percent:number|null}>|null;clock:{onset:ClockSummary;wake:ClockSummary}|null;versions:string[]};
+
+// ---------- Correlations redesign (U17): pure helpers; Python computes r, n, exclusions and the best-fit line ----------
+/** Chip groups for the pair composer; metrics the catalog adds later fall into OTHER. */
+export const CORRELATION_GROUPS:[string,string[]][]=[["SLEEP",["asleep_s","deep_s","rem_s","core_s","awake_s","efficiency"]],["SCORES",["overall","consistency"]],["BODY",["hr_mean","hrv_mean","resp_mean","temp_mean"]]];
+export function groupMetrics(metrics:Metric[]):[string,Metric[]][]{
+ const known=new Set(CORRELATION_GROUPS.flatMap(([,ids])=>ids));
+ const groups=CORRELATION_GROUPS.map(([name,ids]):[string,Metric[]]=>[name,ids.map(id=>metrics.find(m=>m.id===id)).filter((m):m is Metric=>!!m)]);
+ const other=metrics.filter(m=>!known.has(m.id));
+ return [...groups,...(other.length?[["OTHER",other] as [string,Metric[]]]:[])].filter(([,ms])=>ms.length>0);
+}
+export const SHORT_LABEL:Record<string,string>={asleep_s:"Asleep",awake_s:"Awake",core_s:"Core",deep_s:"Deep",rem_s:"REM",efficiency:"Efficiency",overall:"Score",consistency:"Consistency",hr_mean:"Heart rate",hrv_mean:"HRV",resp_mean:"Resp. rate",temp_mean:"Wrist temp"};
+/** r with an explicit sign and a true minus, e.g. "−0.75", "+0.12", "0.00". */
+export function rText(r:number):string{return Math.abs(r)<.005?"0.00":`${r>0?"+":"−"}${Math.abs(r).toFixed(2)}`;}
+/** A paired value in the catalog's own unit (minutes stay minutes, hours read as "7h 09m"). */
+export function pairText(m:Pick<Metric,"id"|"unit"|"clock">,v:number|null):string{return v!==null&&m.unit==="min"?`${Math.round(v)} min`:display(m,v);}
+export type NiceAxis={lo:number;hi:number;ticks:number[];decimals:number};
+/** Round axis steps (1, 2, 2.5 or 5 x 10^k) covering the values, so labels read 40, 50, 60 rather than 41.6, 48.2. */
+export function niceAxis(values:number[],count=5):NiceAxis{
+ let lo=values.length?Math.min(...values):0,hi=values.length?Math.max(...values):1;if(lo===hi){lo-=1;hi+=1;}
+ const raw=(hi-lo)/(count-1),p=10**Math.floor(Math.log10(raw)),f=raw/p,mult=f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10,step=mult*p;
+ const a=Math.floor(lo/step+1e-9)*step,b=Math.ceil(hi/step-1e-9)*step,ticks:number[]=[];
+ for(let v=a;v<=b+step/2;v+=step)ticks.push(Number(v.toFixed(10)));
+ return {lo:a,hi:b,ticks,decimals:Math.max(0,-Math.floor(Math.log10(step)+1e-9)+(mult===2.5?1:0))};
+}
+/** Point colour by age within the selected range: slate (oldest) to coral (newest). */
+export function ageColour(date:string,start:string,end:string):string{
+ const a=Date.parse(start),span=Math.max(1,Date.parse(end)-a),t=Math.min(1,Math.max(0,(Date.parse(date)-a)/span));
+ const from=[0x56,0x63,0x7f],to=[0xff,0x7a,0x62];return `rgb(${from.map((v,i)=>Math.round(v+(to[i]-v)*t)).join(",")})`;
+}
+/** Steady hover: the nearest point within `reach` px, but the current one is kept until another is clearly closer,
+ * so neighbouring points never flicker. Returns a date or null. */
+export function nearestPoint(points:{date:string;cx:number;cy:number}[],x:number,y:number,current:string|null,reach=30,keep=34):string|null{
+ const d=(p:{cx:number;cy:number})=>(p.cx-x)**2+(p.cy-y)**2;let best:string|null=null,bd=Infinity;
+ for(const p of points){const v=d(p);if(v<bd){bd=v;best=p.date;}}
+ const cur=points.find(p=>p.date===current);if(cur&&d(cur)<keep*keep&&d(cur)<=bd+40)return current;
+ return bd<reach*reach?best:null;
+}
+/** Scatter plot height in pixels: proportional to its width, capped so the card fits one screen height (P29 U16),
+ * and never so short on a phone that points crowd together. */
+export function scatterHeight(width:number,viewportHeight:number):number{
+ return Math.round(Math.max(Math.min(width*.62,viewportHeight-260),Math.min(260,width*.85)));
+}

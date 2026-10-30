@@ -73,7 +73,7 @@ test("U12 nine tiles fill three full rows; wrist temperature stays everywhere el
  // Kept: the main-chart chip, the Correlations option and the dashboard card (P29 Q1 a).
  await expect(page.getByRole("checkbox",{name:"Sleeping wrist temperature",exact:true})).toHaveCount(1);
  await page.getByRole("button",{name:"Correlations",exact:true}).click();
- await expect(page.getByLabel("X axis metric").locator("option",{hasText:"Sleeping wrist temperature"})).toHaveCount(1);
+ await expect(page.getByRole("group",{name:"X axis"}).getByRole("button",{name:"Sleeping wrist temperature",exact:true})).toHaveCount(1);
  await page.getByRole("button",{name:"Dashboard",exact:true}).click();
  await expect(page.locator(".metric",{hasText:"Sleeping wrist temperature"})).toHaveCount(1);
 });

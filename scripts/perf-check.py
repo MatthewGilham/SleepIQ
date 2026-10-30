@@ -30,6 +30,7 @@ BUDGETS = {
     "dashboard": 2.0,
     "chart series": 1.0,
     "analytics summary": 1.0,
+    "correlation": 1.0,
     "incremental import": 5.0,
     "clean rebuild": 60.0,
 }
@@ -114,6 +115,8 @@ def main() -> int:
                 "chart series, 30 days": lambda: client.post("/api/v1/analytics/timeseries", json={**body, "range": "30"}, headers=HEADERS),
                 "analytics summary, all 5 years": lambda: client.post("/api/v1/analytics/summary", json={"range": "all"}, headers=HEADERS),
                 "analytics summary, 30 days": lambda: client.post("/api/v1/analytics/summary", json={"range": "30"}, headers=HEADERS),
+                "correlation pair, all 5 years": lambda: client.post("/api/v1/analytics/correlation", json={"x": "hr_mean", "y": "hrv_mean", "range": "all"}, headers=HEADERS),
+                "correlation grid, all 5 years": lambda: client.post("/api/v1/analytics/correlation/matrix", json={"range": "all"}, headers=HEADERS),
             }
             for label, call in calls.items():
                 for attempt in range(args.repeat):

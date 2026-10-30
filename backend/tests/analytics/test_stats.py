@@ -5,8 +5,9 @@ from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
-from app.analytics.api import Pairing, Selection, correlation, series
-from app.analytics.stats import pearson, rolling_mean
+from app.analytics.api import Pairing, Selection, Window, correlation, correlation_matrix, series
+from app.analytics.catalog import CATALOG
+from app.analytics.stats import least_squares, pearson, rolling_mean
 from app.ingest.store import import_bytes
 from app.main import create_app
 from fastapi.testclient import TestClient
@@ -164,3 +165,68 @@ def test_wake_dates_are_consecutive_calendar_days(store):
     dates = series(store[1], Selection(metrics=["hr_mean"], range="all"))["dates"]
     first = date.fromisoformat(dates[0])
     assert dates == [(first + timedelta(days=i)).isoformat() for i in range(10)]
+
+
+def test_best_fit_line_matches_the_stdlib_reference_and_follows_r(store):
+    # U17 F4: Python supplies the least-squares line; none where r is unavailable.
+    result = correlation(store[1], Pairing(x="hr_mean", y="hrv_mean", range="all"))
+    xs, ys = [p["x"] for p in result["pairs"]], [p["y"] for p in result["pairs"]]
+    reference = statistics.linear_regression(xs, ys)
+    assert result["fit"]["slope"] == pytest.approx(reference.slope, abs=1e-12)
+    assert result["fit"]["intercept"] == pytest.approx(reference.intercept, abs=1e-9)
+    assert correlation(store[1], Pairing(x="hr_mean", y="hrv_mean", **custom(8, 9)))["fit"] is None
+    assert correlation(store[1], Pairing(x="hr_mean", y="resp_mean", range="all"))["fit"] is None
+    assert least_squares([1.0, 2.0], [3.0, 4.0]) is None
+    assert least_squares([1.0, 2.0, 3.0], [2.0, 4.0, 6.0]) == {"slope": 2.0, "intercept": 0.0}
+
+
+def test_pair_grid_matches_the_single_pair_endpoint_for_every_cell(store):
+    # U17 F7: one cell per pair of non-clock metrics, each equal to the single-pair calculation.
+    grid = correlation_matrix(store[1], Window(range="all"))
+    ids = [m.id for m in CATALOG if not m.clock]
+    assert [m["id"] for m in grid["metrics"]] == ids
+    assert len(grid["cells"]) == len(ids) * (len(ids) - 1) // 2
+    assert grid["days"] == 10 and grid["start"] == "2026-10-01" and grid["end"] == "2026-10-10"
+    for cell in grid["cells"]:
+        single = correlation(store[1], Pairing(x=cell["x"], y=cell["y"], range="all"))
+        assert cell["n"] == single["n"] and cell["reason"] == single["reason"]
+        assert cell["r"] == (None if single["r"] is None else pytest.approx(single["r"], abs=1e-12))
+    hr_hrv = next(c for c in grid["cells"] if {c["x"], c["y"]} == {"hr_mean", "hrv_mean"})
+    assert hr_hrv["n"] == 7 and hr_hrv["r"] is not None
+    narrowed = correlation_matrix(store[1], Window(**custom(8, 10)))
+    assert narrowed["days"] == 3
+    assert (
+        next(c for c in narrowed["cells"] if {c["x"], c["y"]} == {"hr_mean", "hrv_mean"})["n"] == 3
+    )
+
+
+def test_pair_grid_endpoint_boundary_one_year_range_and_empty_store(store, scratch):
+    data, _ = store
+    app = create_app(chart_data=data)
+    with TestClient(app, base_url="http://localhost", client=("127.0.0.1", 1)) as c:
+        url = "/api/v1/analytics/correlation/matrix"
+        assert c.post(url, json={"range": "all"}).status_code == 403
+        ok = c.post(url, json={"range": "365"}, headers=HEADERS)
+        assert ok.status_code == 200 and ok.headers["cache-control"] == "no-store"
+        assert ok.json()["days"] == 365 and ok.json()["end"] == "2026-10-10"
+        assert c.post(url, json={"range": "14"}, headers=HEADERS).status_code == 422
+        assert (
+            c.post(url, json={"range": "all", "x": "hr_mean"}, headers=HEADERS).status_code == 422
+        )
+        pair = c.post(
+            "/api/v1/analytics/correlation",
+            json={"x": "hr_mean", "y": "hrv_mean", "range": "365"},
+            headers=HEADERS,
+        )
+        assert pair.status_code == 200 and pair.json()["days"] == 365
+    remote = TestClient(app, base_url="http://localhost", client=("192.168.1.20", 1))
+    assert (
+        remote.post(
+            "/api/v1/analytics/correlation/matrix", json={"range": "all"}, headers=HEADERS
+        ).status_code
+        == 403
+    )
+    (scratch / "empty").mkdir()
+    _, empty_engine = new_store(scratch / "empty")
+    assert correlation_matrix(empty_engine, Window(range="all"))["cells"] == []
+    empty_engine.dispose()

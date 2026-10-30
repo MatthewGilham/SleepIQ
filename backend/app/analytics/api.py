@@ -15,7 +15,7 @@ from sqlalchemy import Engine, text
 
 from app.analytics.catalog import BY_ID, CATALOG, Metric
 from app.analytics.dashboard import NightNotFound, dashboard
-from app.analytics.stats import ROLLING_MINIMUM, pearson, rolling_mean
+from app.analytics.stats import ROLLING_MINIMUM, least_squares, pearson, rolling_mean
 from app.db.coordinator import write_guard
 from app.domain.config import DERIVE, SCORE
 
@@ -30,7 +30,7 @@ CORRELATION_METHOD = (
 
 class Window(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    range: Literal["7", "30", "90", "all", "custom"] = "30"
+    range: Literal["7", "30", "90", "365", "all", "custom"] = "30"
     start: date | None = None
     end: date | None = None
 
@@ -250,6 +250,7 @@ def correlation(engine: Engine, pairing: Pairing) -> dict[str, Any]:
             "n": 0,
             "excluded": {"missing_x": 0, "missing_y": 0, "neither": 0},
             "r": None,
+            "fit": None,
             "reason": "Unavailable: no recorded nights",
         }
     start, end = _bounds(indexed, pairing)
@@ -267,7 +268,8 @@ def correlation(engine: Engine, pairing: Pairing) -> dict[str, Any]:
             excluded["missing_y"] += 1
         else:
             pairs.append({"date": day, "x": xv, "y": yv})
-    r, reason = pearson([p["x"] for p in pairs], [p["y"] for p in pairs])
+    xs, ys = [p["x"] for p in pairs], [p["y"] for p in pairs]
+    r, reason = pearson(xs, ys)
     return {
         **result,
         "start": start.isoformat(),
@@ -277,7 +279,41 @@ def correlation(engine: Engine, pairing: Pairing) -> dict[str, Any]:
         "n": len(pairs),
         "excluded": excluded,
         "r": r,
+        "fit": least_squares(xs, ys),
         "reason": reason,
+    }
+
+
+def correlation_matrix(engine: Engine, window: Window) -> dict[str, Any]:
+    """Pearson r for every pair of non-clock metrics over the same calendar days (U17, F7)."""
+    metrics = [m for m in CATALOG if not m.clock]
+    result: dict[str, Any] = {
+        "metrics": [{"id": m.id, "label": m.label, "unit": m.unit} for m in metrics],
+        "method": CORRELATION_METHOD,
+        "versions": [DERIVE.version, SCORE.version],
+    }
+    indexed = _rows(engine)
+    if not indexed:
+        return {**result, "start": None, "end": None, "days": 0, "cells": []}
+    start, end = _bounds(indexed, window)
+    dates = _days(start, end)
+    values = {m.id: [_value(indexed.get(day), m) for day in dates] for m in metrics}
+    cells = []
+    for i, a in enumerate(metrics):
+        for b in metrics[i + 1 :]:
+            paired = [
+                (x, y)
+                for x, y in zip(values[a.id], values[b.id], strict=True)
+                if x is not None and y is not None
+            ]
+            r, reason = pearson([x for x, _ in paired], [y for _, y in paired])
+            cells.append({"x": a.id, "y": b.id, "r": r, "n": len(paired), "reason": reason})
+    return {
+        **result,
+        "start": start.isoformat(),
+        "end": end.isoformat(),
+        "days": len(dates),
+        "cells": cells,
     }
 
 
@@ -308,6 +344,10 @@ def router(engine: Engine, data: Path, synthetic: bool = False) -> APIRouter:
     @api.post("/analytics/correlation")
     def paired(pairing: Pairing) -> dict[str, Any]:
         return {**correlation(engine, pairing), "synthetic": synthetic}
+
+    @api.post("/analytics/correlation/matrix")
+    def pair_grid(window: Window) -> dict[str, Any]:
+        return {**correlation_matrix(engine, window), "synthetic": synthetic}
 
     def read(conn: Any) -> list[dict[str, Any]]:
         value = conn.execute(

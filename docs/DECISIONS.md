@@ -160,3 +160,4 @@ Questions as asked:
 
 Agent defaults (owner may change): year shown on the first axis tick and where the year changes; the Correlations paired-data table stays as a collapsed "Accessible paired data table".
 
+**Correlations direction (2026-10-30, U16):** owner chose **A Afterburn Holo**, asked for a smoother, more professional refinement, then approved it ("Yes this version is slick and professional, I like it") with **all features F1-F7**, adding: "make sure it fits the screen proportionally". Agent interpretation, made testable in U17: charts are drawn at their real pixel size (text and points keep their size at any width); at common screens (1366x768 to 1920x1080) the scatter and its r panel fit within one screen height; the layout fills the content width with no sideways scroll down to 390 px.

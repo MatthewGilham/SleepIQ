@@ -1,5 +1,5 @@
 ﻿import {expect,test} from "vitest";
-import {averageText,bezierAt,chartSegments,curveRuns,display,fileNameFrom,fitMetrics,formatValue,groupAxes,refusal,rollingNote,scatterLayout,sliceSeries,toAxis,withDefaults} from "./charts";
+import {ageColour,groupMetrics,nearestPoint,niceAxis,pairText,rText,scatterHeight,averageText,bezierAt,chartSegments,curveRuns,display,fileNameFrom,fitMetrics,formatValue,groupAxes,refusal,rollingNote,scatterLayout,sliceSeries,toAxis,withDefaults} from "./charts";
 import type {Pt} from "./charts";
 import type {Series} from "./charts";
 test("rolling notes always show coverage and never invent a mean",()=>{
@@ -79,4 +79,37 @@ test("average labels format Python's whole-range mean and skip clock times",()=>
  expect(averageText({id:"hrv_mean",unit:"ms",clock:false,normalization:norm(44.4)},true)).toBe("average (0)");
  expect(averageText({id:"temp_mean",unit:"°C",clock:false,normalization:norm(null)})).toBe("no reading");
  expect(averageText({id:"onset_minute",unit:"local time",clock:true,normalization:norm(1400)})).toBeNull();
+});
+
+test("correlation axes use round steps that cover every value (U17)",()=>{
+ expect(niceAxis([41.6,67.7])).toEqual({lo:40,hi:70,ticks:[40,50,60,70],decimals:0});
+ const fine=niceAxis([50,60]);expect(fine.ticks).toEqual([50,52.5,55,57.5,60]);expect(fine.decimals).toBe(1);
+ const small=niceAxis([0.12,0.31]);expect(small.lo).toBeLessThanOrEqual(0.12);expect(small.hi).toBeGreaterThanOrEqual(0.31);
+ for(const t of small.ticks)expect(Number(t.toFixed(small.decimals))).toBeCloseTo(t,10);
+ expect(niceAxis([5,5]).lo).toBeLessThan(5);expect(niceAxis([5,5]).hi).toBeGreaterThan(5);
+ expect(niceAxis([]).ticks.length).toBeGreaterThan(1);
+});
+test("r text, paired values, colours and groups (U17)",()=>{
+ expect(rText(-0.7549)).toBe("−0.75");expect(rText(0.12)).toBe("+0.12");expect(rText(0.004)).toBe("0.00");expect(rText(-0.004)).toBe("0.00");
+ expect(pairText({id:"deep_s",unit:"min",clock:false},61.4)).toBe("61 min");
+ expect(pairText({id:"asleep_s",unit:"h",clock:false},7.15)).toBe("7h 09m");
+ expect(pairText({id:"hr_mean",unit:"bpm",clock:false},59)).toBe("59.0 bpm");
+ expect(ageColour("2026-01-01","2026-01-01","2026-12-31")).toBe("rgb(86,99,127)");
+ expect(ageColour("2026-12-31","2026-01-01","2026-12-31")).toBe("rgb(255,122,98)");
+ expect(ageColour("2027-06-01","2026-01-01","2026-12-31")).toBe("rgb(255,122,98)");
+ const m=(id:string)=>({id,label:id,unit:"",method:"",clock:false});
+ expect(groupMetrics([m("hr_mean"),m("asleep_s"),m("new_metric")]).map(([g,ms])=>[g,ms.map(x=>x.id)])).toEqual([["SLEEP",["asleep_s"]],["BODY",["hr_mean"]],["OTHER",["new_metric"]]]);
+});
+test("hover keeps the current point until another is clearly closer (U17)",()=>{
+ const pts=[{date:"a",cx:100,cy:100},{date:"b",cx:110,cy:100}];
+ expect(nearestPoint(pts,104,100,null)).toBe("a");
+ // Just past the midpoint, the current point is kept (no flicker between neighbours) ...
+ expect(nearestPoint(pts,106,100,"a")).toBe("a");
+ // ... until the other is clearly closer.
+ expect(nearestPoint(pts,110,100,"a")).toBe("b");
+ expect(nearestPoint(pts,300,300,"a")).toBeNull();expect(nearestPoint([],0,0,null)).toBeNull();
+});
+test("scatter height is proportional, fits one screen and never collapses on a phone (U17)",()=>{
+ expect(scatterHeight(800,900)).toBe(496);expect(scatterHeight(1200,1080)).toBe(744);
+ expect(scatterHeight(1200,768)).toBe(508);expect(scatterHeight(320,844)).toBe(260);
 });

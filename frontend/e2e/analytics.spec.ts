@@ -32,29 +32,7 @@ test("rolling averages show coverage, skip clock times and persist in presets",a
  await expect(page.getByRole("checkbox",{name:"Sleep onset",exact:true})).toBeChecked();
  await page.locator(".preset-menu > summary").click();await page.getByRole("button",{name:"Delete selected"}).click();await page.getByRole("button",{name:"Confirm delete"}).click();await expect(page.getByText("Preset deleted.",{exact:true})).toBeVisible();
 });
-test("correlation explorer pairs nights, reports exclusions and unavailable cases",async({page})=>{
- await open(page,"Correlations");await expect(page.getByRole("heading",{name:"Correlation explorer"})).toBeVisible();
- const summary=page.locator(".correlation-summary");
- await expect(summary.locator("dd").nth(0)).toHaveText("74");
- await expect(summary.locator("dd").nth(1)).toHaveText("0");await expect(summary.locator("dd").nth(2)).toHaveText("9");await expect(summary.locator("dd").nth(3)).toHaveText("7");
- await expect(page.locator(".correlation-r")).toHaveText(/^-?[01]\.\d\d$/);
- const scatter=page.getByRole("group",{name:"Scatter plot of Overnight HRV against Sleeping heart rate"});
- await expect(scatter.locator("circle")).toHaveCount(74);
- await scatter.locator("circle").first().focus();await expect(page.locator(".chart-detail")).toContainText("2026-07-31");
- await expect(page.getByText(/not evidence of cause/)).toBeVisible();
- expect(await page.getByLabel("X axis metric").locator("option").allTextContents()).not.toContain("Sleep onset (local time)");
- await page.screenshot({path:"../.cache/correlations-desktop.png",fullPage:true});
- await page.getByLabel("X axis metric").selectOption("deep_s");
- await expect(page.locator(".correlation-r")).toHaveText("Unavailable");await expect(page.getByText("Unavailable: a metric has no variation across the paired nights")).toBeVisible();
- await page.getByLabel("X axis metric").selectOption("hr_mean");await page.getByLabel("Date range").selectOption("custom");
- await page.getByLabel("From",{exact:true}).fill("2026-10-27");await page.getByLabel("To",{exact:true}).fill("2026-10-28");
- await expect(summary.locator("dd").nth(0)).toHaveText("2");await expect(page.getByText("Unavailable: fewer than 3 paired nights")).toBeVisible();
- await page.getByLabel("Y axis metric").selectOption("hr_mean");await expect(page.getByRole("alert")).toContainText("Choose two different metrics.");
- await page.getByLabel("Y axis metric").selectOption("hrv_mean");await page.getByLabel("Date range").selectOption("all");
- await page.setViewportSize({width:390,height:844});await expect(page.getByRole("heading",{name:"Correlation explorer"})).toBeVisible();
- expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
- await page.screenshot({path:"../.cache/correlations-mobile.png",fullPage:true});
-});
+// The correlation explorer checks moved to correlations.spec.ts with the U17 redesign (same counts and unavailable cases).
 // Regression: clearing results at request start collapsed the page, so the browser jumped the scroll position.
 async function steady(page:any,action:()=>Promise<unknown>,done:()=>Promise<unknown>){
  await page.evaluate(()=>window.scrollTo(0,500));await page.waitForTimeout(100);
@@ -73,6 +51,6 @@ test("changing options keeps charts in place instead of jumping the page",async(
  await steady(page,()=>page.getByRole("checkbox",{name:"Deep",exact:true}).dispatchEvent("click"),()=>expect(line(page,"deep_s")).toBeAttached());
  // Stale charts keep the mode they were fetched in: the z-axis label appears only with normalized data.
  await choose(page,"Display","Normalized");await expect(page.getByText("Standard deviations (z)",{exact:true})).toHaveCount(0);await expect(page.getByText("Standard deviations (z)",{exact:true})).toBeVisible();
- await open(page,"Correlations");await expect(page.locator(".correlation-r")).toHaveText(/\d/);
- await steady(page,()=>page.getByLabel("Date range").selectOption("all"),()=>expect(page.getByText(/^2026-07-0\d — 2026-10-28/)).toBeVisible());
+ await open(page,"Correlations");await expect(page.locator(".cx-r")).toHaveText(/\d/);
+ await steady(page,()=>press(page,"Date range","All"),()=>expect(page.locator(".cx-scatter-card .cx-sub")).toHaveText("2 Jul 2026 – 28 Oct 2026 · 119 days"));
 });
