@@ -41,6 +41,22 @@ A real ~1.53 MB JSON POST returned HTTP 200 and was saved by the temporary recei
 
 **Important:** These are sample counts from one inspected export, not a guaranteed full-history inventory. A timestamp can include an explicit `+0100` or `+0000` offset. The 25 October 2026 fall-back creates *visually reversed local clock times* within an actually positive-duration interval. `heartbeatSeries` is nested source data; retain or handle it deliberately rather than implicitly. Observed wrist temperature intervals can span many hours; do not assume they are instantaneous points. The exporter may evolve: validate by observed version/keys and fail safely on unsupported shapes.
 
+### Export date-range evidence (30 October 2026)
+
+Owner-supervised, counts-only diagnosis of a night whose onset showed about 1.5 h late:
+- The night came from automatic exports whose sleep data began after local midnight. Neither the stored observations nor the retained raw JSON held any sleep row, under any label, from the four hours before the displayed onset.
+- The first exported stage began well after midnight, not at it. This suggests Health Auto Export selects sleep stages by start time within the date range: a stage that crosses midnight is dropped, not clipped.
+- A wrist-temperature interval starting before midnight was still included, so selection appears to vary by metric.
+- SleepIQ computed the session correctly from what it received.
+- An owner re-export of the last 7 days restored the night (3,034 exact repeats skipped, 0 conflicts). The rebuild reaches back two days, which joined the late rows and put the onset back in the evening.
+
+Consequences:
+- A range that starts at today's midnight cuts off the pre-midnight part of every night.
+- A range ending at yesterday's end omits the latest night, as seen on 29 October.
+- Exports must overlap the previous day. Overlap is safe because exact repeats deduplicate.
+
+The owner has since selected Since Last Sync. Whether it misses stages that HealthKit writes after a mid-night sync, with start times before that sync, is **unverified**. Check the next nights' onsets against the owner's recollection.
+
 ## 3. Proposed processing stages
 
 ### Consequences of the owner-supervised shape diagnostic
@@ -89,7 +105,7 @@ Store enough derived metadata to answer **how** a value was calculated (chosen s
 3. **Session quality:** Detect gaps, overlapping sources, missing stages, short partial nights, non-monotonic timestamps, implausible values and out-of-order uploads. Display uncertainty rather than fabricating plausible data.
 4. **Data minimisation:** keep raw files locally according to configured retention and encrypt the transport; avoid cloud upload, real patient fixtures, or exposing receiver publicly.
 5. **Reprocessing:** Parser version and calculation version let new rules recompute past nights from canonical observations; preserve auditability and invalidate stale cached summaries.
-6. **Export audit:** Test real future auto-exports to establish whether payloads contain full history, time windows or deltas; use a safe overlap/backfill plan regardless of cadence.
+6. **Export audit:** Test real future auto-exports to establish whether payloads contain full history, time windows or deltas; use a safe overlap/backfill plan regardless of cadence. Calendar-day ranges cut overnight sessions at midnight (§2, "Export date-range evidence").
 
 ## 6. Owner decisions required before implementing sleep calculations
 
