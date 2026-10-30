@@ -1,12 +1,18 @@
 import { Analytics } from "./Analytics";
 import { Correlations } from "./Correlations";
 import { DataExport } from "./DataExport";
-import { Dashboard } from "./Dashboard";
+import { Dashboard, TrendPanel } from "./Dashboard";
 import { arrowDirection, importText, loadDashboard, longDay, nightFromSearch, searchForNight, shortDay } from "./dashboardModel";
 import type { DashboardData } from "./dashboardModel";
 import { backupLabel, loadBackupStatus } from "./backup";
 import { loadCertificateLabel } from "./certificate";
 import { useEffect, useState } from "react";
+
+// Design preview only (no store configured): 400 illustrative nights ending 28 Oct 2026, every 23rd unrecorded.
+const PREVIEW_TREND = {
+  dates: Array.from({ length: 400 }, (_, i) => new Date(Date.UTC(2026, 9, 28 - 399 + i)).toISOString().slice(0, 10)),
+  asleep_h: Array.from({ length: 400 }, (_, i) => (i % 23 === 5 ? null : [7.2, 6.8, 8.1, 7.5, 7.8, 6.9, 7.333][i % 7])),
+};
 
 export type PreviewState = "complete" | "partial" | "empty";
 // "preview" means no chart store is configured, so the labelled synthetic design preview is shown instead.
@@ -30,7 +36,6 @@ function Timeline() {
 export function App({ initial }: { initial?: Live } = {}) {
   const [state,setState]=useState<PreviewState>("complete");
   const [page,setPage]=useState("Dashboard");
-  const [range,setRange]=useState(7);
   const partial=state==="partial";
   const [live,setLive]=useState<Live>(initial ?? {kind:"loading"}),[retry,setRetry]=useState(0),[backup,setBackup]=useState("Not connected"),[cert,setCert]=useState<string|null>(null);
   // The viewed night lives in the address (?night=YYYY-MM-DD) so a refresh keeps the place; null means the latest night.
@@ -64,7 +69,7 @@ export function App({ initial }: { initial?: Live } = {}) {
   <section className="panel consistency"><div className="panel-title"><h2>Consistency</h2><span>◷</span></div><div className="consistency-number">100.0 <small>/ 100</small></div><div className="consistency-bars">{[40,58,52,70,63,78,68,85,76,90,82,95,88,96].map((h,i)=><i key={i} style={{height:`${h}%`}}/>)}</div><p>Based on <strong>28 qualifying nights</strong></p><span className="muted">Previous 30 calendar days</span></section></div>
   <section className="panel stages-panel"><div className="panel-title"><div><h2>A journey through sleep</h2><p className="muted">Sleep stages · 7h 40m recorded window</p></div><div className="legend">{Object.entries(colors).map(([s,c])=><span key={s}><i style={{background:c}}/>{s}</span>)}</div></div><Timeline/><div className="stage-summary">{[["Awake","20m"],["REM","2h 05m"],["Core","4h 03m"],["Deep","1h 12m"]].map(([s,v])=><div key={s}><i style={{background:colors[s as keyof typeof colors]}}/><span>{s}</span><strong>{v}</strong></div>)}</div></section>
   <div className="section-heading"><h2>The details that matter</h2><span>Overnight measurements · synthetic example</span></div><section className="metrics-grid" aria-label="Nightly metrics"><Metric label="Sleep efficiency" value="95.7" unit="%" detail="Stage-based · asleep / recorded stages"/><Metric label="Sleeping heart rate" value="54" unit="bpm" detail="Unweighted mean · overnight samples"/><Metric label="Overnight HRV" value={partial?null:"48"} unit="ms" detail={partial?"No overnight samples available":"Mean SDNN · 8 overnight samples"}/><Metric label="Respiratory rate" value="14.2" unit="breaths/min" detail="Overnight mean"/><Metric label="Sleeping wrist temperature" value={null} unit="°C" detail="No reading in this example"/></section>
-  <div className="bottom-grid"><section className="panel"><div className="panel-title"><div><h2>Time asleep, over time</h2><p className="muted">Illustrative nightly duration · hours</p></div><div className="segmented" aria-label="Chart range">{[7,30].map(n=><button key={n} aria-pressed={range===n} onClick={()=>setRange(n)}>{n}D</button>)}</div></div><div className="trend-bars" aria-label={`${range} days of synthetic sleep durations`}>{Array.from({length:range},(_,i)=>{const hours=[7.2,6.8,8.1,7.5,7.8,6.9,7.333][i%7];return <div key={i}><span style={{height:`${hours/10*100}%`}} tabIndex={0} title={`Example day ${i+1}: ${hours.toFixed(1)} hours`}/></div>;})}</div><div className="trend-axis"><span>{range===7?"22 Oct":"29 Sep"}</span><span>28 Oct</span></div><p className="muted">Individual nights · no rolling average applied</p></section>
+  <div className="bottom-grid"><TrendPanel trend={PREVIEW_TREND} note="Illustrative nightly duration · hours"/>
   <section className="panel breakdown"><div className="panel-title"><h2>Behind the score</h2><span className="pill">TRANSPARENT BY DESIGN</span></div>{[["Duration","30%","25.0"],["Consistency","25%","25.0"],["Efficiency","15%","15.0"],["Deep · pilot-neutral","10%","7.5"],["REM · pilot-neutral","10%","7.5"],["HR / HRV · pilot-neutral","10%","7.5"]].map(([label,weight,value])=><div className="breakdown-row" key={label}><span>{label}</span><small>{weight}</small><b>{partial?"—":value}</b></div>)}<p className="muted">Synthetic example score breakdown. Neutral components score 75/100. Not clinically calibrated.</p></section></div>
   </> }<footer>SleepIQ <span>Private by design. Clear by intention.</span><span>Afterburn - local sleep analytics</span></footer></main></div></div>;
 }

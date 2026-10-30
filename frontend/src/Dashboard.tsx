@@ -1,6 +1,6 @@
-import {useState} from "react";
-import {axisTicks,clock,consistencyNote,contribution,duration,missingText,number,offsetLabel,physiologyDetail,shortDay,stageBar,units} from "./dashboardModel";
-import type {DashboardData,Latest,Stage} from "./dashboardModel";
+import {useRef,useState} from "react";
+import {TREND_RANGES,axisTicks,clock,consistencyNote,contribution,duration,hourTicks,missingText,number,offsetLabel,physiologyDetail,shortDay,stageBar,tickDays,trendWindow,units} from "./dashboardModel";
+import type {DashboardData,Latest,Stage,TrendRange} from "./dashboardModel";
 
 const order:Stage[]=["Awake","REM","Core","Deep"];
 const colors:Record<Stage,string>={Awake:"var(--stage-awake)",REM:"var(--stage-rem)",Core:"var(--stage-core)",Deep:"var(--stage-deep)"};
@@ -17,14 +17,43 @@ function Timeline({night}:{night:Latest}){
   {night.stages.map((s,i)=>{const bar=stageBar(s.start_s,s.duration_s,session);return <rect key={i} tabIndex={0} x={bar.x} y={8+order.indexOf(s.stage)*36} width={bar.width} height="24" rx="4" fill={colors[s.stage]}><title>{s.stage}: {Math.round(s.duration_s/60)} minutes; {Math.round(s.start_s/60)} minutes after onset</title></rect>;})}
  </svg><div className="axis">{axisTicks(night.onset_local,night.session_s).map((t,i)=><span key={i}>{t}</span>)}</div></div>;
 }
+/** Nightly duration with a labelled hours axis (U14) over 7/30/90 days, a year or All (U15): bars up to a month, then an
+ * area line that breaks at unrecorded nights. Exported so the design preview draws the same chart. */
+export function TrendPanel({trend,note}:{trend:DashboardData["trend"];note:string}){
+ const [range,setRange]=useState<TrendRange>(30),[hover,setHover]=useState<number|null>(null);const svg=useRef<SVGSVGElement>(null);
+ const {dates,hours}=trendWindow(trend,range),n=dates.length;
+ const ticks=hourTicks(Math.max(0,...hours.filter((h):h is number=>h!==null))),top=ticks[ticks.length-1];
+ const pct=(h:number)=>`${Math.min(100,h/top*100)}%`,y=(h:number)=>100-Math.min(100,h/top*100);
+ const label=(i:number)=>hours[i]===null?`${dates[i]}: no recording`:`${dates[i]}: ${hours[i]!.toFixed(1)} hours`;
+ const bars=n<=31,ends=tickDays(dates,n?[...new Set([0,n-1])]:[]);
+ // Consecutive recorded nights form one run; a gap ends the line, so missing nights are never bridged.
+ const runs:number[][]=[];hours.forEach((h,i)=>{if(h===null)return;const last=runs[runs.length-1];if(last&&last[last.length-1]===i-1)last.push(i);else runs.push([i]);});
+ const points=(run:number[])=>run.length===1?[[run[0]+.15,y(hours[run[0]]!)],[run[0]+.85,y(hours[run[0]]!)]]:run.map(i=>[i+.5,y(hours[i]!)]);
+ return <section className="panel trend-panel"><div className="panel-title"><div><h2>Time asleep, over time</h2><p className="muted">{note}</p></div>
+  <div className="segmented" role="group" aria-label="Chart range">{TREND_RANGES.map(([name,r])=><button key={name} aria-pressed={range===r} onClick={()=>{setRange(r);setHover(null);}}>{name}</button>)}</div></div>
+  <div className="trend-chart">
+   <div className="trend-yaxis" aria-hidden="true">{ticks.map(t=><span key={t} style={{bottom:pct(t)}}>{t}h</span>)}</div>
+   <div className="trend-plot">{ticks.map(t=><i key={t} className="trend-grid" style={{bottom:pct(t)}}/>)}
+    {bars?<div className="trend-bars" role="group" aria-label={`${n} days of sleep durations`}>{hours.map((h,i)=><div key={dates[i]}><span style={{height:h===null?0:pct(h)}} tabIndex={0} title={label(i)}/></div>)}</div>
+    :<svg ref={svg} className="trend-line" viewBox={`0 0 ${n} 100`} preserveAspectRatio="none" role="img" aria-label={`${n} days of sleep durations, ${hours.filter(h=>h!==null).length} nights recorded; gaps are nights not recorded`}
+      onPointerMove={e=>{const box=svg.current?.getBoundingClientRect();if(box?.width)setHover(Math.max(0,Math.min(n-1,Math.floor((e.clientX-box.left)/box.width*n))));}} onPointerLeave={()=>setHover(null)}>
+     {runs.map(run=>{const p=points(run),line=p.map(([px,py],k)=>`${k?"L":"M"}${px} ${py}`).join(" ");
+      return <g key={run[0]} data-run={run.length}><path className="trend-area" d={`${line} L${p[p.length-1][0]} 100 L${p[0][0]} 100 Z`}/><path className="trend-stroke" d={line} vectorEffect="non-scaling-stroke"/></g>;})}
+     {hover!==null&&<line className="trend-cursor" x1={hover+.5} x2={hover+.5} y1="0" y2="100" vectorEffect="non-scaling-stroke"/>}
+    </svg>}
+   </div>
+  </div>
+  <div className="trend-axis">{[...ends.values()].map((d,i)=><span key={i}>{d}</span>)}</div>
+  {!bars&&<p className="trend-readout" aria-live="polite">{hover===null?"Hover the chart for one night's duration":label(hover)}</p>}
+  <p className="muted">Individual nights · no rolling average applied</p></section>;
+}
+
 // Python derives every value; this view only formats and positions them.
 export function Dashboard({data}:{data:DashboardData}){
- const [range,setRange]=useState(30);
  const night=data.latest;
  if(!night)return <section className="panel placeholder"><span className="empty-moon">☾</span><h2>Your nights will find a home here.</h2><p>No sleep history available. After a successful import, your latest recorded night will appear here.</p></section>;
  const score=night.score,scored=score?.status==="scored"&&score.overall!==null;
  const total=score?Object.values(score.components).reduce((sum,c)=>sum+c.weight,0)||100:100;
- const trend=data.trend.asleep_h.slice(-range),dates=data.trend.dates.slice(-range);
  const stageTotals:[Stage,number][]=[["Awake",night.awake_s],["REM",night.rem_s],["Core",night.core_s],["Deep",night.deep_s]];
  const baseline=score?.consistency_detail;
  const minutes=Math.round(night.asleep_s/60);
@@ -44,9 +73,7 @@ export function Dashboard({data}:{data:DashboardData}){
  <div className="section-heading"><h2>The details that matter</h2><span>Overnight measurements · {night.wake_date}</span></div>
  <section className="metrics-grid" aria-label="Nightly metrics"><Metric label="Sleep efficiency" value={number(night.efficiency*100)} unit="%" detail="Stage-based · asleep / recorded stages"/>
   {night.physiology.map(p=><Metric key={p.id} label={p.label} value={number(p.value)} unit={units[p.id]} detail={p.value===null?(p.id==="temp"?"No reading attributed to this night":"No overnight samples"):`${physiologyDetail[p.id]} · ${p.n} sample${p.n===1?"":"s"}`}/>)}</section>
- <div className="bottom-grid"><section className="panel"><div className="panel-title"><div><h2>Time asleep, over time</h2><p className="muted">Nightly duration · hours · gaps are nights not recorded</p></div><div className="segmented" aria-label="Chart range">{[7,30].map(n=><button key={n} aria-pressed={range===n} onClick={()=>setRange(n)}>{n}D</button>)}</div></div>
-  <div className="trend-bars" role="group" aria-label={`${range} days of sleep durations`}>{trend.map((h,i)=><div key={dates[i]}>{h===null?<span style={{height:0}} tabIndex={0} title={`${dates[i]}: no recording`}/>:<span style={{height:`${Math.min(100,h/10*100)}%`}} tabIndex={0} title={`${dates[i]}: ${h.toFixed(1)} hours`}/>}</div>)}</div>
-  <div className="trend-axis"><span>{shortDay(`${dates[0]}T00:00`)}</span><span>{shortDay(`${dates[dates.length-1]}T00:00`)}</span></div><p className="muted">Individual nights · no rolling average applied</p></section>
+ <div className="bottom-grid"><TrendPanel trend={data.trend} note="Nightly duration · hours · gaps are nights not recorded"/>
  <section className="panel breakdown"><div className="panel-title"><h2>Behind the score</h2><span className="pill">TRANSPARENT BY DESIGN</span></div>
   {names.map(name=>{const c=score?.components[name];return <div className="breakdown-row" key={name}><span>{labels[name]}{c?.neutral?" · pilot-neutral":""}</span><small>{c?`${c.weight}%`:"—"}</small><b>{c?contribution(c,total):"—"}</b></div>;})}
   <p className="muted">Contributions to the 100-point score. Neutral components score 75/100. Not clinically calibrated. {scored?"":missingText(score?.missing??[])}</p></section></div>

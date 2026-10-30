@@ -124,16 +124,19 @@ def dashboard(engine: Engine, synthetic: bool, wake_date: date | None = None) ->
                 {"src": night["source"], "a": start, "b": end},
             )
         ]
-        recent = conn.execute(
+        # The whole history up to this night (U15): the page slices 7/30/90/365 days or All from it.
+        history = conn.execute(
             text(
                 "SELECT wake_date, asleep_s FROM nightly_metrics WHERE derivation_version=:v "
-                "AND wake_date>date(:d, '-29 days') AND wake_date<=:d ORDER BY wake_date"
+                "AND wake_date<=:d ORDER BY wake_date"
             ),
             {"v": DERIVE.version, "d": night["wake_date"]},
         ).all()
-    by_day = {r[0]: r[1] for r in recent}
+    by_day = {r[0]: r[1] for r in history}
     last = datetime.fromisoformat(night["wake_date"]).date()
-    days = [(last - timedelta(days=i)).isoformat() for i in range(29, -1, -1)]
+    # From the first stored night, but never fewer than the 30 calendar days the dashboard has always had.
+    first = min(datetime.fromisoformat(history[0][0]).date(), last - timedelta(days=29))
+    days = [(first + timedelta(days=i)).isoformat() for i in range((last - first).days + 1)]
     result["trend"] = {
         "dates": days,
         "asleep_h": [by_day[d] / 3600 if d in by_day else None for d in days],

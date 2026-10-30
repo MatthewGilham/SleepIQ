@@ -151,6 +151,27 @@ def test_trend_ends_on_requested_night(scratch: Path):
     assert trend["asleep_h"][-1] == pytest.approx(body["latest"]["asleep_s"] / 3600)
 
 
+def test_trend_reaches_back_to_the_first_stored_night(scratch: Path):
+    # U15: 100 nights with two unrecorded wake dates; the trend runs from the first stored night to the viewed one.
+    data, engine = new_store(scratch)
+    days = [date(2026, 5, 1) + timedelta(days=i) for i in range(100) if i not in (40, 77)]
+    import_bytes(engine, data, payload(merge(*(night_blocks(d) for d in days))))
+    wake_dates = [d.isoformat() for d in days]
+    body = client(data).get("/api/v1/dashboard").json()
+    trend = body["trend"]
+    start, end = date.fromisoformat(wake_dates[0]), date.fromisoformat(wake_dates[-1])
+    assert trend["dates"][0] == wake_dates[0] and trend["dates"][-1] == wake_dates[-1]
+    assert len(trend["dates"]) == (end - start).days + 1  # one entry per calendar day
+    assert trend["dates"] == [(start + timedelta(days=i)).isoformat() for i in range(len(trend["dates"]))]
+    recorded = {d for d, h in zip(trend["dates"], trend["asleep_h"], strict=True) if h is not None}
+    assert recorded == set(wake_dates)  # unrecorded days are null, never 0
+    # Viewing an earlier night: history stops there; a short history is padded to 30 calendar days.
+    early = client(data).get(f"/api/v1/dashboard?night={wake_dates[3]}").json()["trend"]
+    assert early["dates"][-1] == wake_dates[3] and len(early["dates"]) == 30
+    assert max(early["dates"]) == wake_dates[3]
+    assert [h is not None for h in early["asleep_h"]].count(True) == 4
+
+
 def test_night_variant_keeps_local_origin_and_no_store_rules(scratch: Path):
     data, _ = gap_store(scratch)
     url = "/api/v1/dashboard?night=2026-10-02"

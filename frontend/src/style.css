@@ -1148,3 +1148,17 @@
 .sleep-total .dur-unit{font-size:22px;color:var(--muted);margin:0 0 0 1px;letter-spacing:0}
 /* U09: the three top panels' titles share one row height, so a tall pill no longer pushes one title down. */
 .hero-grid .panel-title{min-height:28px}
+/* U14/U15: duration trend with a labelled hours axis; gridlines come from the same ticks as the labels. */
+.trend-chart{display:grid;grid-template-columns:30px minmax(0,1fr);gap:6px;margin-top:22px}
+.trend-yaxis{position:relative;height:155px}
+.trend-yaxis span{position:absolute;right:0;transform:translateY(50%);font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums;line-height:1}
+.trend-plot{position:relative;height:155px;border-bottom:1px solid var(--palette-47)}
+.trend-grid{position:absolute;left:0;right:0;height:1px;background:var(--palette-48);pointer-events:none}
+.trend-plot .trend-bars{position:absolute;inset:0;height:auto;margin:0;background:none;border:0}
+.trend-line{position:absolute;inset:0;width:100%;height:100%;overflow:visible;cursor:crosshair}
+.trend-line .trend-area{fill:var(--palette-49);opacity:.18}
+.trend-line .trend-stroke{fill:none;stroke:var(--palette-49);stroke-width:2;stroke-linejoin:round}
+.trend-line .trend-cursor{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}
+.trend-panel .trend-axis{margin-left:36px}
+.trend-readout{font-size:11px;color:var(--muted);margin:8px 0 0 36px;min-height:1.4em;font-variant-numeric:tabular-nums}
+.trend-panel .segmented{flex-wrap:wrap}

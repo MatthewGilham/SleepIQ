@@ -1,5 +1,5 @@
 import {expect,test} from "vitest";
-import {axisTicks,clock,consistencyNote,contribution,duration,fullDay,importText,longDay,missingText,number,offsetLabel,shortDay,stageBar,tickDays} from "./dashboardModel";
+import {axisTicks,clock,consistencyNote,contribution,duration,fullDay,hourTicks,importText,longDay,missingText,number,offsetLabel,shortDay,stageBar,tickDays,trendWindow} from "./dashboardModel";
 
 test("durations and source-local strings are formatted without time-zone conversion",()=>{
  expect(duration(7*3600+20*60)).toBe("7h 20m");expect(duration(5*3600+5*60)).toBe("5h 05m");
@@ -36,4 +36,21 @@ test("chart dates carry the year on the first tick and wherever the year changes
  expect([...tickDays(dates,[1,3]).values()]).toEqual(["31 Dec 2025","2 Jan 2026"]);
  expect([...tickDays(["2026-10-01","2026-10-15","2026-10-28"],[0,1,2]).values()]).toEqual(["1 Oct 2026","15 Oct","28 Oct"]);
  expect(tickDays([],[]).size).toBe(0);
+});
+test("the trend hours axis runs from 0 to at least 10 h in 2 h steps (U14)",()=>{
+ expect(hourTicks(9.1)).toEqual([0,2,4,6,8,10]);expect(hourTicks(0)).toEqual([0,2,4,6,8,10]);
+ expect(hourTicks(10)).toEqual([0,2,4,6,8,10]);expect(hourTicks(11.3)).toEqual([0,2,4,6,8,10,12]);
+ expect(hourTicks(13)).toEqual([0,2,4,6,8,10,12,14]);
+});
+test("trend windows slice calendar days, pad before the history and start All at the first stored night (U15)",()=>{
+ const trend={dates:["2026-10-24","2026-10-25","2026-10-26","2026-10-27","2026-10-28"],asleep_h:[null,7,null,6.5,8]};
+ expect(trendWindow(trend,"all")).toEqual({dates:["2026-10-25","2026-10-26","2026-10-27","2026-10-28"],hours:[7,null,6.5,8]});
+ const week=trendWindow(trend,7);
+ expect(week.dates).toEqual(["2026-10-22","2026-10-23","2026-10-24","2026-10-25","2026-10-26","2026-10-27","2026-10-28"]);
+ expect(week.hours).toEqual([null,null,null,7,null,6.5,8]);
+ // Padding crosses month and year boundaries by calendar day.
+ expect(trendWindow({dates:["2026-01-01"],asleep_h:[7]},7).dates[0]).toBe("2025-12-26");
+ const long={dates:Array.from({length:400},(_,i)=>new Date(Date.UTC(2025,8,24+i)).toISOString().slice(0,10)),asleep_h:Array.from({length:400},(_,i)=>i%5?7:null)};
+ for(const r of [7,30,90,365] as const){const w=trendWindow(long,r);expect(w.dates).toHaveLength(r);expect(w.dates.at(-1)).toBe(long.dates[399]);expect(w.hours).toEqual(long.asleep_h.slice(-r));}
+ expect(trendWindow({dates:[],asleep_h:[]},30)).toEqual({dates:[],hours:[]});
 });

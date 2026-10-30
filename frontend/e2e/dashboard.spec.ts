@@ -41,7 +41,9 @@ test("partial, unscored night stays visible with missing data labelled, not zero
  await expect(page.locator(".metric",{hasText:"Overnight HRV"})).toContainText("Missing data");
  await expect(page.locator(".metric",{hasText:"Resting heart rate"})).toHaveCount(0);
  await expect(page.getByText("Flags: revised")).toBeVisible();
- await expect(page.locator(".trend-bars span").first()).toHaveAttribute("title","2026-10-27: no recording");
+ // A short history is padded to the 30-day window (U15); the unrecorded day is empty, never a zero bar.
+ await expect(page.locator(".trend-bars > div")).toHaveCount(30);
+ await expect(page.locator(".trend-bars span").nth(28)).toHaveAttribute("title","2026-10-27: no recording");
  await expect(page.getByText("Not enough history yet (3 prior nights; needs at least 7)")).toBeVisible();
 });
 test("empty store shows the no-history state",async({page})=>{

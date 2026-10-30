@@ -859,7 +859,7 @@ U06, U07 and U08 are complete and accepted by the owner on 2026-10-29. Commits: 
 
 ## Improvements, round 3 (P29)
 
-Owner-requested on 2026-10-30; request and answers in DECISIONS P29 (Q1 tile only; Q2 7D/30D/90D/1Y/All, bars to 30 days then area line; Q3 full Correlations redesign inspired by Analytics). **Phase R3-1 approved by the owner on 2026-10-30** ("get started with the first phase R3-1. Stop once completd"); R3-2 and R3-3 not approved. Three phases, each split into sub-phases; the owner approves each phase before it starts (phase-boundary rules unchanged). Every sub-phase ends with common gates G-1 to G-4 (above) and its own scoped local commit. Nothing here changes stored health data, needs a migration or touches ingestion. Status vocabulary as above.
+Owner-requested on 2026-10-30; request and answers in DECISIONS P29 (Q1 tile only; Q2 7D/30D/90D/1Y/All, bars to 30 days then area line; Q3 full Correlations redesign inspired by Analytics). **Phase R3-1 approved by the owner on 2026-10-30** ("get started with the first phase R3-1. Stop once completd"); **Phase R3-2 approved by the owner on 2026-10-30** ("Now complete R3-2, updating the docs as you go"); R3-3 not approved. Three phases, each split into sub-phases; the owner approves each phase before it starts (phase-boundary rules unchanged). Every sub-phase ends with common gates G-1 to G-4 (above) and its own scoped local commit. Nothing here changes stored health data, needs a migration or touches ingestion. Status vocabulary as above.
 
 **Findings behind the plan (agent investigation, 2026-10-30)**
 - "8h 12m" spacing: `.sleep-total span` has `margin-right:8px` *and* the markup adds a literal space after "h", so the gap after "h" (~20 px) is far larger than the gap before it (0 px); the units are half-size and sit on the baseline, so "h" and "m" look detached from their numbers (see `design-references/image1.png`).
@@ -874,7 +874,7 @@ Owner-requested on 2026-10-30; request and answers in DECISIONS P29 (Q1 tile onl
 
 | ID | Status | Objective and bounded files |
 |---|---|---|
-| U09 | built; owner check U09-4 pending | **Duration spacing on the dashboard.** "8h 12m" reads as one figure: units sit tight to their number (small fixed gap), one consistent space between the hour and minute groups, units aligned with the numbers' x-height rather than floating low. Same treatment wherever `.sleep-total` style is reused. While there, align the three top panels' title rows (SleepIQ score / Shape of your night / Consistency). Files: `style.css`, `Dashboard.tsx` markup only. |
+| U09 | done | **Duration spacing on the dashboard.** "8h 12m" reads as one figure: units sit tight to their number (small fixed gap), one consistent space between the hour and minute groups, units aligned with the numbers' x-height rather than floating low. Same treatment wherever `.sleep-total` style is reused. While there, align the three top panels' title rows (SleepIQ score / Shape of your night / Consistency). Files: `style.css`, `Dashboard.tsx` markup only. |
 | U10 | done | **Score delta without "/100".** The Average SleepIQ score KPI says "▼ 1.8 vs previous N days". The headline value keeps "/100". Files: `Analytics.tsx` (`deltaText`), `charts.ts` if the formatter is shared. |
 | U11 | done | **Remove "Show as table"** from the Analytics main chart (button, table and footer). Tests that read values from it move to the tooltip. Files: `Analytics.tsx`, `style.css`, the three specs above. |
 | U12 | done | **Remove the Wrist temperature tile** from Analytics so the tiles fill a 3 x 3 grid. Only the tile (P29 Q1 a): the main-chart chip, dashboard card, Correlations, CSV, stored data and derivation stay. Files: `Analytics.tsx` (`TILES`), affected specs. |
@@ -897,12 +897,12 @@ Owner-requested on 2026-10-30; request and answers in DECISIONS P29 (Q1 tile onl
 
 | ID | Status | Objective and bounded files |
 |---|---|---|
-| U14 | proposed | **Labelled Y axis** in hours (0 to 10 h or the data maximum rounded up to a whole hour, ticks every 2 h, label "h"), aligned with the gridlines; gridlines generated from the same ticks, not a CSS background. Files: `Dashboard.tsx`, `dashboardModel.ts` (tick helper, unit-tested), `style.css`. |
-| U15 | proposed | **Ranges back to the first recorded night.** Range buttons 7D / 30D / 90D / 1Y / All (P29 Q2), all ending on the night being viewed; bars up to 30 days, an area line for 90D and longer. Backend: the dashboard response carries the nightly asleep series from the first stored night to the viewed night (about 400 numbers now, about 1,800 after five years), or the page reads the existing timeseries endpoint; the agent picks the smaller change and records it. Gaps are never bridged. Files: `analytics/dashboard.py`, its tests, `Dashboard.tsx`, `dashboardModel.ts`, `style.css`, ARCHITECTURE.md contract. |
+| U14 | done | **Labelled Y axis** in hours (0 to 10 h or the data maximum rounded up to a whole hour, ticks every 2 h, label "h"), aligned with the gridlines; gridlines generated from the same ticks, not a CSS background. Files: `Dashboard.tsx`, `dashboardModel.ts` (tick helper, unit-tested), `style.css`. |
+| U15 | built; owner check U15-5 pending | **Ranges back to the first recorded night.** Range buttons 7D / 30D / 90D / 1Y / All (P29 Q2), all ending on the night being viewed; bars up to 30 days, an area line for 90D and longer. Backend: the dashboard response carries the nightly asleep series from the first stored night to the viewed night (about 400 numbers now, about 1,800 after five years), or the page reads the existing timeseries endpoint; the agent picks the smaller change and records it. Gaps are never bridged. Files: `analytics/dashboard.py`, its tests, `Dashboard.tsx`, `dashboardModel.ts`, `style.css`, ARCHITECTURE.md contract. |
 
 **Acceptance (R3-2)**
 - U14-1 [T] Unit: tick helper returns 0, 2, 4, 6, 8, 10 for a 9.1 h maximum and never fewer than three ticks.
-- U14-2 [T] Playwright: the trend chart shows Y-axis labels including "0" and "8 h" (or the chosen format), and a bar for a known synthetic night reaches the height of its value within 1 px of the labelled scale.
+- U14-2 [T] Playwright: the trend chart shows Y-axis labels including "0h" and "8h" (format chosen to match "7h 09m"), and a bar for a known synthetic night reaches the height of its value within 1 px of the labelled scale.
 - U15-1 [T] Backend: the series starts at the first stored wake date, ends at the requested night, has one entry per calendar day with null for unrecorded days, and contains no later nights.
 - U15-2 [T] Backend: loopback/origin/`no-store` rules unchanged; `perf-check.py --enforce` dashboard timing on the five-year workload stays within its existing budget.
 - U15-3 [T] Playwright: each range button shows the expected first and last dates (derived independently from the fixture); All starts on the first stored night; the selected range persists while stepping Previous/Next.
@@ -941,7 +941,7 @@ Order: R3-1 (U09 to U13 in any order), then R3-2, then R3-3. R3-3 cannot start b
 | U09-3 | `layout.spec.ts` (all nine widths) passes unchanged |
 | Unit | `App.test.tsx` server-render assertion updated to the new markup |
 | G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-30): Ruff, Mypy (41 files), 214 backend tests, 39 frontend unit tests, build, 55 Playwright tests, performance budgets, secret scan 170 files PASS, `pip-audit` and `npm audit` clean. First run failed one unit test that asserted the old markup; fixed and rerun |
-| U09-4 | Pending: owner compares with `design-references/image1.png` |
+| U09-4 | Owner-reported pass (2026-10-30): "Ive checked they all look good" (covers U09 to U13 in the browser) |
 | G-2, G-3 | Staged list held only U09 source, test, and the round-3 plan docs; commit `e7e0d4f` |
 
 **U10 Score change without "/100"**
@@ -989,4 +989,27 @@ Order: R3-1 (U09 to U13 in any order), then R3-2, then R3-3. R3-3 cannot start b
 
 ### R3-1 status (2026-10-30)
 
-U10, U11, U12 and U13 are done; U09 is built and passes its automated criteria, with the owner check U09-4 outstanding. Commits: U09 `e7e0d4f` (with the round-3 plan), U10 `c2e16c2`, U11 `1b5350a`, U12 `509e3e1`, U13 in the commit that adds this section. Nothing changed stored data, the backend or migrations. **Stopped at the phase boundary as the owner asked; R3-2 needs explicit owner approval.** Owner checks: restart SleepIQ so the browser loads the new build, then look at the dashboard duration (U09-4) and Analytics.
+U09 to U13 are done; the owner checked them in the browser on 2026-10-30 ("Ive checked they all look good"), passing U09-4. Commits: U09 `e7e0d4f` (with the round-3 plan), U10 `c2e16c2`, U11 `1b5350a`, U12 `509e3e1`, U13 in the commit that adds this section. Nothing changed stored data, the backend or migrations. **Stopped at the phase boundary as the owner asked; R3-2 needs explicit owner approval.** Owner checks: restart SleepIQ so the browser loads the new build, then look at the dashboard duration (U09-4) and Analytics.
+
+### R3-2 verification evidence
+
+U14 and U15 change the same chart component, so they share one commit.
+
+| Check | Evidence |
+|---|---|
+| Design | Backend (`analytics/dashboard.py`): the trend runs from the first stored night (or 30 days back, whichever is earlier) to the viewed night, one entry per calendar day, null when unrecorded; field names unchanged. Chosen over reusing the timeseries endpoint because it is a one-query change and keeps one dashboard request. Frontend: `TrendPanel` in `Dashboard.tsx` (also used by the design preview in `App.tsx`), `trendWindow` and `hourTicks` in `dashboardModel.ts`, styles in `style.css` |
+| U14-1 | `dashboardModel.test.ts`: `hourTicks(9.1)` gives 0-10 in 2 h steps; 0, 10, 11.3 and 13 h cases; never fewer than six ticks |
+| U14-2 | `refinements.spec.ts` "U14 ...": labels "0h" to "10h", six gridlines, the latest night's bar (429 min) tops out within 1 px of 7.15 h on the labelled scale and stands on 0 |
+| U15-1 | `test_dashboard.py::test_trend_reaches_back_to_the_first_stored_night`: 100 days with two unrecorded wake dates; trend starts at the first stored night, ends at the latest, one entry per calendar day, null exactly on unrecorded days; viewing the fourth night gives 30 days ending there with four recorded. Existing `test_trend_ends_on_requested_night` passes unchanged |
+| U15-2 | Boundary tests (`test_night_variant_keeps_local_origin_and_no_store_rules`) pass; `perf-check.py --enforce` dashboard on the five-year workload 0.005-0.010 s (budget 2 s) |
+| U15-3 | `refinements.spec.ts` "U15 each range ...": 7D, 30D, 90D, 1Y and All show the independently derived first/last labels, day counts and recorded-night counts (bars up to 30 days, line beyond); All starts on 2 Jul 2026, the first stored night. "U15 unrecorded nights ...": 90D stays selected after Previous and then ends on 27 Oct |
+| U15-4 | Same file: an unrecorded day is a zero-height bar titled "no recording"; All draws ten separate line runs around nine unrecorded nights; hover readout shows a value and "no recording"; no horizontal scroll at 390 px for all five ranges. `dashboard.spec.ts` mocked two-day trend now padded to 30 bars |
+| Unit | `trendWindow` padding across a year boundary, All from the first stored night, 7/30/90/365 slices of a 400-day history |
+| Test fix | The U13 test failed once more because a resting mouse can still move the crosshair; it now parks the mouse before pressing End. Three consecutive passes, then the full gate |
+| G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-30): Ruff, Mypy (41 files), 215 backend tests, 42 frontend unit tests, build, 62 Playwright tests, performance budgets, secret scan 170 files PASS, `pip-audit` and `npm audit` clean |
+| G-4 | ARCHITECTURE.md (dashboard trend contract), DESIGN.md (section 2 and round-3 note), TESTING.md |
+| U15-5 | Pending: owner checks All on real data (starts September 2025, readable) |
+
+### R3-2 status (2026-10-30)
+
+U14 and U15 are built and pass their automated criteria; U15-5 (owner check on real data) is outstanding. Commit recorded below. **Stopped at the phase boundary; R3-3 needs explicit owner approval.**

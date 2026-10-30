@@ -20,6 +20,22 @@ export function tickDays(dates:string[],shown:number[]):Map<number,string>{
  return labels;
 }
 export function longDay(date:string):string{const d=new Date(`${date}T00:00:00Z`);return `${days[d.getUTCDay()]}, ${d.getUTCDate()} ${["January","February","March","April","May","June","July","August","September","October","November","December"][d.getUTCMonth()]}`;}
+export type TrendRange=7|30|90|365|"all";
+export const TREND_RANGES:[string,TrendRange][]=[["7D",7],["30D",30],["90D",90],["1Y",365],["All","all"]];
+const daysBefore=(iso:string,n:number)=>new Date(Date.parse(`${iso}T00:00:00Z`)-n*86_400_000).toISOString().slice(0,10);
+/** The last `range` calendar days of the duration trend, padded with unrecorded days before the stored history,
+ * or All: from the first stored night (U15). Python supplies one entry per calendar day ending on the viewed night. */
+export function trendWindow(trend:DashboardData["trend"],range:TrendRange):{dates:string[];hours:(number|null)[]}{
+ const {dates,asleep_h}=trend;
+ if(range==="all"){const i=asleep_h.findIndex(h=>h!==null);return i<0?{dates:[],hours:[]}:{dates:dates.slice(i),hours:asleep_h.slice(i)};}
+ const missing=dates.length?Math.max(0,range-dates.length):0,pad=Array.from({length:missing},(_,k)=>daysBefore(dates[0],missing-k));
+ return {dates:[...pad,...dates.slice(-range)],hours:[...pad.map(()=>null),...asleep_h.slice(-range)]};
+}
+/** Hours axis for the duration trend: 0 up to at least 10 h, rounded up to an even hour, a tick every 2 h (U14). */
+export function hourTicks(maxHours:number):number[]{
+ const top=Math.max(10,Math.ceil(maxHours/2)*2);
+ return Array.from({length:top/2+1},(_,i)=>i*2);
+}
 export function offsetLabel(minutes:number):string{const a=Math.abs(minutes);return `UTC${minutes<0?"-":"+"}${String(Math.floor(a/60)).padStart(2,"0")}:${String(a%60).padStart(2,"0")}`;}
 export function axisTicks(onset:string,sessionSeconds:number):string[]{
  const base=Date.parse(`${onset}:00Z`);
