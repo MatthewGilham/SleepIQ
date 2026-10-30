@@ -1012,4 +1012,4 @@ U14 and U15 change the same chart component, so they share one commit.
 
 ### R3-2 status (2026-10-30)
 
-U14 and U15 are built and pass their automated criteria; U15-5 (owner check on real data) is outstanding. Commit recorded below. **Stopped at the phase boundary; R3-3 needs explicit owner approval.**
+U14 and U15 are built and pass their automated criteria; U15-5 (owner check on real data) is outstanding. Commit `85ce93a` (U14 and U15 together; this hash line added in a follow-up docs-only commit). **Stopped at the phase boundary; R3-3 needs explicit owner approval.**
