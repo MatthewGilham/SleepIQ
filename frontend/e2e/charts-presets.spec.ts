@@ -6,10 +6,10 @@ const presets=(page:any)=>page.locator(".preset-menu > summary").click();
 test("charts ranges, normalized view, gaps, clock exclusion, zoom and keyboard",async({page})=>{
  await open(page);
  // Ranges end on the latest stored wake date (28 Oct); "All" starts at the first stored night (2 Jul, i=1).
- for(const [name,days] of [["7 days","7"],["90 days","90"],["All","119"],["30 days","30"]]){await choose(page,"Date range",name);await expect(page.locator(".range-label")).toHaveText(new RegExp(`28 Oct · ${days} days$`));}
+ for(const [name,days] of [["7 days","7"],["90 days","90"],["All","119"],["30 days","30"]]){await choose(page,"Date range",name);await expect(page.locator(".range-label")).toHaveText(new RegExp(`28 Oct 2026 · ${days} days$`));}
  await choose(page,"Date range","Custom");
  await page.getByLabel("From",{exact:true}).fill("2026-10-01");await page.getByLabel("To",{exact:true}).fill("2026-10-28");
- await expect(page.locator(".range-label")).toHaveText("1 Oct – 28 Oct · 28 days");
+ await expect(page.locator(".range-label")).toHaveText("1 Oct 2026 – 28 Oct 2026 · 28 days");
  // Unrecorded nights (13 Oct, 26 Oct) break the HRV line into separate runs rather than bridging them.
  await expect.poll(()=>page.locator('.main-svg g[data-metric="hrv_mean"] path.series-line').count()).toBeGreaterThan(1);
  const frame=page.locator(".chart-frame");await frame.focus();await expect(frame).toBeFocused();await expect(page.locator(".chart-tip time")).toHaveAttribute("datetime","2026-10-28");

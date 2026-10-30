@@ -878,7 +878,7 @@ Owner-requested on 2026-10-30; request and answers in DECISIONS P29 (Q1 tile onl
 | U10 | done | **Score delta without "/100".** The Average SleepIQ score KPI says "▼ 1.8 vs previous N days". The headline value keeps "/100". Files: `Analytics.tsx` (`deltaText`), `charts.ts` if the formatter is shared. |
 | U11 | done | **Remove "Show as table"** from the Analytics main chart (button, table and footer). Tests that read values from it move to the tooltip. Files: `Analytics.tsx`, `style.css`, the three specs above. |
 | U12 | done | **Remove the Wrist temperature tile** from Analytics so the tiles fill a 3 x 3 grid. Only the tile (P29 Q1 a): the main-chart chip, dashboard card, Correlations, CSV, stored data and derivation stay. Files: `Analytics.tsx` (`TILES`), affected specs. |
-| U13 | proposed | **Year on main-chart dates.** Range label and tooltip heading read "29 Oct 2026"; axis ticks show the year on the first tick and wherever the year changes ("Jan 2026"), otherwise "29 Oct". Stage-bar end labels follow the same rule. Files: `Analytics.tsx`, `dashboardModel.ts`/`charts.ts` (one date formatter, unit-tested). |
+| U13 | done | **Year on main-chart dates.** Range label and tooltip heading read "29 Oct 2026"; axis ticks show the year on the first tick and wherever the year changes ("1 Jan 2027"), otherwise "29 Oct". Stage-bar end labels follow the same rule. Files: `Analytics.tsx`, `dashboardModel.ts`/`charts.ts` (one date formatter, unit-tested). |
 
 **Acceptance (R3-1)**
 - U09-1 [T] Playwright: in the "Shape of your night" panel the horizontal gap between "8" and "h" and between "12" and "m" is at most 4 px each, and the gap between "h" and "12" is between 8 and 16 px (bounding boxes); same at 390 px.
@@ -973,3 +973,20 @@ Order: R3-1 (U09 to U13 in any order), then R3-2, then R3-3. R3-3 cannot start b
 | U12-2 | Same test: the "Sleeping wrist temperature" chart chip, Correlations option and dashboard card are all still present; CSV unchanged (no backend file in the diff; existing export header test passes) |
 | Flake fixed | The first full run failed the U09 title test because it measured before the dashboard loaded (`evaluateAll` does not wait); it now waits for all three titles. Rerun passed |
 | G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-30): Ruff, Mypy (41 files), 214 backend tests, 39 frontend unit tests, build, 58 Playwright tests, performance budgets, secret scan 170 files PASS, `pip-audit` and `npm audit` clean |
+| G-2, G-3 | Staged list held only U12 source, tests and docs; commit `509e3e1` |
+
+**U13 Year on main-chart dates**
+
+| Check | Evidence |
+|---|---|
+| Fix | `dashboardModel.ts` gains `fullDay` ("29 Oct 2026") and `tickDays` (year on the first tick and on the first tick of each new year). `Analytics.tsx` uses them for the main-chart ticks, range label, tooltip heading (now one `<time>` reading "28 Oct 2026" instead of "28 Oct 2026-10-28") and the stage-bar end labels |
+| U13-1 | `dashboardModel.test.ts` "chart dates carry the year...": "29 Oct 2026"; ticks across 30 Dec 2025 to 3 Jan 2026 give "30 Dec 2025", "1 Jan 2026", "3 Jan"; same-year ticks stay short; empty input |
+| U13-2 | `refinements.spec.ts` "U13 ...": with All selected the range label reads "... 2026 – 28 Oct 2026 · N days", the first tick has the year and the second does not, the tooltip heading reads "28 Oct 2026" (datetime 2026-10-28), the first stage-bar label ends "2026" |
+| Updated | `analytics.spec.ts` and `charts-presets.spec.ts` range-label expectations now include the year |
+| Test fix | One full run failed U13 because the mouse rested over the chart and moved the crosshair; the test now presses End after focusing. Rerun passed |
+| G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-30): Ruff, Mypy (41 files), 214 backend tests, 40 frontend unit tests, build, 59 Playwright tests, performance budgets, secret scan 170 files PASS, `pip-audit` and `npm audit` clean |
+| G-2, G-3 | Staged list held only U13 source, tests and docs; commit hash recorded in the R3-1 status below |
+
+### R3-1 status (2026-10-30)
+
+U10, U11, U12 and U13 are done; U09 is built and passes its automated criteria, with the owner check U09-4 outstanding. Commits: U09 `e7e0d4f` (with the round-3 plan), U10 `c2e16c2`, U11 `1b5350a`, U12 `509e3e1`, U13 in the commit that adds this section. Nothing changed stored data, the backend or migrations. **Stopped at the phase boundary as the owner asked; R3-2 needs explicit owner approval.** Owner checks: restart SleepIQ so the browser loads the new build, then look at the dashboard duration (U09-4) and Analytics.

@@ -2,7 +2,7 @@ import {useEffect,useRef,useState} from "react";
 import type {ReactNode} from "react";
 
 import {averageText,axisUnit,chartRequest,clockText,curveRuns,display,fitMetrics,hoursText,initialSelection,refusal,rollingNote,runPath,sliceSeries,toAxis,unitName,withDefaults} from "./charts";
-import {shortDay} from "./dashboardModel";
+import {fullDay,tickDays} from "./dashboardModel";
 import type {ChartData,Metric,Preset,Selection,Series,Summary} from "./charts";
 
 // Afterburn reds plus gold and ice-blue (P27). Fixed per metric so a metric keeps its colour everywhere.
@@ -101,6 +101,7 @@ function MainChart({series,dates,normalized,fit,averages,recorded,onReset}:{seri
  const axisOf=(s:Series)=>axes.find(a=>a.unit===axisUnit(s,normalized))!;
  const x=(i:number)=>xAt(i,n);
  const step=Math.max(1,Math.ceil(n/8));
+ const ticks=tickDays(dates,dates.map((_,i)=>i).filter(i=>(i%step===0&&n-1-i>=step*0.6)||i===n-1));
  const move=(to:number)=>setCursor(Math.max(0,Math.min(n-1,to)));
  const tipLeft=c===null?0:x(c)/W*100;
  return <div className="main-chart" ref={box}>
@@ -117,14 +118,14 @@ function MainChart({series,dates,normalized,fit,averages,recorded,onReset}:{seri
     </g>;})}
     {normalized?(()=>{const s=series.find(v=>mean(v)!==null);return s?<AverageLine key="z" y={axisOf(s).y(0)} ink="#f4eded" text="average (0)"/>:null;})()
      :series.map(s=>{const m=mean(s);return m===null?null:<AverageLine key={`avg-${s.id}`} metric={s.id} y={axisOf(s).y(m)} ink={color(s.id)} text={averageText(s)!}/>;})}
-    {dates.map((d,i)=>(i%step===0&&n-1-i>=step*0.6)||i===n-1?<text key={d} x={x(i)} y={H-8} textAnchor="middle" className="tick dim-tick">{shortDay(d)}</text>:null)}
+    {[...ticks].map(([i,label])=><text key={dates[i]} x={x(i)} y={H-8} textAnchor="middle" className="tick dim-tick">{label}</text>)}
     {c!==null&&<g className="crosshair"><line x1={x(c)} x2={x(c)} y1={T} y2={T+IH}/>{series.map(s=>{const v=value(s,s.values[c]);return v===null?null:<circle key={s.id} cx={x(c)} cy={axisOf(s).y(v)} r="5" stroke={color(s.id)}/>;})}</g>}
     <rect x={L} y={T} width={IW} height={IH} fill="transparent" className="hit"
      onPointerMove={e=>svg.current&&n&&setCursor(indexAt(svg.current,e.clientX,n))} onPointerLeave={()=>{if(document.activeElement!==box.current?.firstChild)setCursor(null);}}/>
    </svg>
    <div className="axis-captions">{axes.map(a=><span key={a.unit} className={`axis-caption caption-${a.side}`} style={{color:a.ink}}>{unitName(a.unit)}</span>)}</div>
    <div className="chart-tip" role="status" aria-live="polite" hidden={c===null} style={c===null?undefined:tipLeft>62?{right:`calc(${100-tipLeft}% + 14px)`}:{left:`calc(${tipLeft}% + 14px)`}}>
-    {c!==null&&<><b>{shortDay(dates[c])} <time dateTime={dates[c]}>{dates[c]}</time></b>
+    {c!==null&&<><b><time dateTime={dates[c]}>{fullDay(dates[c])}</time></b>
      {series.map(s=><div key={s.id} className="tip-row" data-metric={s.id}><span style={{color:color(s.id)}}>● {s.label}</span><span>{display(s,s.values[c],normalized)}</span></div>)}
      {averages&&series.filter(s=>!s.clock).map(s=><div key={`a-${s.id}`} className="tip-row average" data-average={s.id}><span>{s.label} average</span><span>{averageText(s,normalized)}</span></div>)}
      {series.filter(s=>s.rolling).map(s=><div key={`r-${s.id}`} className="tip-row rolling"><span>{s.label}</span><span>{rollingNote(s.rolling!,c,v=>display(s,v,normalized))}</span></div>)}
@@ -190,7 +191,7 @@ function StageBars({tiles}:{tiles:ChartData}){
    {Array.from({length:max/2+1},(_,g)=>{const y=top+ih-g*2/max*ih;return <g key={g}><line x1={left} x2={Wd} y1={y} y2={y} className="an-grid"/><text x={left-6} y={y+3} textAnchor="end" className="tick dim-tick">{g*2}</text></g>;})}
    {dates.map((d,i)=>{const x=left+i*bw+bw*.18,w=bw*.64;if(asleep[i]===null)return <rect key={d} x={x} y={top+ih-6} width={w} height="6" rx="2" className="missing-bar"><title>{d}: no recorded sleep</title></rect>;
     let y=top+ih;return <g key={d}><title>{`${d}: ${stack.map(p=>`${p.k==="rem"?"REM":p.k[0].toUpperCase()+p.k.slice(1)} ${p.v[i]===null?"no reading":`${Math.round(p.v[i]!)} min`}`).join(", ")}`}</title>{stack.map(p=>{const h=(p.v[i]??0)/60/max*ih;y-=h;return <rect key={p.k} x={x} y={y} width={w} height={Math.max(0,h-1)} rx="1" fill={STAGE_COLOR[p.k]}/>;})}</g>;})}
-   {dates.length>0&&[0,dates.length-1].map(i=><text key={i} x={left+i*bw+bw/2} y={Ht-6} textAnchor="middle" className="tick dim-tick">{shortDay(dates[i])}</text>)}
+   {dates.length>0&&[...tickDays(dates,[...new Set([0,dates.length-1])])].map(([i,label])=><text key={i} x={left+i*bw+bw/2} y={Ht-6} textAnchor="middle" className="tick dim-tick">{label}</text>)}
   </svg></section>;
 }
 
@@ -298,7 +299,7 @@ export function Analytics(){
    {win&&win.summary.nights>0&&<Kpis summary={win.summary} tiles={win.tiles} catalog={byId}/>}
    <div className="an-focus">
     <section className="an-card main-card" ref={main} aria-labelledby="main-heading">
-     <div className="main-head"><h2 id="main-heading">{title}</h2>{dates.length>0&&<span className="dim range-label"><time dateTime={dates[0]}>{shortDay(dates[0])}</time> – <time dateTime={dates.at(-1)}>{shortDay(dates.at(-1)!)}</time> · {dates.length} days</span>}</div>
+     <div className="main-head"><h2 id="main-heading">{title}</h2>{dates.length>0&&<span className="dim range-label"><time dateTime={dates[0]}>{fullDay(dates[0])}</time> – <time dateTime={dates.at(-1)}>{fullDay(dates.at(-1)!)}</time> · {dates.length} days</span>}</div>
      <fieldset className="chips"><legend className="sr-only">Metrics in the main chart</legend>{chips.map(m=>{const off=selection.mode==="normalized"&&m.clock,on=selection.metrics.includes(m.id);return <label key={m.id} className={`chip${on?" on":""}${off?" disabled":""}`}><input type="checkbox" checked={on} disabled={off} onChange={e=>toggle(m.id,e.target.checked)}/><i style={{background:color(m.id)}}/>{m.label}{off?" (actual only)":""}</label>;})}</fieldset>
      <p className="chip-note" role="status">{refused}</p>
      {!selection.metrics.length&&<p role="status">Choose at least one metric.</p>}

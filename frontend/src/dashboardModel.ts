@@ -11,6 +11,14 @@ export function duration(seconds:number):string{const m=Math.round(seconds/60);r
 // Local strings are source-local "YYYY-MM-DDTHH:MM"; they are sliced, never re-zoned by the browser.
 export const clock=(local:string)=>local.slice(11,16);
 export const shortDay=(local:string)=>`${Number(local.slice(8,10))} ${months[Number(local.slice(5,7))-1]}`;
+/** "29 Oct 2026": date labels where the year matters (chart ranges and tooltips, U13). */
+export const fullDay=(local:string)=>`${shortDay(local)} ${local.slice(0,4)}`;
+/** Axis tick labels for the dates at `shown` indices: the first tick and any tick in a new year carry the year (U13). */
+export function tickDays(dates:string[],shown:number[]):Map<number,string>{
+ const labels=new Map<number,string>();let year="";
+ for(const i of shown){const y=dates[i].slice(0,4);labels.set(i,y===year?shortDay(dates[i]):fullDay(dates[i]));year=y;}
+ return labels;
+}
 export function longDay(date:string):string{const d=new Date(`${date}T00:00:00Z`);return `${days[d.getUTCDay()]}, ${d.getUTCDate()} ${["January","February","March","April","May","June","July","August","September","October","November","December"][d.getUTCMonth()]}`;}
 export function offsetLabel(minutes:number):string{const a=Math.abs(minutes);return `UTC${minutes<0?"-":"+"}${String(Math.floor(a/60)).padStart(2,"0")}:${String(a%60).padStart(2,"0")}`;}
 export function axisTicks(onset:string,sessionSeconds:number):string[]{

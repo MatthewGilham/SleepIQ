@@ -1,5 +1,5 @@
 import {expect,test} from "vitest";
-import {axisTicks,clock,consistencyNote,contribution,duration,importText,longDay,missingText,number,offsetLabel,shortDay,stageBar} from "./dashboardModel";
+import {axisTicks,clock,consistencyNote,contribution,duration,fullDay,importText,longDay,missingText,number,offsetLabel,shortDay,stageBar,tickDays} from "./dashboardModel";
 
 test("durations and source-local strings are formatted without time-zone conversion",()=>{
  expect(duration(7*3600+20*60)).toBe("7h 20m");expect(duration(5*3600+5*60)).toBe("5h 05m");
@@ -28,4 +28,12 @@ test("withheld scores explain what is missing",()=>{
 test("import status never invents a date",()=>{
  expect(importText({batches:0,last_received_utc:null,nights:0})).toBe("No imports yet");
  expect(importText({batches:2,last_received_utc:Date.UTC(2026,9,28)/1000,nights:90})).toBe("90 nights · last import 2026-10-28");
+});
+test("chart dates carry the year on the first tick and wherever the year changes (U13)",()=>{
+ expect(fullDay("2026-10-29")).toBe("29 Oct 2026");expect(fullDay("2025-09-01T23:00")).toBe("1 Sep 2025");
+ const dates=["2025-12-30","2025-12-31","2026-01-01","2026-01-02","2026-01-03"];
+ expect([...tickDays(dates,[0,2,4]).values()]).toEqual(["30 Dec 2025","1 Jan 2026","3 Jan"]);
+ expect([...tickDays(dates,[1,3]).values()]).toEqual(["31 Dec 2025","2 Jan 2026"]);
+ expect([...tickDays(["2026-10-01","2026-10-15","2026-10-28"],[0,1,2]).values()]).toEqual(["1 Oct 2026","15 Oct","28 Oct"]);
+ expect(tickDays([],[]).size).toBe(0);
 });

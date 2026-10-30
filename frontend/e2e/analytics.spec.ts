@@ -69,7 +69,7 @@ test("changing options keeps charts in place instead of jumping the page",async(
  await page.route("**/api/v1/analytics/*",async(route:any)=>{await new Promise(f=>setTimeout(f,300));await route.continue();});
  await open(page,"Analytics");await expect(page.locator(".main-svg")).toBeVisible();
  await steady(page,()=>press(page,"Rolling average","7-day avg"),()=>expect(page.locator(".rolling-line").first()).toBeAttached());
- await steady(page,()=>press(page,"Date range","90 days"),()=>expect(page.locator(".range-label")).toHaveText("31 Jul – 28 Oct · 90 days"));
+ await steady(page,()=>press(page,"Date range","90 days"),()=>expect(page.locator(".range-label")).toHaveText("31 Jul 2026 – 28 Oct 2026 · 90 days"));
  await steady(page,()=>page.getByRole("checkbox",{name:"Deep",exact:true}).dispatchEvent("click"),()=>expect(line(page,"deep_s")).toBeAttached());
  // Stale charts keep the mode they were fetched in: the z-axis label appears only with normalized data.
  await choose(page,"Display","Normalized");await expect(page.getByText("Standard deviations (z)",{exact:true})).toHaveCount(0);await expect(page.getByText("Standard deviations (z)",{exact:true})).toBeVisible();

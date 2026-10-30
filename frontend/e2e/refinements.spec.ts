@@ -77,3 +77,23 @@ test("U12 nine tiles fill three full rows; wrist temperature stays everywhere el
  await page.getByRole("button",{name:"Dashboard",exact:true}).click();
  await expect(page.locator(".metric",{hasText:"Sleeping wrist temperature"})).toHaveCount(1);
 });
+
+test("U13 main-chart dates show the year: range label, tooltip heading and first tick",async({page})=>{
+ await analytics(page);
+ await page.getByRole("group",{name:"Date range"}).getByRole("button",{name:"All",exact:true}).click();
+ // The synthetic store's first night wakes on 2026-07-01 (i=0 is unrecorded, so the range starts at the first stored night).
+ const label=page.locator(".range-label");
+ await expect(label).toHaveText(/^\d{1,2} [A-Z][a-z]{2} 2026 – 28 Oct 2026 · \d+ days$/);
+ const ticks=page.locator(".main-svg text.dim-tick");
+ await expect(ticks.first()).toHaveText(/^\d{1,2} [A-Z][a-z]{2} 2026$/);
+ // Later ticks in the same year stay short.
+ await expect(ticks.nth(1)).toHaveText(/^\d{1,2} [A-Z][a-z]{2}$/);
+ // End pins the crosshair to the last night whatever the mouse is resting on.
+ await page.locator(".chart-frame").focus();await page.keyboard.press("End");
+ await expect(page.locator(".chart-tip time")).toHaveText("28 Oct 2026");
+ await expect(page.locator(".chart-tip time")).toHaveAttribute("datetime","2026-10-28");
+ // Stage bars: the first end label carries the year too.
+ const ends=await page.locator(".stage-bars svg > text.dim-tick").allTextContents();
+ expect(ends[0]).toMatch(/ 2026$/);
+ await page.locator(".main-card").screenshot({path:"../.cache/u13-main.png"});
+});
