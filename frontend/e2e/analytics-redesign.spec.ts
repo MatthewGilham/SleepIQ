@@ -108,7 +108,7 @@ test("'Zoom to fit' lifts the hours axis off zero; turning it off restores zero"
  await expect(lowest).toHaveText("0.0");
 });
 
-test("keyboard moves the crosshair night by night and the table lists the chart's values",async({page})=>{
+test("keyboard moves the crosshair night by night and the tooltip lists every value, including missing ones",async({page})=>{
  await open(page);
  await page.locator(".chart-frame").focus();
  await expect(tip(page).locator("time")).toHaveAttribute("datetime","2026-10-28");
@@ -117,13 +117,14 @@ test("keyboard moves the crosshair night by night and the table lists the chart'
  await page.keyboard.press("ArrowRight");await expect(tip(page).locator("time")).toHaveAttribute("datetime","2026-10-27");
  const tipValues=await tip(page).locator(".tip-row[data-metric] span:last-child").allTextContents();
  expect(tipValues).toEqual([hm(390+118%40),`${35+118%23} ms`]);
- await page.getByRole("button",{name:"Show as table"}).click();
- const row=page.getByRole("row").filter({has:page.getByRole("cell",{name:"2026-10-27",exact:true})});
- expect((await row.getByRole("cell").allTextContents()).slice(1)).toEqual(tipValues);
- await expect(page.getByRole("columnheader",{name:"Overnight HRV",exact:true})).toBeVisible();
- // Every day in the range is a row; missing values say so.
- await expect(page.locator(".chart-table tbody tr")).toHaveCount(30);
- await expect(page.getByRole("row").filter({has:page.getByRole("cell",{name:"2026-10-17",exact:true})}).getByRole("cell").nth(2)).toHaveText("no reading");
+ // Home/End reach both ends of the 30-day range; a night without HRV (i=108, 2026-10-17) says "no reading".
+ await page.keyboard.press("Home");await expect(tip(page).locator("time")).toHaveAttribute("datetime","2026-09-29");
+ await page.keyboard.press("End");await expect(tip(page).locator("time")).toHaveAttribute("datetime","2026-10-28");
+ await page.keyboard.press("Home");for(let k=0;k<18;k++)await page.keyboard.press("ArrowRight");
+ await expect(tip(page).locator("time")).toHaveAttribute("datetime","2026-10-17");
+ expect(await tip(page).locator(".tip-row[data-metric] span:last-child").allTextContents()).toEqual([hm(390+108%40),"no reading"]);
+ // The table view was removed in U11 (P29).
+ await expect(page.getByRole("button",{name:/Show as table|Hide table/})).toHaveCount(0);
 });
 
 test("narrow screens do not scroll sideways and reduced motion turns off the line drawing",async({page})=>{

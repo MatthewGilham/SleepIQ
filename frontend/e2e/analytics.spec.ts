@@ -11,18 +11,19 @@ test("rolling averages show coverage, skip clock times and persist in presets",a
  await expect(line(page,"asleep_s").locator(".rolling-line").first()).toBeAttached();
  await expect(page.getByText(/Dashed line: trailing 7-day calendar mean/)).toBeVisible();
  await page.screenshot({path:"../.cache/rolling-desktop.png",fullPage:true});
- await page.getByRole("button",{name:"Show as table"}).click();
- await expect(page.getByRole("columnheader",{name:"Total asleep 7-day mean"})).toBeVisible();
- await expect(page.getByRole("cell",{name:/^7-day mean \d+h \d\dm \([4-7]\/7 nights recorded\)$/}).first()).toBeVisible();
- // The crosshair tooltip carries the same coverage text.
- await page.locator(".chart-frame").focus();await expect(page.locator(".chart-tip .tip-row.rolling").first()).toContainText(/7-day mean .*nights recorded/);
+ // The crosshair tooltip carries the coverage text (the table view was removed in U11).
+ await page.locator(".chart-frame").focus();
+ await expect(page.locator(".chart-tip .tip-row.rolling",{hasText:"Total asleep"}).locator("span").last()).toHaveText(/^7-day mean \d+h \d\dm \([4-7]\/7 nights recorded\)$/);
+ await page.locator(".chart-frame").blur();
  await choose(page,"Display","Normalized");
  await expect(line(page,"hrv_mean").locator(".rolling-line").first()).toBeAttached();
  await choose(page,"Display","Actual units");
  // Hours and ms already use both axes, so HRV makes way for the clock metric.
  await page.getByRole("checkbox",{name:"Overnight HRV",exact:true}).uncheck();
  await page.getByRole("checkbox",{name:"Sleep onset",exact:true}).check();
- await expect(page.getByRole("cell",{name:"7-day mean: Not available for clock times"}).first()).toBeVisible();
+ await page.locator(".chart-frame").focus();
+ await expect(page.locator(".chart-tip .tip-row.rolling",{hasText:"Sleep onset"})).toContainText("7-day mean: Not available for clock times");
+ await page.locator(".chart-frame").blur();
  await expect(line(page,"onset_minute")).toBeAttached();await expect(line(page,"onset_minute").locator(".rolling-line")).toHaveCount(0);
  await choose(page,"Rolling average","30-day avg");
  await page.locator(".preset-menu > summary").click();

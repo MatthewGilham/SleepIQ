@@ -48,3 +48,12 @@ test("U10 the score change is shown in points without /100; the headline keeps /
  await expect(page.locator('[data-kpi="asleep_s"] .kpi-sub')).toHaveText(/^[▲▼±] \d+ min vs previous 30 days$/);
  await expect(page.locator('[data-kpi="hrv_mean"] .kpi-sub')).toHaveText(/^[▲▼±] \d+ ms vs previous 30 days$/);
 });
+
+test("U11 Analytics has no table view; exact values come from the keyboard tooltip",async({page})=>{
+ await analytics(page);
+ await expect(page.getByRole("button",{name:/Show as table|Hide table/})).toHaveCount(0);
+ await expect(page.locator(".main-card table")).toHaveCount(0);
+ await page.locator(".chart-frame").focus();
+ await expect(page.locator(".chart-tip")).toBeVisible();
+ await expect(page.locator(".chart-tip time")).toHaveAttribute("datetime","2026-10-28");
+});

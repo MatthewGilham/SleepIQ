@@ -79,14 +79,11 @@ test("clock times get no average; other metrics keep theirs",async({page})=>{
  await expect(avg(page,"asleep_s")).toHaveCount(1);await expect(avg(page,"onset_minute")).toHaveCount(0);
 });
 
-test("tooltip and table repeat the label text",async({page})=>{
+test("the tooltip repeats the label text",async({page})=>{
  await open(page);
  await page.locator(".chart-frame").focus();
  await expect(page.locator('.chart-tip .tip-row.average[data-average="asleep_s"] span').last()).toHaveText(ASLEEP_LABEL);
  await expect(page.locator('.chart-tip .tip-row.average[data-average="hrv_mean"] span').last()).toHaveText(HRV_LABEL);
- await page.getByRole("button",{name:"Show as table"}).click();
- await expect(page.locator('.chart-table tfoot td[data-average="asleep_s"]')).toHaveText(ASLEEP_LABEL);
- await expect(page.locator('.chart-table tfoot td[data-average="hrv_mean"]')).toHaveText(HRV_LABEL);
 });
 
 test("a metric with no readings draws no average and its tooltip says so",async({page})=>{

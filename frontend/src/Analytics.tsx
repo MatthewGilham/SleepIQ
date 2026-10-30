@@ -221,7 +221,7 @@ export function Analytics(){
  const [error,setError]=useState(""),[busy,setBusy]=useState(false),[winBusy,setWinBusy]=useState(false),[ready,setReady]=useState(false),[retry,setRetry]=useState(0);
  const [name,setName]=useState(""),[current,setCurrent]=useState(""),[isDefault,setDefault]=useState(false),[saving,setSaving]=useState(false),[notice,setNotice]=useState("");
  const [confirmation,setConfirmation]=useState<"save"|"delete"|null>(null),[zoom,setZoom]=useState<[number,number]|null>(null);
- const [refused,setRefused]=useState(""),[fit,setFit]=useState(false),[table,setTable]=useState(false),[averages,setAverages]=useState(true);
+ const [refused,setRefused]=useState(""),[fit,setFit]=useState(false),[averages,setAverages]=useState(true);
  const generation=useRef(0),main=useRef<HTMLElement>(null);
  const byId=Object.fromEntries(catalog.map(m=>[m.id,m]));
  const unitFor=(mode:Selection["mode"])=>(id:string)=>byId[id]?axisUnit(byId[id],mode==="normalized"):id;
@@ -307,12 +307,8 @@ export function Analytics(){
       <Brush series={data.series[0]} n={total} zoom={zoom} setZoom={setZoom} normalized={normalized}/>
       <div className="chart-toolbar zoom-row"><label>Zoom start<input type="range" aria-label="Zoom start" min={0} max={Math.max(0,total-1)} value={za} onChange={e=>setZoom([Math.min(Number(e.target.value),zb),zb])}/></label><label>Zoom end<input type="range" aria-label="Zoom end" min={0} max={Math.max(0,total-1)} value={zb} onChange={e=>setZoom([za,Math.max(Number(e.target.value),za)])}/></label><button onClick={()=>setZoom(null)}>Reset zoom</button>
        {hasHours&&<label className="inline"><input type="checkbox" checked={fit} onChange={e=>setFit(e.target.checked)}/>Zoom to fit hours axis</label>}
-       <label className="inline"><input type="checkbox" checked={averages} onChange={e=>setAverages(e.target.checked)}/>Show averages</label>
-       <button aria-expanded={table} onClick={()=>setTable(t=>!t)}>{table?"Hide table":"Show as table"}</button></div>
-      <p className="hint">Hover or focus the chart and use Left/Right for exact values · drag in the strip to zoom · double-click to reset · zoom keeps the range and normalization baseline</p>
-      {table&&<div className="chart-table"><table><caption className="sr-only">{title}, values shown in the chart</caption><thead><tr><th>Wake date</th>{sliced.map(s=><th key={s.id}>{s.label}</th>)}{sliced.filter(s=>s.rolling).map(s=><th key={`r-${s.id}`}>{s.label} {s.rolling!.window}-day mean</th>)}</tr></thead>
-       <tbody>{dates.map((d,i)=><tr key={d}><td>{d}</td>{sliced.map(s=><td key={s.id}>{display(s,s.values[i],normalized)}</td>)}{sliced.filter(s=>s.rolling).map(s=><td key={`r-${s.id}`}>{rollingNote(s.rolling!,i,v=>display(s,v,normalized))}</td>)}</tr>)}</tbody>
-       {averages&&<tfoot><tr><th scope="row">Average</th>{sliced.map(s=><td key={s.id} data-average={s.id}>{averageText(s,normalized)??"not shown for clock times"}</td>)}{sliced.filter(s=>s.rolling).map(s=><td key={`r-${s.id}`}/>)}</tr></tfoot>}</table></div>}
+       <label className="inline"><input type="checkbox" checked={averages} onChange={e=>setAverages(e.target.checked)}/>Show averages</label></div>
+      <p className="hint">Hover or focus the chart and use Left/Right (Home/End) for exact values · drag in the strip to zoom · double-click to reset · zoom keeps the range and normalization baseline</p>
      </>}
      <p className="muted">{normalized?"Z-score = (value − mean) / population standard deviation over the selected range. Constant series are unavailable; clock times are excluded.":"Metrics that share a unit share an axis (all sleep durations in hours), with at most two axes and six lines. Clock times use source-local wall time; midnight crossings are not elapsed durations."}</p>
      {averages&&<p className="muted">Dotted line: {normalized?"the average, which is 0 for every normalized metric":"each metric's average over the whole selected range, not just the zoomed part; nights without a reading are left out. Clock times have no average"}.</p>}
