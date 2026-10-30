@@ -898,7 +898,7 @@ Owner-requested on 2026-10-30; request and answers in DECISIONS P29 (Q1 tile onl
 | ID | Status | Objective and bounded files |
 |---|---|---|
 | U14 | done | **Labelled Y axis** in hours (0 to 10 h or the data maximum rounded up to a whole hour, ticks every 2 h, label "h"), aligned with the gridlines; gridlines generated from the same ticks, not a CSS background. Files: `Dashboard.tsx`, `dashboardModel.ts` (tick helper, unit-tested), `style.css`. |
-| U15 | built; owner check U15-5 pending | **Ranges back to the first recorded night.** Range buttons 7D / 30D / 90D / 1Y / All (P29 Q2), all ending on the night being viewed; bars up to 30 days, an area line for 90D and longer. Backend: the dashboard response carries the nightly asleep series from the first stored night to the viewed night (about 400 numbers now, about 1,800 after five years), or the page reads the existing timeseries endpoint; the agent picks the smaller change and records it. Gaps are never bridged. Files: `analytics/dashboard.py`, its tests, `Dashboard.tsx`, `dashboardModel.ts`, `style.css`, ARCHITECTURE.md contract. |
+| U15 | done | **Ranges back to the first recorded night.** Range buttons 7D / 30D / 90D / 1Y / All (P29 Q2), all ending on the night being viewed; bars up to 30 days, an area line for 90D and longer. Backend: the dashboard response carries the nightly asleep series from the first stored night to the viewed night (about 400 numbers now, about 1,800 after five years), or the page reads the existing timeseries endpoint; the agent picks the smaller change and records it. Gaps are never bridged. Files: `analytics/dashboard.py`, its tests, `Dashboard.tsx`, `dashboardModel.ts`, `style.css`, ARCHITECTURE.md contract. |
 
 **Acceptance (R3-2)**
 - U14-1 [T] Unit: tick helper returns 0, 2, 4, 6, 8, 10 for a 9.1 h maximum and never fewer than three ticks.
@@ -1008,11 +1008,11 @@ U14 and U15 change the same chart component, so they share one commit.
 | Test fix | The U13 test failed once more because a resting mouse can still move the crosshair; it now parks the mouse before pressing End. Three consecutive passes, then the full gate |
 | G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-30): Ruff, Mypy (41 files), 215 backend tests, 42 frontend unit tests, build, 62 Playwright tests, performance budgets, secret scan 170 files PASS, `pip-audit` and `npm audit` clean |
 | G-4 | ARCHITECTURE.md (dashboard trend contract), DESIGN.md (section 2 and round-3 note), TESTING.md |
-| U15-5 | Pending: owner checks All on real data (starts September 2025, readable) |
+| U15-5 | Owner-reported pass (2026-10-30): "Mark R3-2 as complete and tested" |
 
 ### R3-2 status (2026-10-30)
 
-U14 and U15 are built and pass their automated criteria; U15-5 (owner check on real data) is outstanding. Commit `85ce93a` (U14 and U15 together; this hash line added in a follow-up docs-only commit). **Stopped at the phase boundary; R3-3 needs explicit owner approval.**
+U14 and U15 are done; the owner confirmed R3-2 on 2026-10-30 ("Mark R3-2 as complete and tested"), passing U15-5. **Phase R3-2 is complete.** Commit `85ce93a` (U14 and U15 together; this hash line added in a follow-up docs-only commit). **Stopped at the phase boundary; R3-3 needs explicit owner approval.**
 
 ### R3-3 progress
 
@@ -1067,4 +1067,4 @@ U14 and U15 are built and pass their automated criteria; U15-5 (owner check on r
 
 ### Round 3 (P29) status (2026-10-30)
 
-R3-1 and R3-3 are complete and accepted. R3-2 (U14, U15) is built and passes its automated criteria; **its owner check U15-5 is still open** (dashboard "All" on real data starts around September 2025 and is readable). No further round-3 work is planned; any new work needs owner approval.
+**All three phases (R3-1, R3-2, R3-3) are complete and accepted by the owner.** No further round-3 work is planned; any new work needs owner approval.
