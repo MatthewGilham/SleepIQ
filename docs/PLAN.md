@@ -914,8 +914,8 @@ Owner-requested on 2026-10-30; request and answers in DECISIONS P29 (Q1 tile onl
 | ID | Status | Objective and bounded files |
 |---|---|---|
 | U16 | done | **Synthetic preview for approval** (DESIGN.md section 8): a full Correlations redesign in the Analytics visual language (P29 Q3), served from `.cache/` with synthetic data only. It shows 2-3 colour/theme directions that read as more futuristic while still sitting beside the approved Afterburn pages (for example Afterburn with an ice-blue/gold "holographic" accent, a neon-on-black variant, and a restrained Analytics-match), and marks which interactive features are included, so the owner picks one direction and feature set. Whether the colour change should later spread to other pages is a separate owner decision, not part of this task. No production code changes. |
-| U17 | built; owner check U18 pending | **Build the approved design.** Minimum scope (P29 Q3, option b; final list from U16): metric chips instead of selects, segmented range control, a large r readout on a -1 to +1 meter, glowing scatter with hover/focus crosshair tooltip, points coloured by date (older to newer), an optional least-squares best-fit line shown only when r is available, animated transitions between pairs (off under reduced motion), "swap axes" button. Also proposed in the preview for the owner to keep or drop: a clickable all-pairs matrix computed in Python (new endpoint; option c), shown with numbers and a neutral colour ramp rather than strength labels; a "nights over time" mini-strip that highlights the hovered point's night; brushing a date range on that strip to re-run the correlation. Pearson maths stays in Python; existing honesty rules stay (n, exclusions, no p-values, "not evidence of cause"). Files: `Correlations.tsx`, `charts.ts`, `style.css`, new/updated specs; for C also `backend/app/analytics/` plus tests and ARCHITECTURE.md. |
-| U18 | proposed | **Owner acceptance** on real data. |
+| U17 | done | **Build the approved design.** Minimum scope (P29 Q3, option b; final list from U16): metric chips instead of selects, segmented range control, a large r readout on a -1 to +1 meter, glowing scatter with hover/focus crosshair tooltip, points coloured by date (older to newer), an optional least-squares best-fit line shown only when r is available, animated transitions between pairs (off under reduced motion), "swap axes" button. Also proposed in the preview for the owner to keep or drop: a clickable all-pairs matrix computed in Python (new endpoint; option c), shown with numbers and a neutral colour ramp rather than strength labels; a "nights over time" mini-strip that highlights the hovered point's night; brushing a date range on that strip to re-run the correlation. Pearson maths stays in Python; existing honesty rules stay (n, exclusions, no p-values, "not evidence of cause"). Files: `Correlations.tsx`, `charts.ts`, `style.css`, new/updated specs; for C also `backend/app/analytics/` plus tests and ARCHITECTURE.md. |
+| U18 | done | **Owner acceptance** on real data. |
 
 **Acceptance (R3-3)**
 - U16-1 [O] Owner reviews the preview and approves it or lists changes. Pass = owner says approved.
@@ -1049,7 +1049,7 @@ U14 and U15 are built and pass their automated criteria; U15-5 (owner check on r
 | G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-30): Ruff, Mypy (41 files), 218 backend tests, 46 frontend unit tests, build, 72 Playwright tests, performance budgets, secret scan 171 files PASS, `pip-audit` and `npm audit` clean |
 | G-4 | ARCHITECTURE.md (correlation `fit`, matrix endpoint, `"365"`), DESIGN.md (section 4, A01 note, round-3 note), TESTING.md (spec, budget) |
 | G-2, G-3 | Staged list held only U17 source, tests and docs; commit `194c52d` (hash added in a follow-up docs-only commit) |
-| U18 | Pending: owner uses Correlations on real data and accepts it |
+| U18 | Owner-reported pass (2026-10-30): after the banner fix, "It looks good mark as complete in docs" |
 
 **U17 follow-up: page banner (2026-10-30)**
 
@@ -1060,3 +1060,11 @@ U14 and U15 are built and pass their automated criteria; U15-5 (owner check on r
 | Fix | `sourceBanner(page, live)` in `App.tsx` uses the actual source for every page: no store configured gives "Design preview" (built-in examples), the synthetic test store gives "Synthetic preview", the owner's store gives "Local correlations" (or dashboard / analytics / data & settings) "Your stored nights; calculated locally"; while loading "Checking the local store…" |
 | Tests | `App.test.tsx` "every page's banner follows the real data source...": all four pages for preview, synthetic and stored data, loading and error. `correlations.spec.ts` "the page banner follows the data source...": synthetic store reads "Synthetic preview" on Correlations; with the synthetic flag off, all four pages read "Local ..." with no preview wording. Existing "without a configured store the labelled synthetic design preview remains" still passes |
 | G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-30): Ruff, Mypy (41 files), 218 backend tests, 47 frontend unit tests, build, 73 Playwright tests, performance budgets, secret scan 171 files PASS, `pip-audit` and `npm audit` clean |
+
+### R3-3 status (2026-10-30)
+
+**Phase R3-3 is complete.** U16 (preview, approved after one refinement round), U17 (build, plus the page-banner follow-up) and U18 (owner acceptance on real data) are done. Commits: `7138045`, `4c956d4`, `4f12747` (preview records), `194c52d` (U17 build), `49576ee` (hash record), `32d072a` (banner fix), and the commit that adds this section. Last full gate (2026-10-30, after the banner fix): exit 0, 218 backend tests, 47 frontend unit tests, 73 Playwright tests, performance budgets, secret scan, `pip-audit` and `npm audit` clean.
+
+### Round 3 (P29) status (2026-10-30)
+
+R3-1 and R3-3 are complete and accepted. R3-2 (U14, U15) is built and passes its automated criteria; **its owner check U15-5 is still open** (dashboard "All" on real data starts around September 2025 and is readable). No further round-3 work is planned; any new work needs owner approval.
