@@ -856,3 +856,89 @@ Owner-requested on 2026-10-29 after U05; choices in DECISIONS P28. Order: U06, t
 ### Round 2 (P28) status
 
 U06, U07 and U08 are complete and accepted by the owner on 2026-10-29. Commits: U06 `a0f314c`, U07 `b4ebdd4`, U08 `c4861ed`. Docs sweep on acceptance: remaining AI references outside the U06-7 list (DESIGN, SCORING, DATA_PIPELINE, SECURITY, DEVELOPMENT_PLAN, ASTRA_PLANNING_PROMPT) now describe the app without the assistant; historical PLAN entries and superseded decisions are kept as records. No further round-2 work is planned; any new work needs owner approval.
+
+## Improvements, round 3 (P29)
+
+Owner-requested on 2026-10-30; request and answers in DECISIONS P29 (Q1 tile only; Q2 7D/30D/90D/1Y/All, bars to 30 days then area line; Q3 full Correlations redesign inspired by Analytics). **Phase R3-1 approved by the owner on 2026-10-30** ("get started with the first phase R3-1. Stop once completd"); R3-2 and R3-3 not approved. Three phases, each split into sub-phases; the owner approves each phase before it starts (phase-boundary rules unchanged). Every sub-phase ends with common gates G-1 to G-4 (above) and its own scoped local commit. Nothing here changes stored health data, needs a migration or touches ingestion. Status vocabulary as above.
+
+**Findings behind the plan (agent investigation, 2026-10-30)**
+- "8h 12m" spacing: `.sleep-total span` has `margin-right:8px` *and* the markup adds a literal space after "h", so the gap after "h" (~20 px) is far larger than the gap before it (0 px); the units are half-size and sit on the baseline, so "h" and "m" look detached from their numbers (see `design-references/image1.png`).
+- Dashboard trend: bars on a background grid with no labels; the API returns only the 30 days ending on the viewed night (`analytics/dashboard.py`), so longer ranges need a backend change. At 393 nights a bar would be under 2 px wide.
+- "down 1.8/100": `deltaText` in `Analytics.tsx` formats the score delta with the catalog unit `/100`.
+- Analytics gap: ten tiles in a three-column grid leave Wrist temperature alone on the last row; nine tiles fill 3 x 3 exactly.
+- Missing year: main-chart axis ticks and the range label use `shortDay` ("29 Oct"); only the tooltip's machine date carries the year.
+- "Show as table" is also the chart's screen-reader alternative and is used by three Playwright specs (`analytics.spec.ts`, `analytics-redesign.spec.ts`, `averages.spec.ts`) to read values; removing it means those checks move to the tooltip. The keyboard crosshair (Left/Right/Home/End) with its live tooltip remains the accessible route.
+- Correlations: still the A01 panel style (plain selects, three-tick grey scatter, no best-fit line although DESIGN.md section 4 allows one "only when data supports it"), unlike the Afterburn Analytics cards.
+
+### Phase R3-1 Quick fixes (no new data, low risk)
+
+| ID | Status | Objective and bounded files |
+|---|---|---|
+| U09 | built; owner check U09-4 pending | **Duration spacing on the dashboard.** "8h 12m" reads as one figure: units sit tight to their number (small fixed gap), one consistent space between the hour and minute groups, units aligned with the numbers' x-height rather than floating low. Same treatment wherever `.sleep-total` style is reused. While there, align the three top panels' title rows (SleepIQ score / Shape of your night / Consistency). Files: `style.css`, `Dashboard.tsx` markup only. |
+| U10 | proposed | **Score delta without "/100".** The Average SleepIQ score KPI says "▼ 1.8 vs previous N days". The headline value keeps "/100". Files: `Analytics.tsx` (`deltaText`), `charts.ts` if the formatter is shared. |
+| U11 | proposed | **Remove "Show as table"** from the Analytics main chart (button, table and footer). Tests that read values from it move to the tooltip. Files: `Analytics.tsx`, `style.css`, the three specs above. |
+| U12 | proposed | **Remove the Wrist temperature tile** from Analytics so the tiles fill a 3 x 3 grid. Only the tile (P29 Q1 a): the main-chart chip, dashboard card, Correlations, CSV, stored data and derivation stay. Files: `Analytics.tsx` (`TILES`), affected specs. |
+| U13 | proposed | **Year on main-chart dates.** Range label and tooltip heading read "29 Oct 2026"; axis ticks show the year on the first tick and wherever the year changes ("Jan 2026"), otherwise "29 Oct". Stage-bar end labels follow the same rule. Files: `Analytics.tsx`, `dashboardModel.ts`/`charts.ts` (one date formatter, unit-tested). |
+
+**Acceptance (R3-1)**
+- U09-1 [T] Playwright: in the "Shape of your night" panel the horizontal gap between "8" and "h" and between "12" and "m" is at most 4 px each, and the gap between "h" and "12" is between 8 and 16 px (bounding boxes); same at 390 px.
+- U09-2 [T] The three top panels' title text tops are within 2 px of each other at 1440 px.
+- U09-3 [T] Existing `layout.spec.ts` card-containment checks still pass at every width.
+- U09-4 [O] Owner compares with `design-references/image1.png` and says the spacing looks right.
+- U10-1 [T] Playwright: the score KPI subline matches `/^[▲▼±] \d+\.\d vs previous \d+ days$/` and contains no "/100"; the headline still ends "/100". Other KPI deltas unchanged.
+- U11-1 [T] Playwright: Analytics has no button named "Show as table"/"Hide table" and no main-chart `table`.
+- U11-2 [T] The values previously checked through the table (U05-14, U08-6) are checked through the keyboard-driven tooltip instead and still pass; U05-14 and U08-6 are marked superseded by U11 in this file.
+- U12-1 [T] Playwright: Analytics shows exactly nine tiles, none labelled "Wrist temperature"; at 1440 px they occupy three full rows (every row has three tiles).
+- U12-2 [T] Wrist temperature is still a selectable main-chart chip, still a dashboard card, still offered in Correlations and still a CSV column; `git diff` touches no backend, migration or `backend/app/domain/` file.
+- U13-1 [T] Unit: the date formatter gives "29 Oct 2026" for long form and the first-tick/year-change rule for ticks, including a range spanning 31 Dec to 1 Jan.
+- U13-2 [T] Playwright: with All selected on the synthetic store, the range label and tooltip heading include a four-digit year, and at least the first axis tick does.
+
+### Phase R3-2 Dashboard "Time asleep, over time"
+
+| ID | Status | Objective and bounded files |
+|---|---|---|
+| U14 | proposed | **Labelled Y axis** in hours (0 to 10 h or the data maximum rounded up to a whole hour, ticks every 2 h, label "h"), aligned with the gridlines; gridlines generated from the same ticks, not a CSS background. Files: `Dashboard.tsx`, `dashboardModel.ts` (tick helper, unit-tested), `style.css`. |
+| U15 | proposed | **Ranges back to the first recorded night.** Range buttons 7D / 30D / 90D / 1Y / All (P29 Q2), all ending on the night being viewed; bars up to 30 days, an area line for 90D and longer. Backend: the dashboard response carries the nightly asleep series from the first stored night to the viewed night (about 400 numbers now, about 1,800 after five years), or the page reads the existing timeseries endpoint; the agent picks the smaller change and records it. Gaps are never bridged. Files: `analytics/dashboard.py`, its tests, `Dashboard.tsx`, `dashboardModel.ts`, `style.css`, ARCHITECTURE.md contract. |
+
+**Acceptance (R3-2)**
+- U14-1 [T] Unit: tick helper returns 0, 2, 4, 6, 8, 10 for a 9.1 h maximum and never fewer than three ticks.
+- U14-2 [T] Playwright: the trend chart shows Y-axis labels including "0" and "8 h" (or the chosen format), and a bar for a known synthetic night reaches the height of its value within 1 px of the labelled scale.
+- U15-1 [T] Backend: the series starts at the first stored wake date, ends at the requested night, has one entry per calendar day with null for unrecorded days, and contains no later nights.
+- U15-2 [T] Backend: loopback/origin/`no-store` rules unchanged; `perf-check.py --enforce` dashboard timing on the five-year workload stays within its existing budget.
+- U15-3 [T] Playwright: each range button shows the expected first and last dates (derived independently from the fixture); All starts on the first stored night; the selected range persists while stepping Previous/Next.
+- U15-4 [T] Playwright: unrecorded days are gaps (no bar, line broken), never 0; no horizontal page overflow at 390 px for every range.
+- U15-5 [O] Owner checks All on their real data and confirms it starts at their first night (Sep 2025) and is readable.
+
+### Phase R3-3 Correlations redesign
+
+| ID | Status | Objective and bounded files |
+|---|---|---|
+| U16 | proposed | **Synthetic preview for approval** (DESIGN.md section 8): a full Correlations redesign in the Analytics visual language (P29 Q3), served from `.cache/` with synthetic data only. It shows 2-3 colour/theme directions that read as more futuristic while still sitting beside the approved Afterburn pages (for example Afterburn with an ice-blue/gold "holographic" accent, a neon-on-black variant, and a restrained Analytics-match), and marks which interactive features are included, so the owner picks one direction and feature set. Whether the colour change should later spread to other pages is a separate owner decision, not part of this task. No production code changes. |
+| U17 | proposed | **Build the approved design.** Minimum scope (P29 Q3, option b; final list from U16): metric chips instead of selects, segmented range control, a large r readout on a -1 to +1 meter, glowing scatter with hover/focus crosshair tooltip, points coloured by date (older to newer), an optional least-squares best-fit line shown only when r is available, animated transitions between pairs (off under reduced motion), "swap axes" button. Also proposed in the preview for the owner to keep or drop: a clickable all-pairs matrix computed in Python (new endpoint; option c), shown with numbers and a neutral colour ramp rather than strength labels; a "nights over time" mini-strip that highlights the hovered point's night; brushing a date range on that strip to re-run the correlation. Pearson maths stays in Python; existing honesty rules stay (n, exclusions, no p-values, "not evidence of cause"). Files: `Correlations.tsx`, `charts.ts`, `style.css`, new/updated specs; for C also `backend/app/analytics/` plus tests and ARCHITECTURE.md. |
+| U18 | proposed | **Owner acceptance** on real data. |
+
+**Acceptance (R3-3)**
+- U16-1 [O] Owner reviews the preview and approves it or lists changes. Pass = owner says approved.
+- U17-1 [T] All existing correlation checks still pass: r, n and exclusion counts equal the backend values; fewer than three pairs or a constant series shows "Unavailable" with the reason; clock metrics are not offered; no p-values.
+- U17-2 [T] Unit: best-fit line endpoints equal a hand-calculated least-squares fit on a fixture; no line when r is null.
+- U17-3 [T] Playwright: hovering or focusing a point shows wake date and both values with units; keyboard can reach every point; the swap button exchanges the axes and r is unchanged.
+- U17-4 [T] Playwright: at 390 px no horizontal overflow; with `prefers-reduced-motion: reduce` no transition animation runs; reload keeps no layout jump (existing method).
+- U17-5 [T] (Option C only) Backend: every matrix cell equals the single-pair endpoint for that pair and range; perf budget under 1 s on the five-year workload; clicking a cell selects that pair.
+- U17-6 [T] `layout.spec.ts` card-containment extended to Correlations at all listed widths.
+- U18-1 [O] Owner uses Correlations on their own data and accepts it. Pass = owner says accepted.
+
+Order: R3-1 (U09 to U13 in any order), then R3-2, then R3-3. R3-3 cannot start building (U17) until U16 is approved.
+
+### R3-1 verification evidence
+
+**U09 Duration spacing**
+
+| Check | Evidence |
+|---|---|
+| Cause and fix | `.sleep-total span` gave every unit an 8 px right margin and the markup added a space after "h". Each number and unit is now a `.dur-part` group (unit 1 px from its number), the groups sit 12 px apart in a baseline flex row, and the three top panels' title rows share a 28 px minimum height (the score panel's pill had pushed its title about 3 px down). `style.css`, `Dashboard.tsx`, the synthetic preview in `App.tsx` |
+| U09-1 | `frontend/e2e/refinements.spec.ts` at 1440 and 390 px: number-to-unit gaps 0-4 px, hour-to-minute group gap 8-16 px, text still "7h 09m" |
+| U09-2 | Same file: the three hero titles' tops are within 2 px at 1440 px |
+| U09-3 | `layout.spec.ts` (all nine widths) passes unchanged |
+| Unit | `App.test.tsx` server-render assertion updated to the new markup |
+| G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-30): Ruff, Mypy (41 files), 214 backend tests, 39 frontend unit tests, build, 55 Playwright tests, performance budgets, secret scan 170 files PASS, `pip-audit` and `npm audit` clean. First run failed one unit test that asserted the old markup; fixed and rerun |
+| U09-4 | Pending: owner compares with `design-references/image1.png` |

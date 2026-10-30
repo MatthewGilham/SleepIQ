@@ -1142,3 +1142,9 @@
 @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.an-focus,.an-row2{grid-template-columns:minmax(0,1fr)}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){.kpis,.tiles{grid-template-columns:minmax(0,1fr)}.kpi-value{font-size:24px}}
 @media(prefers-reduced-motion:reduce){.an .series-line{animation:none}.an button.tile{transition:none}}
+/* U09: a duration reads as one figure: each unit sits tight to its number, one even gap between the hour and minute groups. */
+.sleep-total{display:flex;align-items:baseline;gap:12px;letter-spacing:-1px}
+.sleep-total .dur-part{display:inline-flex;align-items:baseline;white-space:nowrap;font-size:inherit;color:inherit;margin:0}
+.sleep-total .dur-unit{font-size:22px;color:var(--muted);margin:0 0 0 1px;letter-spacing:0}
+/* U09: the three top panels' titles share one row height, so a tall pill no longer pushes one title down. */
+.hero-grid .panel-title{min-height:28px}

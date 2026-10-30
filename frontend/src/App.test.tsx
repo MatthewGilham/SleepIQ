@@ -28,7 +28,7 @@ test("live dashboard shows an unscored night with reasons, gaps and genuine zero
   expect(html).toContain("Generated test data");
   expect(html).toContain("Insufficient");
   expect(html).toContain("overnight HRV, enough history for consistency");
-  expect(html).toContain("7<span>h</span> 20<span>m</span>");
+  expect(html).toContain(`<span class="dur-part">7<span class="dur-unit">h</span></span> <span class="dur-part">20<span class="dur-unit">m</span></span>`);
   expect(html).toContain("23:00");
   expect(html).toContain("Missing data");
   expect(html).toContain("95.7");

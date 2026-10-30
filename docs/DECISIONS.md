@@ -146,3 +146,17 @@ Owner answers from numbered options: (1) **delete** the local AI usage counter (
 
 Agent defaults recorded for visibility: the averages toggle is not saved in presets; `httpx2` stays as a dev dependency because FastAPI's test client needs it; backups taken before the cleanup are left as they are and rotate out normally. Owner action: revoke any OpenAI key and remove it from `.env` or the launching environment (the agent does not read `.env`). Tasks U06-U08 in PLAN.md "Improvements, round 2".
 
+## P29 UI refinements, round 3 (2026-10-30)
+Owner request: fix the dashboard "8h 12m" spacing (`design-references/image1.png`); give the dashboard "Time asleep, over time" chart a Y axis and ranges back to the first recorded night; show the Analytics score delta without "/100"; remove "Show as table"; remove the Wrist temperature section (it leaves a gap); show the year on the Analytics main-chart dates; make Correlations as polished, interactive and futuristic as the other pages. Plan: PLAN.md "Improvements, round 3 (P29)".
+
+Decided by the request itself: "Show as table" is removed (the keyboard crosshair tooltip remains the accessible route); the score delta drops "/100"; the Wrist temperature tile leaves Analytics. This partly reverses P27 answer 4 (wrist temperature kept); stored data is unaffected.
+
+**Owner answers (2026-10-30):** (1) **(a)** remove only Wrist temperature's own Analytics tile; the main-chart chip, dashboard card, Correlations, CSV and stored data stay. (2) **Yes**: ranges 7D / 30D / 90D / 1Y / All with the recommended form (a), bars to 30 days and an area line beyond. (3) Inspiration is **Analytics**; the owner wants a **full redesign** of Correlations: improved user experience and interactivity, and more futuristic colours, theme and design. Scope is therefore at least option (b); the exact features (including the all-pairs matrix) and the colour direction are settled from the U16 preview. Owner words: "1. Just get rid of its own individual tile, the rest stays the same. 2. Yes 3. Yes i meant analytics, I want a full redesign, I want improved user experience and interactivity and better futuristic colours, theme and design."
+
+Questions as asked:
+- Q1 Wrist temperature scope: (a) Analytics tile only; (b) Analytics tile and main-chart chip (recommended); (c) all UI including the dashboard card and Correlations, CSV kept; (d) as (c) plus CSV.
+- Q2 Dashboard trend: ranges (proposed 7D / 30D / 90D / 1Y / All) and long-range form: (a) bars to 30 days, area line beyond (recommended); (b) bars always; (c) weekly averages beyond 90 days.
+- Q3 Correlations: confirm "inspiration from the other pages" (the request said "from correlations"); scope (a) restyle only, (b) restyle plus interactions and best-fit line (recommended), (c) (b) plus a clickable all-pairs matrix. Colouring matrix cells by r would be a visual strength cue, which A01 avoided ("no strength labels").
+
+Agent defaults (owner may change): year shown on the first axis tick and where the year changes; the Correlations paired-data table stays as a collapsed "Accessible paired data table".
+
