@@ -1069,6 +1069,17 @@ U14 and U15 are done; the owner confirmed R3-2 on 2026-10-30 ("Mark R3-2 as comp
 
 **All three phases (R3-1, R3-2, R3-3) are complete and accepted by the owner.** No further round-3 work is planned; any new work needs owner approval.
 
+### Top-strip removal (P30, 2026-10-30)
+
+**Status: complete (pending owner review).** Removed the "Local <page> / Your stored nights; calculated locally" strip from every page (DECISIONS P30).
+
+| Check | Evidence |
+|---|---|
+| Change | `sourceBanner(live)` in `App.tsx` returns `null` for stored nights, loading and error; the strip renders only for "Design preview" and "Synthetic preview". `DESIGN.md` Layout paragraph updated |
+| Tests changed | `App.test.tsx` (strip absent for stored/loading/error, labels kept); `correlations.spec.ts` (no strip and no "Local ..." text on all four pages with the synthetic flag off); `dashboard.spec.ts` (no longer expects "Local dashboard") |
+| Run | `npm test` 47 passed; `npm run build` (tsc + vite) passed; `npx playwright test` 73 passed. Then `check.ps1 -Suite Full` exit 0 (2026-10-30): Ruff, Mypy (41 files), 218 backend tests, 47 frontend unit tests, build, 73 Playwright tests, performance budgets, secret scan 171 files PASS, `pip-audit` and `npm audit` clean |
+| Commit | Local commit at owner request (not a phase end); not pushed |
+
 ### Source checks / foundation investigation (2026-10-30)
 
 Owner reported a GitHub `Source checks / foundation` failure. Status: `in_progress`; owner supplied the failed-step log: 217 passed, cold-start launcher test failed on `HttpListenerResponse.Close()` with a disconnected client. The fake server created another `GetContextAsync()` every 500 ms without completing the previous accept; an abandoned accept could consume a health request whose client then timed out. Fix scope: test fixture and documentation only; preserve one pending accept across waits, specify response length, close the listener in `finally`, and wait for the browser hook within a bounded deadline instead of assuming eight seconds is sufficient. Assert that the hook has not fired before readiness. No workflow or application changes.

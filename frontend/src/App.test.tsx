@@ -68,17 +68,11 @@ test("arrow keys navigate only without modifiers and outside form fields", () =>
   expect(arrowDirection({ key: "ArrowLeft", target: body, altKey: true })).toBe(0);
   expect(arrowDirection({ key: "ArrowUp", target: body })).toBe(0);
 });
-test("every page's banner follows the real data source, never the page name", () => {
+test("the top strip names only a synthetic or design-preview source, and is absent for stored nights", () => {
   const ready = (synthetic: boolean) => ({ kind: "ready" as const, data: { synthetic } as DashboardData });
-  for (const page of ["Dashboard", "Analytics", "Correlations", "Data & Settings"]) {
-    expect(sourceBanner(page, { kind: "preview" })).toEqual(["Design preview", "Synthetic examples - no personal health data"]);
-    expect(sourceBanner(page, ready(true))).toEqual(["Synthetic preview", "Generated test data - not your health records"]);
-    const real = sourceBanner(page, ready(false));
-    expect(real[1]).toBe("Your stored nights; calculated locally");
-    expect(real.join(" ")).not.toMatch(/preview|synthetic|Synthetic/);
-  }
-  expect(sourceBanner("Correlations", ready(false))[0]).toBe("Local correlations");
-  expect(sourceBanner("Data & Settings", ready(false))[0]).toBe("Local data & settings");
-  expect(sourceBanner("Correlations", { kind: "loading" })).toEqual(["Local correlations", "Checking the local store…"]);
-  expect(sourceBanner("Analytics", { kind: "error", message: "x" })[1]).toBe("Store status unavailable");
+  expect(sourceBanner({ kind: "preview" })).toEqual(["Design preview", "Synthetic examples - no personal health data"]);
+  expect(sourceBanner(ready(true))).toEqual(["Synthetic preview", "Generated test data - not your health records"]);
+  expect(sourceBanner(ready(false))).toBeNull();
+  expect(sourceBanner({ kind: "loading" })).toBeNull();
+  expect(sourceBanner({ kind: "error", message: "x" })).toBeNull();
 });

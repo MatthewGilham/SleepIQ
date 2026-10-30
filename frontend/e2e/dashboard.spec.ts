@@ -35,7 +35,8 @@ const night={wake_date:"2026-10-28",source:"Watch",onset_local:"2026-10-27T23:00
 const body={synthetic:false,versions:["derive-1","pilot-1"],import:{batches:1,last_received_utc:1793000000,nights:3},latest:night,trend:{dates:["2026-10-27","2026-10-28"],asleep_h:[null,7.33]}};
 test("partial, unscored night stays visible with missing data labelled, not zero",async({page})=>{
  await page.route("**/api/v1/dashboard",r=>r.fulfill({json:body}));await page.goto("/");
- await expect(page.getByText("Local dashboard")).toBeVisible();
+ await expect(page.getByRole("heading",{name:"A little clarity, every morning."})).toBeVisible();
+ await expect(page.locator("main > .preview-banner")).toHaveCount(0);
  await expect(page.locator(".score-ring")).toContainText("Insufficient");
  await expect(page.getByText("No overall score because of missing: overnight HRV, enough history for consistency.").first()).toBeVisible();
  await expect(page.locator(".metric",{hasText:"Overnight HRV"})).toContainText("Missing data");

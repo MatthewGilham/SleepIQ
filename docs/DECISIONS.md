@@ -161,3 +161,8 @@ Questions as asked:
 Agent defaults (owner may change): year shown on the first axis tick and where the year changes; the Correlations paired-data table stays as a collapsed "Accessible paired data table".
 
 **Correlations direction (2026-10-30, U16):** owner chose **A Afterburn Holo**, asked for a smoother, more professional refinement, then approved it ("Yes this version is slick and professional, I like it") with **all features F1-F7**, adding: "make sure it fits the screen proportionally". Agent interpretation, made testable in U17: charts are drawn at their real pixel size (text and points keep their size at any width); at common screens (1366x768 to 1920x1080) the scatter and its r panel fit within one screen height; the layout fills the content width with no sideways scroll down to 390 px.
+
+## P30 Remove the "Local <page> / Your stored nights; calculated locally" banner (2026-10-30)
+Owner request: the text at the top of every page ("Local dashboard - Your stored nights; calculated locally") is pointless and redundant; remove it from all pages and replace it with nothing.
+
+Decided: pages showing the owner's stored nights, and the loading and error states, have no top strip at all. This supersedes the U17 follow-up banner wording for real data. Questions asked (owner did not answer; the recommended options were applied): (1) keep the "Design preview" and "Synthetic preview" labels, since they stop test data being mistaken for real records; (2) keep the Dashboard "Preview state" selector, shown only in design-preview mode. Not changed: page sub-headings such as "Stored nights, calculated locally. Missing nights are never filled in." on Analytics. The owner can ask to remove the synthetic labels or the selector too.
