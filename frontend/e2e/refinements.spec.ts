@@ -21,8 +21,10 @@ for(const width of [1440,390])test(`U09 duration units sit tight to their number
 
 test("U09 the three top panel titles line up",async({page})=>{
  await page.setViewportSize({width:1440,height:900});await page.goto("/");
- const tops=await page.locator(".hero-grid > .panel > .panel-title h2").evaluateAll((els:Element[])=>els.map(e=>e.getBoundingClientRect().top));
- expect(tops).toHaveLength(3);
+ // Wait for the live dashboard (all three panels) before measuring; evaluateAll does not wait.
+ const titles=page.locator(".hero-grid > .panel > .panel-title h2");
+ await expect(titles).toHaveCount(3);await expect(page.locator(".sleep-total")).toHaveText("7h 09m");
+ const tops=await titles.evaluateAll((els:Element[])=>els.map(e=>e.getBoundingClientRect().top));
  expect(Math.max(...tops)-Math.min(...tops)).toBeLessThanOrEqual(2);
  await page.locator(".hero-grid").screenshot({path:"../.cache/u09-hero.png"});
 });
@@ -56,4 +58,22 @@ test("U11 Analytics has no table view; exact values come from the keyboard toolt
  await page.locator(".chart-frame").focus();
  await expect(page.locator(".chart-tip")).toBeVisible();
  await expect(page.locator(".chart-tip time")).toHaveAttribute("datetime","2026-10-28");
+});
+
+test("U12 nine tiles fill three full rows; wrist temperature stays everywhere else",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});await analytics(page);
+ const tiles=page.locator(".tiles .tile");
+ await expect(tiles).toHaveCount(9);
+ await expect(page.locator('[data-tile="temp_mean"]')).toHaveCount(0);
+ await expect(page.locator(".tiles")).not.toContainText("Wrist temperature");
+ // Three rows of three: group tile tops and count each row.
+ const tops=await tiles.evaluateAll((els:Element[])=>els.map(e=>Math.round(e.getBoundingClientRect().top)));
+ const rows=new Map<number,number>();for(const t of tops)rows.set(t,(rows.get(t)??0)+1);
+ expect([...rows.values()]).toEqual([3,3,3]);
+ // Kept: the main-chart chip, the Correlations option and the dashboard card (P29 Q1 a).
+ await expect(page.getByRole("checkbox",{name:"Sleeping wrist temperature",exact:true})).toHaveCount(1);
+ await page.getByRole("button",{name:"Correlations",exact:true}).click();
+ await expect(page.getByLabel("X axis metric").locator("option",{hasText:"Sleeping wrist temperature"})).toHaveCount(1);
+ await page.getByRole("button",{name:"Dashboard",exact:true}).click();
+ await expect(page.locator(".metric",{hasText:"Sleeping wrist temperature"})).toHaveCount(1);
 });

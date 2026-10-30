@@ -11,7 +11,8 @@ const color=(id:string)=>COLOR[id]??"#ff8c80";
 const STAGE_COLOR={deep:"#70363c",core:"#bb514e",rem:"#ff8575",awake:"#ffc5a5"};
 // Core is neither a chip nor a tile (owner, P27); it stays in the stage views and the CSV export.
 const NOT_CHARTED=new Set(["core_s"]);
-const TILES:[string,string][]=[["asleep_s","Total asleep"],["deep_s","Deep"],["rem_s","REM"],["awake_s","Awake"],["overall","SleepIQ score"],["hr_mean","Sleeping heart rate"],["hrv_mean","Overnight HRV"],["efficiency","Sleep efficiency"],["resp_mean","Respiratory rate"],["temp_mean","Wrist temperature"]];
+const TILES:[string,string][]=[["asleep_s","Total asleep"],["deep_s","Deep"],["rem_s","REM"],["awake_s","Awake"],["overall","SleepIQ score"],["hr_mean","Sleeping heart rate"],["hrv_mean","Overnight HRV"],["efficiency","Sleep efficiency"],["resp_mean","Respiratory rate"]];
+// Wrist temperature has no tile (U12, P29): nine tiles fill a 3 x 3 grid. It stays a main-chart chip, a dashboard card and in Correlations and CSV.
 const WINDOW_METRICS=[...TILES.map(t=>t[0]),"core_s","onset_minute","wake_minute"];
 const RANGES:[Selection["range"],string][]=[["7","7 days"],["30","30 days"],["90","90 days"],["all","All"],["custom","Custom"]];
 const ROLLING:[Selection["rolling"],string][]=[["off","No average"],["7","7-day avg"],["30","30-day avg"]];

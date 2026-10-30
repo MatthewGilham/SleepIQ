@@ -40,10 +40,10 @@ test("KPI row: average sleep, score gauge, HRV and nights recorded match indepen
  await expect(kpi("overall").getByRole("img",{name:/pilot ceiling 92\.5/})).toBeVisible();
 });
 
-test("tiles: the ten agreed metrics, no Core or resting heart rate, and a click focuses the main chart",async({page})=>{
+test("tiles: the nine agreed metrics (no wrist temperature since U12), no Core or resting heart rate, and a click focuses the main chart",async({page})=>{
  await open(page);
  const titles=await page.locator(".tiles .tile h3 > span:first-child").allTextContents();
- expect(titles).toEqual(["Total asleep","Deep","REM","Awake","SleepIQ score","Sleeping heart rate","Overnight HRV","Sleep efficiency","Respiratory rate","Wrist temperature"]);
+ expect(titles).toEqual(["Total asleep","Deep","REM","Awake","SleepIQ score","Sleeping heart rate","Overnight HRV","Sleep efficiency","Respiratory rate"]);
  expect(titles).not.toContain("Core");expect(titles.join()).not.toMatch(/Resting/);
  await expect(chip(page,"Core")).toHaveCount(0);
  await expect(page.locator('[data-tile="deep_s"] .tile-val')).toHaveText("1h 00m avg");

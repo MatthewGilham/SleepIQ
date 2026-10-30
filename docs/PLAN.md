@@ -877,7 +877,7 @@ Owner-requested on 2026-10-30; request and answers in DECISIONS P29 (Q1 tile onl
 | U09 | built; owner check U09-4 pending | **Duration spacing on the dashboard.** "8h 12m" reads as one figure: units sit tight to their number (small fixed gap), one consistent space between the hour and minute groups, units aligned with the numbers' x-height rather than floating low. Same treatment wherever `.sleep-total` style is reused. While there, align the three top panels' title rows (SleepIQ score / Shape of your night / Consistency). Files: `style.css`, `Dashboard.tsx` markup only. |
 | U10 | done | **Score delta without "/100".** The Average SleepIQ score KPI says "▼ 1.8 vs previous N days". The headline value keeps "/100". Files: `Analytics.tsx` (`deltaText`), `charts.ts` if the formatter is shared. |
 | U11 | done | **Remove "Show as table"** from the Analytics main chart (button, table and footer). Tests that read values from it move to the tooltip. Files: `Analytics.tsx`, `style.css`, the three specs above. |
-| U12 | proposed | **Remove the Wrist temperature tile** from Analytics so the tiles fill a 3 x 3 grid. Only the tile (P29 Q1 a): the main-chart chip, dashboard card, Correlations, CSV, stored data and derivation stay. Files: `Analytics.tsx` (`TILES`), affected specs. |
+| U12 | done | **Remove the Wrist temperature tile** from Analytics so the tiles fill a 3 x 3 grid. Only the tile (P29 Q1 a): the main-chart chip, dashboard card, Correlations, CSV, stored data and derivation stay. Files: `Analytics.tsx` (`TILES`), affected specs. |
 | U13 | proposed | **Year on main-chart dates.** Range label and tooltip heading read "29 Oct 2026"; axis ticks show the year on the first tick and wherever the year changes ("Jan 2026"), otherwise "29 Oct". Stage-bar end labels follow the same rule. Files: `Analytics.tsx`, `dashboardModel.ts`/`charts.ts` (one date formatter, unit-tested). |
 
 **Acceptance (R3-1)**
@@ -962,3 +962,14 @@ Order: R3-1 (U09 to U13 in any order), then R3-2, then R3-3. R3-3 cannot start b
 | U11-2 | Moved to the tooltip: `analytics.spec.ts` (rolling coverage text for Total asleep; "Not available for clock times" for Sleep onset), `analytics-redesign.spec.ts` (Home/End reach 2026-09-29 and 2026-10-28; 2026-10-17 shows sleep and "no reading" for HRV), `averages.spec.ts` (tooltip average text). U05-14 and U08-6 marked superseded |
 | Docs | DESIGN.md (U05, U08 paragraphs), TESTING.md |
 | G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-30): Ruff, Mypy (41 files), 214 backend tests, 39 frontend unit tests, build, 57 Playwright tests, performance budgets, secret scan 170 files PASS, `pip-audit` and `npm audit` clean |
+| G-2, G-3 | Staged list held only U11 source, tests and docs; commit `1b5350a` |
+
+**U12 Remove the Wrist temperature tile**
+
+| Check | Evidence |
+|---|---|
+| Fix | `TILES` in `Analytics.tsx` no longer lists `temp_mean` (so the tile window request no longer fetches it either). No backend, migration or `backend/app/domain/` change |
+| U12-1 | `refinements.spec.ts` "U12 ...": nine tiles, none for wrist temperature, laid out as rows of 3, 3 and 3 at 1440 px; `analytics-redesign.spec.ts` tile list updated to the nine |
+| U12-2 | Same test: the "Sleeping wrist temperature" chart chip, Correlations option and dashboard card are all still present; CSV unchanged (no backend file in the diff; existing export header test passes) |
+| Flake fixed | The first full run failed the U09 title test because it measured before the dashboard loaded (`evaluateAll` does not wait); it now waits for all three titles. Rerun passed |
+| G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-30): Ruff, Mypy (41 files), 214 backend tests, 39 frontend unit tests, build, 58 Playwright tests, performance budgets, secret scan 170 files PASS, `pip-audit` and `npm audit` clean |
