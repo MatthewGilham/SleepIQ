@@ -52,7 +52,8 @@ function Gauge({value,ceiling}:{value:number|null;ceiling:number}){
 }
 function deltaText(id:string,m:Metric|undefined,delta:number|null,days:number):ReactNode{
  if(delta===null||!m)return <span className="muted">No earlier nights to compare</span>;
- const size=Math.abs(delta),amount=id==="asleep_s"||id.endsWith("_s")?`${Math.round((toAxis(m,size)??0)*60)} min`:display(m,size);
+ // A score change is points, so "▼ 1.8" rather than "▼ 1.8 /100" (P29); the headline keeps "/100".
+ const size=Math.abs(delta),amount=id==="asleep_s"||id.endsWith("_s")?`${Math.round((toAxis(m,size)??0)*60)} min`:m.unit==="/100"?size.toFixed(1):display(m,size);
  return <><span className={delta>0?"up":delta<0?"down":""}>{delta>0?"▲":delta<0?"▼":"±"} {amount}</span> vs previous {days} days</>;
 }
 

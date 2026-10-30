@@ -875,7 +875,7 @@ Owner-requested on 2026-10-30; request and answers in DECISIONS P29 (Q1 tile onl
 | ID | Status | Objective and bounded files |
 |---|---|---|
 | U09 | built; owner check U09-4 pending | **Duration spacing on the dashboard.** "8h 12m" reads as one figure: units sit tight to their number (small fixed gap), one consistent space between the hour and minute groups, units aligned with the numbers' x-height rather than floating low. Same treatment wherever `.sleep-total` style is reused. While there, align the three top panels' title rows (SleepIQ score / Shape of your night / Consistency). Files: `style.css`, `Dashboard.tsx` markup only. |
-| U10 | proposed | **Score delta without "/100".** The Average SleepIQ score KPI says "▼ 1.8 vs previous N days". The headline value keeps "/100". Files: `Analytics.tsx` (`deltaText`), `charts.ts` if the formatter is shared. |
+| U10 | done | **Score delta without "/100".** The Average SleepIQ score KPI says "▼ 1.8 vs previous N days". The headline value keeps "/100". Files: `Analytics.tsx` (`deltaText`), `charts.ts` if the formatter is shared. |
 | U11 | proposed | **Remove "Show as table"** from the Analytics main chart (button, table and footer). Tests that read values from it move to the tooltip. Files: `Analytics.tsx`, `style.css`, the three specs above. |
 | U12 | proposed | **Remove the Wrist temperature tile** from Analytics so the tiles fill a 3 x 3 grid. Only the tile (P29 Q1 a): the main-chart chip, dashboard card, Correlations, CSV, stored data and derivation stay. Files: `Analytics.tsx` (`TILES`), affected specs. |
 | U13 | proposed | **Year on main-chart dates.** Range label and tooltip heading read "29 Oct 2026"; axis ticks show the year on the first tick and wherever the year changes ("Jan 2026"), otherwise "29 Oct". Stage-bar end labels follow the same rule. Files: `Analytics.tsx`, `dashboardModel.ts`/`charts.ts` (one date formatter, unit-tested). |
@@ -942,3 +942,12 @@ Order: R3-1 (U09 to U13 in any order), then R3-2, then R3-3. R3-3 cannot start b
 | Unit | `App.test.tsx` server-render assertion updated to the new markup |
 | G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-30): Ruff, Mypy (41 files), 214 backend tests, 39 frontend unit tests, build, 55 Playwright tests, performance budgets, secret scan 170 files PASS, `pip-audit` and `npm audit` clean. First run failed one unit test that asserted the old markup; fixed and rerun |
 | U09-4 | Pending: owner compares with `design-references/image1.png` |
+| G-2, G-3 | Staged list held only U09 source, test, and the round-3 plan docs; commit `e7e0d4f` |
+
+**U10 Score change without "/100"**
+
+| Check | Evidence |
+|---|---|
+| Fix | `deltaText` in `Analytics.tsx` formats a `/100` metric's change as points with one decimal; the headline value and every other KPI change are unchanged |
+| U10-1 | `refinements.spec.ts` "U10 ...": the score subline equals the change derived independently from stored nightly scores (per-night series endpoint, this and the previous 30 days), has no "/100"; the headline ends "/100"; sleep and HRV changes keep "min" and "ms" |
+| G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-30): Ruff, Mypy (41 files), 214 backend tests, 39 frontend unit tests, build, 56 Playwright tests, performance budgets, secret scan 170 files PASS, `pip-audit` and `npm audit` clean |
