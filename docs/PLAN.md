@@ -1048,4 +1048,5 @@ U14 and U15 are built and pass their automated criteria; U15-5 (owner check on r
 | Test fixes | The first steady-hover test swept a line that crossed only 2 points, so "no flicker" proved little; it now sweeps through the middle of the point cloud and must visit more than 3. Early screenshots looked dim because they caught the 0.4 s fade-in; computed style confirmed full colour |
 | G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-30): Ruff, Mypy (41 files), 218 backend tests, 46 frontend unit tests, build, 72 Playwright tests, performance budgets, secret scan 171 files PASS, `pip-audit` and `npm audit` clean |
 | G-4 | ARCHITECTURE.md (correlation `fit`, matrix endpoint, `"365"`), DESIGN.md (section 4, A01 note, round-3 note), TESTING.md (spec, budget) |
+| G-2, G-3 | Staged list held only U17 source, tests and docs; commit `194c52d` (hash added in a follow-up docs-only commit) |
 | U18 | Pending: owner uses Correlations on real data and accepts it |
