@@ -99,15 +99,22 @@ def test_already_running_opens_browser_without_starting_a_second_copy(tmp_path):
 def test_cold_start_opens_browser_only_after_the_app_answers(tmp_path):
     port, log = free_port(), tmp_path / "browser.log"
     fake = tmp_path / "fake-start.ps1"
-    # Stand-in app: answers the health check after ~3 s, for ~8 s, then exits like Ctrl+C would.
+    # Stand-in app: delayed readiness, then exits after the browser hook runs.
+    # Keep one pending accept: abandoning it on a polling timeout strands the next request.
     fake.write_text(
         "$s = New-Object Net.HttpListener; "
-        f"$s.Prefixes.Add('http://127.0.0.1:{port}/'); Start-Sleep 3; $s.Start(); "
-        "$end = [DateTime]::UtcNow.AddSeconds(8); "
-        "while ([DateTime]::UtcNow -lt $end) { "
-        "  $t = $s.GetContextAsync(); "
-        "  if ($t.Wait(500)) { $b = [Text.Encoding]::UTF8.GetBytes('{\"status\":\"ok\"}'); "
-        "    $t.Result.Response.OutputStream.Write($b, 0, $b.Length); $t.Result.Response.Close() } }; $s.Stop()",
+        f"$s.Prefixes.Add('http://127.0.0.1:{port}/'); Start-Sleep 3; "
+        "if (Test-Path -LiteralPath $env:SLEEPIQ_TEST_BROWSER_LOG) { throw 'Browser opened early' }; "
+        "$s.Start(); try { "
+        "  $end = [DateTime]::UtcNow.AddSeconds(20); $t = $s.GetContextAsync(); "
+        "  while ([DateTime]::UtcNow -lt $end) { "
+        "    if ($t.Wait(500)) { $b = [Text.Encoding]::UTF8.GetBytes('{\"status\":\"ok\"}'); "
+        "      $response = $t.Result.Response; $response.ContentLength64 = $b.Length; "
+        "      $response.OutputStream.Write($b, 0, $b.Length); $response.Close(); "
+        "      $t = $s.GetContextAsync() }; "
+        "    if (Test-Path -LiteralPath $env:SLEEPIQ_TEST_BROWSER_LOG) { break } "
+        "  } "
+        "} finally { $s.Close() }",
         encoding="utf-8",
     )
     result = run_script(

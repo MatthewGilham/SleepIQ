@@ -82,6 +82,8 @@ Run `npm --prefix frontend run test:e2e` after building. Playwright uses install
 Removed in P28. `backend/tests/persistence/test_retired_settings.py` (start-up cleanup of `ai.usage.v1`, no `/api/v1/analysis` route) and `frontend/e2e/no-ai.spec.ts` (no AI panel, no analysis request) guard the removal.
 
 ## Desktop launcher tests (L01)
+The cold-start stand-in keeps a single pending `HttpListener.GetContextAsync()` across polling waits, sets the response content length, and closes its listener in `finally`. It verifies no browser hook before readiness and stays alive until that hook appears (20-second bound), avoiding abandoned accepts and a fixed server-lifetime assumption on CI runners.
+
 `backend/tests/test_desktop_launcher.py` runs the PowerShell launcher against throwaway loopback servers on ephemeral ports (about 30 s): the running check accepts only a `{"status":"ok"}` health answer; the wait succeeds when the server appears late and gives up on time otherwise; with SleepIQ already running the browser opens and no second copy starts; on a cold start the browser opens only after the stand-in app answers; a failing start reports the error and opens nothing; the shortcut targets `powershell.exe` with `-NoProfile -File .../launch.ps1`, the project as working directory, no execution-policy flags, refuses silent overwrite and removes cleanly (created in a temp folder, never the real Desktop); the scripts parse. The browser step is replaced by a log line through the `SLEEPIQ_TEST_BROWSER_LOG` test hook. **Not agent-tested:** the real Chrome launch and the real Desktop shortcut (owner check in OPERATIONS.md).
 
 ## Certificate renewal tests (P25)
