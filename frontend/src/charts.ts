@@ -171,3 +171,12 @@ export function nearestPoint(points:{date:string;cx:number;cy:number}[],x:number
 export function scatterHeight(width:number,viewportHeight:number):number{
  return Math.round(Math.max(Math.min(width*.62,viewportHeight-260),Math.min(260,width*.85)));
 }
+
+/** Metrics where a higher period average is better. Deep and REM are descriptive (S17/S18), so they get no tone. */
+const HIGHER_IS_BETTER=new Set(["asleep_s","overall","hrv_mean"]);
+export type Tone="good"|"bad"|"neutral";
+/** Colour meaning of a change against the previous period: good, bad or neutral; null when there is nothing to judge. */
+export function deltaTone(id:string,delta:number|null):Tone|null{
+ if(delta===null||!HIGHER_IS_BETTER.has(id))return null;
+ return delta===0?"neutral":delta>0?"good":"bad";
+}

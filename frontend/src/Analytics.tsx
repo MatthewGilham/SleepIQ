@@ -1,8 +1,8 @@
 import {useEffect,useRef,useState} from "react";
 import type {ReactNode} from "react";
 
-import {averageText,axisUnit,chartRequest,clockText,curveRuns,display,fitMetrics,hoursText,initialSelection,refusal,rollingNote,runPath,sliceSeries,toAxis,unitName,withDefaults} from "./charts";
-import {fullDay,tickDays} from "./dashboardModel";
+import {averageText,axisUnit,chartRequest,clockText,curveRuns,deltaTone,display,fitMetrics,hoursText,initialSelection,refusal,rollingNote,runPath,sliceSeries,toAxis,unitName,withDefaults} from "./charts";
+import {fullDay,shortDay,tickDays} from "./dashboardModel";
 import type {ChartData,Metric,Preset,Selection,Series,Summary} from "./charts";
 
 // Afterburn reds plus gold and ice-blue (P27). Fixed per metric so a metric keeps its colour everywhere.
@@ -55,7 +55,8 @@ function deltaText(id:string,m:Metric|undefined,delta:number|null,days:number):R
  if(delta===null||!m)return <span className="muted">No earlier nights to compare</span>;
  // A score change is points, so "▼ 1.8" rather than "▼ 1.8 /100" (P29); the headline keeps "/100".
  const size=Math.abs(delta),amount=id==="asleep_s"||id.endsWith("_s")?`${Math.round((toAxis(m,size)??0)*60)} min`:m.unit==="/100"?size.toFixed(1):display(m,size);
- return <><span className={delta>0?"up":delta<0?"down":""}>{delta>0?"▲":delta<0?"▼":"±"} {amount}</span> vs previous {days} days</>;
+ const tone=deltaTone(id,delta);
+ return <><span className={tone??""} title={tone==="good"?"Better than the previous period":tone==="bad"?"Worse than the previous period":undefined}>{delta>0?"▲":delta<0?"▼":"±"} {amount}</span> vs previous {days} days</>;
 }
 
 function Kpis({summary,tiles,catalog}:{summary:Summary;tiles:ChartData;catalog:Record<string,Metric>}){
@@ -141,20 +142,51 @@ function AverageLine({y,ink,text,metric}:{y:number;ink:string;text:string;metric
  return <g className="average" data-average={metric}><line x1={L} x2={W-R} y1={y} y2={y} stroke={ink} strokeWidth="1.6" strokeDasharray="1 5" strokeLinecap="round" className="average-line"/>
   <text x={W-R-6} y={above?y-6:y+14} textAnchor="end" fill={ink} className="tick average-label">{text}</text></g>;
 }
-function Brush({series,n,zoom,setZoom,normalized}:{series:Series|undefined;n:number;zoom:[number,number]|null;setZoom:(z:[number,number]|null)=>void;normalized:boolean}){
- const svg=useRef<SVGSVGElement>(null);const [drag,setDrag]=useState<[number,number]|null>(null);const h=54;
+const MIN_WINDOW=1,PAGE=7;
+type BrushDrag={mode:"new"|"start"|"end"|"pan";from:number;orig:[number,number];cur:[number,number]};
+function Switch({label,checked,onChange}:{label:string;checked:boolean;onChange:(v:boolean)=>void}){
+ return <label className="an-switch"><input type="checkbox" checked={checked} onChange={e=>onChange(e.target.checked)}/><span aria-hidden="true"/>{label}</label>;
+}
+/** Zoom strip: the whole range as a faint line, with a window whose two handles resize it and whose body pans it. */
+function Brush({series,dates,zoom,setZoom,normalized}:{series:Series|undefined;dates:string[];zoom:[number,number]|null;setZoom:(z:[number,number]|null)=>void;normalized:boolean}){
+ const svg=useRef<SVGSVGElement>(null);const [drag,setDrag]=useState<BrushDrag|null>(null);const h=54,n=dates.length,last=Math.max(0,n-1);
  const values=series?series.values.map(v=>normalized?v:toAxis(series,v)):[];const ok=values.filter(finite);const lo=Math.min(...ok),hi=Math.max(...ok);
- const x=(i:number)=>xAt(i,n);const shown=drag??zoom;
+ const x=(i:number)=>xAt(i,n);
+ const win:[number,number]=drag?.cur??zoom??[0,last];const [a,b]=win;
+ const commit=(na:number,nb:number)=>{const lo2=Math.max(0,Math.min(na,last-MIN_WINDOW)),hi2=Math.min(last,Math.max(nb,lo2+MIN_WINDOW));setZoom(lo2<=0&&hi2>=last?null:[lo2,hi2]);return [lo2,hi2] as [number,number];};
  const at=(clientX:number)=>svg.current?indexAt(svg.current,clientX,n):0;
- return <svg ref={svg} viewBox={`0 0 ${W} ${h}`} className="brush" role="img" aria-label="Zoom strip: drag across it to zoom the main chart; double-click to show the full range"
-  onPointerDown={e=>{if(!n)return;svg.current?.setPointerCapture?.(e.pointerId);const i=at(e.clientX);setDrag([i,i]);}}
-  onPointerMove={e=>{if(drag)setDrag([drag[0],at(e.clientX)]);}}
-  onPointerUp={()=>{if(drag){const a=Math.min(...drag),b=Math.max(...drag);if(b-a>=1)setZoom([a,b]);setDrag(null);}}}
-  onDoubleClick={()=>{setDrag(null);setZoom(null);}}>
-  <rect x={L} y="2" width={IW} height={h-4} rx="6" className="brush-bg"/>
-  {series&&ok.length>0&&<Lines values={values} color={color(series.id)} x={x} y={v=>h-8-(v-lo)/(hi-lo||1)*(h-18)}/>}
-  {shown&&<rect x={x(Math.min(...shown))} y="2" width={Math.max(2,x(Math.max(...shown))-x(Math.min(...shown)))} height={h-4} rx="4" className="brush-sel"/>}
- </svg>;
+ const pxPerNight=()=>(svg.current?.getBoundingClientRect().width??W)/W*IW/Math.max(1,last);
+ const down=(e:React.PointerEvent<SVGSVGElement>)=>{if(n<2)return;svg.current?.setPointerCapture?.(e.pointerId);
+  const i=at(e.clientX),reach=14/pxPerNight(),px=(k:number)=>Math.abs(k-i);
+  // Handles win over the body so a window can always be resized; the body pans; anywhere else draws a new window.
+  const mode:BrushDrag["mode"]=px(a)<=reach&&px(a)<=px(b)?"start":px(b)<=reach?"end":zoom&&i>a&&i<b?"pan":"new";
+  setDrag({mode,from:i,orig:[a,b],cur:mode==="new"?[i,i]:[a,b]});};
+ const move=(e:React.PointerEvent<SVGSVGElement>)=>{if(!drag)return;const i=at(e.clientX),[oa,ob]=drag.orig;let cur:[number,number];
+  if(drag.mode==="new")cur=[drag.from,i];
+  else if(drag.mode==="start")cur=commit(Math.min(i,ob-MIN_WINDOW),ob);
+  else if(drag.mode==="end")cur=commit(oa,Math.max(i,oa+MIN_WINDOW));
+  else{const len=ob-oa,na=Math.max(0,Math.min(last-len,oa+i-drag.from));cur=commit(na,na+len);}
+  setDrag({...drag,cur});};
+ const up=()=>{if(!drag)return;if(drag.mode==="new"){const lo2=Math.min(...drag.cur),hi2=Math.max(...drag.cur);if(hi2-lo2>=MIN_WINDOW)commit(lo2,hi2);}setDrag(null);};
+ const key=(which:"start"|"end")=>(e:React.KeyboardEvent)=>{const v=which==="start"?a:b;
+  const jump:Record<string,number>={ArrowLeft:v-1,ArrowDown:v-1,ArrowRight:v+1,ArrowUp:v+1,PageDown:v-PAGE,PageUp:v+PAGE,Home:which==="start"?0:a+MIN_WINDOW,End:which==="start"?b-MIN_WINDOW:last};
+  if(!(e.key in jump))return;e.preventDefault();const t=Math.round(jump[e.key]);
+  if(which==="start")commit(Math.min(t,b-MIN_WINDOW),b);else commit(a,Math.max(t,a+MIN_WINDOW));};
+ const handle=(which:"start"|"end",i:number)=><g key={which} className="brush-handle" transform={`translate(${x(i)} ${h/2})`} tabIndex={0} role="slider" aria-label={which==="start"?"Zoom start":"Zoom end"} aria-orientation="horizontal"
+  aria-valuemin={which==="start"?0:a+MIN_WINDOW} aria-valuemax={which==="start"?b-MIN_WINDOW:last} aria-valuenow={i} aria-valuetext={fullDay(dates[i])} onKeyDown={key(which)}>
+  <rect x="-9" y="-20" width="18" height="40" fill="transparent"/><rect x="-4" y="-15" width="8" height="30" rx="4" className="grip"/><path d="M-1.2 -6V6M1.2 -6V6" className="grip-lines"/></g>;
+ const label=drag?.cur??null;
+ return <div className="brush-wrap">
+  <svg ref={svg} viewBox={`0 0 ${W} ${h}`} className="brush" role="group" aria-label="Zoom strip: drag across it to zoom the main chart, drag the handles to adjust, double-click to show the full range"
+   onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onDoubleClick={()=>{setDrag(null);setZoom(null);}}>
+   <rect x={L} y="2" width={IW} height={h-4} rx="6" className="brush-bg"/>
+   {series&&ok.length>0&&<Lines values={values} color={color(series.id)} x={x} y={v=>h-8-(v-lo)/(hi-lo||1)*(h-18)}/>}
+   {(zoom||drag)&&<><rect x={L} y="2" width={Math.max(0,x(Math.min(...win))-L)} height={h-4} rx="6" className="brush-dim"/><rect x={x(Math.max(...win))} y="2" width={Math.max(0,L+IW-x(Math.max(...win)))} height={h-4} rx="6" className="brush-dim"/>
+    <rect x={x(Math.min(...win))} y="2" width={Math.max(2,x(Math.max(...win))-x(Math.min(...win)))} height={h-4} rx="4" className="brush-sel"/></>}
+   {n>1&&handle("start",Math.min(...win))}{n>1&&handle("end",Math.max(...win))}
+  </svg>
+  {drag&&label&&<div className="brush-label" style={{left:`${x((label[0]+label[1])/2)/W*100}%`}}>{shortDay(dates[Math.min(...label)])} – {shortDay(dates[Math.max(...label)])} · {Math.abs(label[1]-label[0])+1} days</div>}
+ </div>;
 }
 
 function Composition({summary}:{summary:Summary}){
@@ -306,10 +338,10 @@ export function Analytics(){
      {data&&!data.dates.length&&<div><h2>No recorded nights yet</h2><p>Charts will appear after a successful import. Missing data is never filled in.</p></div>}
      {data&&data.dates.length>0&&<>
       <MainChart series={sliced} dates={dates} normalized={normalized} fit={fit} averages={averages} recorded={recorded} onReset={()=>setZoom(null)}/>
-      <Brush series={data.series[0]} n={total} zoom={zoom} setZoom={setZoom} normalized={normalized}/>
-      <div className="chart-toolbar zoom-row"><label>Zoom start<input type="range" aria-label="Zoom start" min={0} max={Math.max(0,total-1)} value={za} onChange={e=>setZoom([Math.min(Number(e.target.value),zb),zb])}/></label><label>Zoom end<input type="range" aria-label="Zoom end" min={0} max={Math.max(0,total-1)} value={zb} onChange={e=>setZoom([za,Math.max(Number(e.target.value),za)])}/></label><button onClick={()=>setZoom(null)}>Reset zoom</button>
-       {hasHours&&<label className="inline"><input type="checkbox" checked={fit} onChange={e=>setFit(e.target.checked)}/>Zoom to fit hours axis</label>}
-       <label className="inline"><input type="checkbox" checked={averages} onChange={e=>setAverages(e.target.checked)}/>Show averages</label></div>
+      <Brush series={data.series[0]} dates={data.dates} zoom={zoom} setZoom={setZoom} normalized={normalized}/>
+      <div className="chart-toolbar zoom-row">{zoom&&<button type="button" className="reset-pill" onClick={()=>setZoom(null)}>Reset zoom</button>}
+       {hasHours&&<Switch label="Zoom to fit hours axis" checked={fit} onChange={setFit}/>}
+       <Switch label="Show averages" checked={averages} onChange={setAverages}/></div>
      </>}
     </section>
     {win&&win.summary.nights>0&&<Composition summary={win.summary}/>}

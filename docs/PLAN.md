@@ -1133,7 +1133,7 @@ Shortened D strings (U22): D1 Correlations caveat becomes "**Exploratory only.**
 
 | ID | Status | Objective and bounded files |
 |---|---|---|
-| U23 | planned | **One synthetic preview** (DESIGN.md section 8) at `.cache/round4-preview/index.html` (git-ignored, synthetic data only) showing, on the real Analytics card styles: (a) the three KPI cards with rises and falls in **three softer good/bad pairs**, for example sage/rose, mint/coral, teal/ember, each also shown beside the Afterburn reds so "bad" is not mistaken for a metric colour; (b) "Zoom to fit hours axis" and "Show averages" as toggle switches in the Correlations switch style; (c) the redesigned zoom strip: a selection window with two grab handles, dimmed area outside the window, a date label while dragging, and a "Reset zoom" pill that appears only when zoomed. All three are interactive in the preview. |
+| U23 | done | **One synthetic preview** (DESIGN.md section 8) at `.cache/round4-preview/index.html` (git-ignored, synthetic data only) showing, on the real Analytics card styles: (a) the three KPI cards with rises and falls in **three softer good/bad pairs**, for example sage/rose, mint/coral, teal/ember, each also shown beside the Afterburn reds so "bad" is not mistaken for a metric colour; (b) "Zoom to fit hours axis" and "Show averages" as toggle switches in the Correlations switch style; (c) the redesigned zoom strip: a selection window with two grab handles, dimmed area outside the window, a date label while dragging, and a "Reset zoom" pill that appears only when zoomed. All three are interactive in the preview. |
 
 **Acceptance (R4-2)**
 - U23-1 [T] The preview uses synthetic data only and `git status` shows no change under `frontend/src` or `backend/`.
@@ -1144,10 +1144,10 @@ Shortened D strings (U22): D1 Correlations caveat becomes "**Exploratory only.**
 
 | ID | Status | Objective and bounded files |
 |---|---|---|
-| U24 | planned | **Good/bad delta colours** for the three KPI deltas, from one "higher is better" map (asleep_s, overall, hrv_mean). Rise = good colour, fall = bad colour, no change = neutral grey; arrows ▲/▼ stay so colour is never the only cue. Deep and REM get no tone (descriptive, S17/S18). Agent default: the accessible text adds "better" or "worse". Files: `Analytics.tsx`, `charts.ts` (pure tone helper), `style.css`, tests. |
-| U25 | planned | **Toggle switches** for "Zoom to fit hours axis" and "Show averages": one shared switch style used by Analytics and the Correlations best-fit toggle (Correlations looks the same as now). Native checkbox kept underneath, so names, roles and keyboard behaviour are unchanged. Files: `Analytics.tsx`, `Correlations.tsx` (class name only), `style.css`. |
-| U26 | planned | **Zoom strip with handles; sliders removed.** Two handles (`role="slider"`, names "Zoom start"/"Zoom end", value text is the full date), a window at least two nights wide, dimmed outside area, drag a handle to resize, drag inside the window to pan (agent default), drag on empty strip to draw a new window (as now), double-click resets (as now). Keyboard: Arrow ±1 night, PageUp/PageDown ±7, Home/End. "Reset zoom" pill only while zoomed. Pointer capture for mouse, pen and touch; reduced motion respected. Files: `Analytics.tsx` (`Brush`, toolbar), `style.css`, `charts-presets.spec.ts`, `averages.spec.ts`, new spec. |
-| U27 | planned | **Owner acceptance** on real data. |
+| U24 | done | **Good/bad delta colours** for the three KPI deltas, from one "higher is better" map (asleep_s, overall, hrv_mean). Rise = good colour, fall = bad colour, no change = neutral grey; arrows ▲/▼ stay so colour is never the only cue. Deep and REM get no tone (descriptive, S17/S18). Agent default: the accessible text adds "better" or "worse". Files: `Analytics.tsx`, `charts.ts` (pure tone helper), `style.css`, tests. |
+| U25 | done | **Toggle switches** for "Zoom to fit hours axis" and "Show averages": one shared switch style used by Analytics and the Correlations best-fit toggle (Correlations looks the same as now). Native checkbox kept underneath, so names, roles and keyboard behaviour are unchanged. Files: `Analytics.tsx`, `Correlations.tsx` (class name only), `style.css`. |
+| U26 | done | **Zoom strip with handles; sliders removed.** Two handles (`role="slider"`, names "Zoom start"/"Zoom end", value text is the full date), a window at least two nights wide, dimmed outside area, drag a handle to resize, drag inside the window to pan (agent default), drag on empty strip to draw a new window (as now), double-click resets (as now). Keyboard: Arrow ±1 night, PageUp/PageDown ±7, Home/End. "Reset zoom" pill only while zoomed. Pointer capture for mouse, pen and touch; reduced motion respected. Files: `Analytics.tsx` (`Brush`, toolbar), `style.css`, `charts-presets.spec.ts`, `averages.spec.ts`, new spec. |
+| U27 | awaiting_approval | **Owner acceptance** on real data. |
 
 **Acceptance (R4-3)**
 - U24-1 [T] Unit: the tone helper returns good for a rise and bad for a fall in each of the three metrics, neutral for 0, none for null, and none for deep_s/rem_s.
@@ -1175,3 +1175,14 @@ Order: R4-1 (U19 to U22 in any order), then R4-2, then R4-3. R4-3 cannot start u
 | G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-31): Ruff, Mypy, 218 backend tests, 47 frontend unit tests, build, 79 Playwright tests, performance budgets, secret scan 172 files PASS, `pip-audit` and `npm audit` clean |
 | Not separately tested | U21-2 pixel-equal panel height before/during hover and U21-3 empty-paragraph scan were not written as dedicated tests; hover readouts keep their element with a non-breaking space, and the existing `layout.spec.ts` card-containment and 390 px checks pass |
 | CSV | `export.spec.ts` unchanged and passing: header still ends `derivation_version,score_version`; no `backend/` file changed |
+
+### R4-2 / R4-3 verification evidence (2026-10-31)
+
+| Check | Evidence |
+|---|---|
+| R4-2 deviation | The owner delegated the visual choices ("go with your recomendations"), so no separate preview was built (U23 `done` by delegation, not by owner viewing). The agent chose soft **sage `#8fcf9f` (good) / rose `#e0788f` (bad)**, neutral `#b4a0a3`; contrast on the card background `#1c1316` computed 10.05 / 6.28 / 7.36 (all above 4.5:1, U23-2). The owner looks at the built result in U27 and may ask for a different pair |
+| Built | U24 `deltaTone` helper plus coloured deltas (arrows kept, tooltip says better/worse); U25 `Switch` for "Zoom to fit hours axis" and "Show averages"; U26 zoom strip with two `role="slider"` handles, panning, draw-to-zoom, drag date label, "Reset zoom" pill only when zoomed, sliders removed. Correlations keeps its own `.cx-switch` with identical 30 x 17 px dimensions (agent default: the two share a look, not a class) |
+| Tests | New `e2e/round4-visuals.spec.ts` (U24-2, U25-1, U26-1 to U26-5, 390 px grab test); `charts.test.ts` (U24-1); `averages.spec.ts` slider steps replaced with handle keyboard presses |
+| Not separately tested | U26-6 is covered by the adapted `averages.spec.ts` (whole-range average kept while zoomed); U26-7 touch emulation is mouse-driven at 390 px (no touch device emulation); the handle's hit area is a 14 px reach computed in code, not an element at least 24 x 24 px |
+| G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-31): Ruff, Mypy, 218 backend tests, 48 frontend unit tests, build, 85 Playwright tests, performance budgets, secret scan 173 files PASS, `pip-audit` and `npm audit` clean |
+| U27 | Awaiting the owner's acceptance on real data |

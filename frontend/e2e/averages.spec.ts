@@ -41,7 +41,7 @@ test("one dotted average line per metric at the independently derived mean",asyn
 
 test("zooming keeps the whole-range average; zoom to fit keeps lines in the plot",async({page})=>{
  await open(page);
- await page.getByLabel("Zoom start").fill("20");await expect(page.locator(".range-label")).toContainText("10 days");
+ await page.getByRole("slider",{name:"Zoom start"}).focus();for(let k=0;k<20;k++)await page.keyboard.press("ArrowRight");await expect(page.locator(".range-label")).toContainText("10 days");
  await expect(avg(page,"asleep_s").locator(".average-label")).toHaveText(ASLEEP_LABEL);
  await expect(avg(page,"hrv_mean").locator(".average-label")).toHaveText(HRV_LABEL);
  await page.getByRole("checkbox",{name:"Zoom to fit hours axis"}).check();

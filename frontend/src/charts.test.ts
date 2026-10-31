@@ -1,5 +1,6 @@
 ﻿import {expect,test} from "vitest";
 import {ageColour,groupMetrics,nearestPoint,niceAxis,pairText,rText,scatterHeight,averageText,bezierAt,chartSegments,curveRuns,display,fileNameFrom,fitMetrics,formatValue,groupAxes,refusal,rollingNote,scatterLayout,sliceSeries,toAxis,withDefaults} from "./charts";
+import {deltaTone} from "./charts";
 import type {Pt} from "./charts";
 import type {Series} from "./charts";
 test("rolling notes always show coverage and never invent a mean",()=>{
@@ -112,4 +113,9 @@ test("hover keeps the current point until another is clearly closer (U17)",()=>{
 test("scatter height is proportional, fits one screen and never collapses on a phone (U17)",()=>{
  expect(scatterHeight(800,900)).toBe(496);expect(scatterHeight(1200,1080)).toBe(744);
  expect(scatterHeight(1200,768)).toBe(508);expect(scatterHeight(320,844)).toBe(260);
+});
+
+test("a rise is good and a fall is bad for sleep, score and HRV; Deep and REM get no tone (P31)",()=>{
+ for(const id of ["asleep_s","overall","hrv_mean"]){expect(deltaTone(id,3)).toBe("good");expect(deltaTone(id,-3)).toBe("bad");expect(deltaTone(id,0)).toBe("neutral");expect(deltaTone(id,null)).toBeNull();}
+ expect(deltaTone("deep_s",5)).toBeNull();expect(deltaTone("rem_s",-5)).toBeNull();
 });
