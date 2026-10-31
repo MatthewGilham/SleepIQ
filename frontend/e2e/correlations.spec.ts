@@ -28,7 +28,7 @@ test("pairs nights, reports exclusions, and handles unavailable cases (A01 behav
  // r matches Python's endpoint for the same window.
  const api=await (await page.request.post("/api/v1/analytics/correlation",{data:{x:"hr_mean",y:"hrv_mean",range:"90"},headers:HEADERS})).json();
  expect(await rOf(page)).toBeCloseTo(api.r,10);
- await expect(page.getByText(/not a significance test or evidence of cause/)).toBeVisible();
+ await expect(page.getByText(/Shows association, not cause/)).toBeVisible();
  // Clock times are never offered.
  await expect(page.locator(".cx-chip",{hasText:/Sleep onset|Wake time/})).toHaveCount(0);
  // The measurement on one axis is disabled on the other.

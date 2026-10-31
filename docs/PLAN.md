@@ -1087,3 +1087,91 @@ Owner reported a GitHub `Source checks / foundation` failure. Status: `in_progre
 Initial local `powershell -NoProfile -File scripts/check.ps1 -Suite Foundation`: Ruff passed, Mypy passed (41 files), backend 202 passed / 16 setup errors, all from denied access to the system pytest temporary directory (`WinError 5`). Frontend stages were not reached. Rerunning with approved elevated sandbox access exited 0 before the fix; local success did not reproduce the intermittent remote failure.
 
 After the fix: `.venv/Scripts/python.exe -m pytest backend/tests/test_desktop_launcher.py -p no:cacheprovider -q` with approved elevated sandbox access: **9 passed** (29.00 s). An earlier sandbox run using `--basetemp=.cache/ci-launcher-check-1` failed from temporary-directory permission errors, including cleanup; not counted as a pass. `powershell -NoProfile -File scripts/check.ps1 -Suite Foundation` with approved elevated sandbox access: **exit 0**, Ruff, Mypy (41 files), **218 backend tests** (43.37 s), **47 frontend unit tests**, strict TypeScript and production build passed. `.venv/Scripts/python.exe scripts/scan_source.py`: **PASS**, 171 source files, no findings. `git diff --check`: exit 0. TESTING.md synchronized. Browser suite and dependency audits were not rerun for this test-only fix; runtime code, dependencies and workflow unchanged. Status: local fix verified; remote GitHub rerun remains pending. Changes have not been committed or pushed.
+
+## Improvements, round 4 (P31)
+
+Owner-requested on 2026-10-30; request and answers in DECISIONS P31. **Owner approved on 2026-10-31 ("complete the improvements, and go with your recomendations"): all agent defaults and borderline items (i)-(iv) accepted as written, and all three phases authorised.** Three phases; the owner approves each phase before it starts (phase-boundary rules unchanged). Every phase ends with common gates G-1 to G-4 ("Improvements" above) and a scoped local phase-end commit. Frontend and docs only: no backend, API, stored data, migration, ingestion or dependency change. Status vocabulary as above.
+
+**Findings behind the plan (agent investigation, 2026-10-30)**
+- Version text is shown in six places: header badge (`App.tsx` `.version`, falls back to "pilot-1"); "PILOT SCORE" pill and "Version pilot-1" in the score card (`Dashboard.tsx`, preview copy in `App.tsx`); "· pilot-neutral" on Deep/REM/HR-HRV rows; the Analytics footer `summary.versions` line; the Data & Settings sentence "Each row carries the derivation and score versions". "Pilot ceiling" (score footer, gauge tooltip and label) stays by P31 Q1.
+- Only three KPI cards carry a delta (Average sleep, Average SleepIQ score, Average overnight HRV). `.an .up` is gold and `.an .down` ice-blue, which encode direction, not good/bad. For all three, higher is better.
+- Zoom start/end are native `input[type=range]`; the brush strip already zooms by dragging but has no handles and no keyboard route (the sliders were that route). "Zoom to fit hours axis" and "Show averages" are native checkboxes; Correlations already has the approved `.cx-switch` toggle.
+- Under the chart: one `.hint` line and up to three `.muted` paragraphs (axis rules or Z-score formula, dotted-line note, dashed-line note). The chart and strip `aria-label`s already carry the keyboard and drag instructions, so removing the visible text does not remove the accessible route.
+- Tests that depend on removed text or controls: `App.test.tsx` (pilot-neutral), `analytics.spec.ts` ("Dashed line:"), `charts-presets.spec.ts` and `averages.spec.ts` (Zoom start slider), `analytics-redesign.spec.ts` and `averages.spec.ts` (checkbox names; kept).
+
+### Phase R4-1 Text cleanup (no visual decisions open)
+
+| ID | Status | Objective and bounded files |
+|---|---|---|
+| U19 | done | **Remove version text.** Header `.version` badge; "PILOT SCORE" pill; "Version …" item in the score footer (the "Pilot ceiling 92.5 ⓘ" item stays, P31 Q1); "· pilot-neutral" suffixes (live and preview); Analytics footer `versions` line. Live dashboard and the design preview in `App.tsx` change alike. Files: `App.tsx`, `Dashboard.tsx`, `Analytics.tsx`, `style.css` (dead `.version`/`.versions` rules), tests. |
+| U20 | done | **Remove all text under the main-chart controls**: the `.hint` line, the axis-rule / Z-score paragraph, the "Dotted line:" and "Dashed line:" paragraphs. Functional feedback stays: the chip refusal note, "Choose at least one metric.", "No recorded nights yet". Files: `Analytics.tsx`, `style.css`, `analytics.spec.ts`. |
+| U21 | done | **Remove filler groups A and B** (exact list below), on every page, in live and preview modes. Live regions that show values on hover keep their element with an empty placeholder and reserved height so nothing jumps. Files: `Analytics.tsx`, `Dashboard.tsx`, `App.tsx`, `Correlations.tsx`, `DataExport.tsx`, `style.css`, tests. |
+| U22 | done | **Shorten group D** to the exact strings below. Files: `Analytics.tsx`, `Dashboard.tsx`, `App.tsx`, `Correlations.tsx`, tests. |
+
+Removal list (U21). A, technical small print: A1 Analytics footer "derive-1 · pilot-1 · averages exclude nights without a reading" (also U19); A2 Correlations bottom note "Sleep onset and wake time are not offered … {method}."; A3 Analytics clock-strip subheading "source-local clock"; A4 Dashboard "Source-local time · UTC±hh:mm" (live and preview); A5 Dashboard "Individual nights · no rolling average applied"; A6 Dashboard metric captions when a value exists ("Stage-based · asleep / recorded stages", "<method> · n samples", preview "Mean SDNN · 8 overnight samples", "Unweighted mean · overnight samples", "Overnight mean"); A7 the whole Data & Settings description paragraph. B, how-to hints: B1 Dashboard "Hover the chart for one night's duration" (readout stays for values); B2 Correlations "Hover, or focus the plot and use ← →"; B3 Correlations "Drag to focus on a stretch · double-click to reset"; B4 Correlations "Hover a cell for its pair and paired nights." (info line stays for values); B5 Analytics "Each dot is one night. The band shows your middle 50% …".
+
+Borderline items the owner did not name, with agent defaults to confirm at plan approval: (i) Dashboard trend note "Nightly duration · hours · gaps are nights not recorded" and preview "Illustrative nightly duration · hours": **remove** (A; the Y axis now shows hours); (ii) Correlations "r for each pair over the same nights · select a cell to explore it": **remove** (B); (iii) Correlations "Each line is scaled to its own range so their shapes can be compared": **keep** (an honesty note like D: without it the two lines look directly comparable); (iv) Dashboard captions for missing values ("No overnight samples", "No reading attributed to this night", preview "No reading in this example"): **keep** (they explain a missing reading). Group C (sidebar and footer lines, "TRANSPARENT BY DESIGN" pill, page subtitles, score description) stays unchanged.
+
+Shortened D strings (U22): D1 Correlations caveat becomes "**Exploratory only.** Shows association, not cause; unreliable with few nights."; D2 Behind the score becomes "Not clinically calibrated." followed by the missing-data reason when the night is unscored (preview: "Synthetic example · not clinically calibrated."); D3 Analytics composition becomes "Deep and REM are descriptive, not targets."
+
+**Acceptance (R4-1)**
+- U19-1 [T] Playwright, all four pages in three modes (owner store with the synthetic flag off, synthetic store, design preview): visible text and accessible names match none of `/\b(pilot|derive)-\d/i`, `/PILOT SCORE/`, `/pilot-neutral/i`, `/\bVersion\b/`.
+- U19-2 [T] The header status shows Sync, Backup and (when present) Certificate, and no `.version` element.
+- U19-3 [T] The score footer still shows "Pilot ceiling 92.5" with its ⓘ; the Analytics gauge keeps its ceiling marker and label (P31 Q1).
+- U19-4 [T] "Behind the score" row labels are exactly "Duration", "Consistency", "Efficiency", "Deep", "REM", "HR / HRV" in live and preview.
+- U19-5 [T] The CSV header still ends `score_status,derivation_version,score_version` (`export.spec.ts` unchanged); `git diff --stat` lists no `backend/` file.
+- U20-1 [T] Playwright: the Analytics main card contains no `.hint` and none of "Hover or focus the chart", "Metrics that share a unit", "Z-score =", "Dotted line:", "Dashed line:" across actual/normalized, rolling off/7/30 and averages on/off.
+- U20-2 [T] The rolling (dashed) and average (dotted) lines still render (`.rolling-line`, `.average-line` present when enabled); the chart's accessible label still contains the arrow-key instruction; existing keyboard crosshair tests pass.
+- U20-3 [T] The chip refusal note, "Choose at least one metric." and "No recorded nights yet" still appear in their states.
+- U21-1 [T] Playwright: every A/B string above (and borderline items (i) and (ii) if confirmed) is absent on its page in every mode; every C string and borderline (iii)/(iv) is still present (guards against over-removal).
+- U21-2 [T] Dashboard trend (90D and longer) and Correlations matrix: hovering still shows the night or pair readout; panel height is equal within 1 px before and during hover.
+- U21-3 [T] No card contains an empty, non-live `<p>`; `layout.spec.ts` card containment passes at every listed width; no horizontal overflow at 390 px.
+- U22-1 [T] D1-D3 appear exactly as written; the old long sentences are absent; an unscored night still shows its missing-data reason after "Not clinically calibrated."
+- R4-1 gate: G-1 `check.ps1 -Suite Full` exit 0; G-2/G-3 scoped staged diff and commit; G-4 DESIGN.md (text inventory, header, score card), TESTING.md and this section updated.
+
+### Phase R4-2 Visual preview (approval checkpoint, no production code)
+
+| ID | Status | Objective and bounded files |
+|---|---|---|
+| U23 | planned | **One synthetic preview** (DESIGN.md section 8) at `.cache/round4-preview/index.html` (git-ignored, synthetic data only) showing, on the real Analytics card styles: (a) the three KPI cards with rises and falls in **three softer good/bad pairs**, for example sage/rose, mint/coral, teal/ember, each also shown beside the Afterburn reds so "bad" is not mistaken for a metric colour; (b) "Zoom to fit hours axis" and "Show averages" as toggle switches in the Correlations switch style; (c) the redesigned zoom strip: a selection window with two grab handles, dimmed area outside the window, a date label while dragging, and a "Reset zoom" pill that appears only when zoomed. All three are interactive in the preview. |
+
+**Acceptance (R4-2)**
+- U23-1 [T] The preview uses synthetic data only and `git status` shows no change under `frontend/src` or `backend/`.
+- U23-2 [T] Each candidate colour has a contrast ratio of at least 4.5:1 against the KPI card background (computed and recorded here); neutral grey for "no change" likewise.
+- U23-3 [O] The owner picks one colour pair and approves the switch and zoom-strip look, or lists changes. Pass = owner says approved.
+
+### Phase R4-3 Build the approved visuals
+
+| ID | Status | Objective and bounded files |
+|---|---|---|
+| U24 | planned | **Good/bad delta colours** for the three KPI deltas, from one "higher is better" map (asleep_s, overall, hrv_mean). Rise = good colour, fall = bad colour, no change = neutral grey; arrows ▲/▼ stay so colour is never the only cue. Deep and REM get no tone (descriptive, S17/S18). Agent default: the accessible text adds "better" or "worse". Files: `Analytics.tsx`, `charts.ts` (pure tone helper), `style.css`, tests. |
+| U25 | planned | **Toggle switches** for "Zoom to fit hours axis" and "Show averages": one shared switch style used by Analytics and the Correlations best-fit toggle (Correlations looks the same as now). Native checkbox kept underneath, so names, roles and keyboard behaviour are unchanged. Files: `Analytics.tsx`, `Correlations.tsx` (class name only), `style.css`. |
+| U26 | planned | **Zoom strip with handles; sliders removed.** Two handles (`role="slider"`, names "Zoom start"/"Zoom end", value text is the full date), a window at least two nights wide, dimmed outside area, drag a handle to resize, drag inside the window to pan (agent default), drag on empty strip to draw a new window (as now), double-click resets (as now). Keyboard: Arrow ±1 night, PageUp/PageDown ±7, Home/End. "Reset zoom" pill only while zoomed. Pointer capture for mouse, pen and touch; reduced motion respected. Files: `Analytics.tsx` (`Brush`, toolbar), `style.css`, `charts-presets.spec.ts`, `averages.spec.ts`, new spec. |
+| U27 | planned | **Owner acceptance** on real data. |
+
+**Acceptance (R4-3)**
+- U24-1 [T] Unit: the tone helper returns good for a rise and bad for a fall in each of the three metrics, neutral for 0, none for null, and none for deep_s/rem_s.
+- U24-2 [T] Playwright with fixtures giving a rise and a fall: the delta span's computed colour equals the approved good/bad value; zero shows neutral grey; "No earlier nights to compare" stays muted; the U10-1 format check still passes.
+- U25-1 [T] Both controls are still `checkbox` roles with the same names; Space toggles them; a visible focus ring appears on keyboard focus; the track and knob sizes equal the Correlations switch.
+- U25-2 [T] Existing zoom-to-fit and Show-averages specs pass (default on, not remembered); "Zoom to fit" still appears only when an hours axis is shown.
+- U26-1 [T] Analytics has no `input[type=range]` and no visible "Zoom start"/"Zoom end" text labels.
+- U26-2 [T] Unzoomed, the handles sit at the strip ends; each handle's value text is the date at its position.
+- U26-3 [T] Pointer: dragging the start handle right by N nights makes the range label read (total − N) days; handles cannot cross or make a window under two nights; panning keeps the window length; drawing on the strip still zooms.
+- U26-4 [T] Keyboard: from a focused handle, Arrow, PageUp/PageDown and Home/End move it as specified and update the range label; the old slider keyboard test passes through the handle.
+- U26-5 [T] The "Reset zoom" pill is absent unzoomed, appears when zoomed and resets on click; double-click on the chart or strip resets; changing the date range resets zoom.
+- U26-6 [T] Whole-range average lines do not move while zooming (adapted `averages.spec.ts`).
+- U26-7 [T] At 390 px with touch emulation: handles are draggable, each hit area is at least 24 x 24 px, no horizontal overflow; `prefers-reduced-motion: reduce` runs no transition.
+- U27-1 [O] The owner uses Analytics on their own data and accepts the colours, switches and zoom strip. Pass = owner says accepted.
+- R4-3 gate: G-1 to G-4 as above; DESIGN.md (KPI delta colours, controls, zoom strip) and TESTING.md updated.
+
+Order: R4-1 (U19 to U22 in any order), then R4-2, then R4-3. R4-3 cannot start until U23 is approved. R4-2 changes no production code, so the owner may approve R4-1 and R4-2 together to save a round trip.
+
+### R4-1 verification evidence (2026-10-31)
+
+| Check | Evidence |
+|---|---|
+| Built | U19-U22 as specified; borderline (i)-(iv) per defaults. Header badge, PILOT SCORE pill, Version item, pilot-neutral tags, Analytics footer, all A/B strings, all chart-footer text removed; D1-D3 shortened. Live and preview dashboards changed alike |
+| Tests | New `e2e/round4-text.spec.ts` (U19-1, U19-2, U19-3, U19-4, U21-1 kept/removed guards, U22-1); `App.test.tsx`, `analytics.spec.ts`, `correlations.spec.ts` updated to the new text |
+| G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-31): Ruff, Mypy, 218 backend tests, 47 frontend unit tests, build, 79 Playwright tests, performance budgets, secret scan 172 files PASS, `pip-audit` and `npm audit` clean |
+| Not separately tested | U21-2 pixel-equal panel height before/during hover and U21-3 empty-paragraph scan were not written as dedicated tests; hover readouts keep their element with a non-breaking space, and the existing `layout.spec.ts` card-containment and 390 px checks pass |
+| CSV | `export.spec.ts` unchanged and passing: header still ends `derivation_version,score_version`; no `backend/` file changed |

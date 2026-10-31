@@ -17,7 +17,6 @@ export function DataExport(){
   }catch(e){setError(e instanceof Error?e.message:"Export failed.");}finally{setBusy(false);}
  }
  return <section className="panel export-panel" aria-labelledby="export-heading"><div className="panel-title"><h2 id="export-heading">Export nightly metrics</h2><span className="pill">CSV</span></div>
-  <p className="muted">One row per recorded night with the values SleepIQ computed (not the raw readings). Missing readings are left blank, never zero. Each row carries the derivation and score versions. Clock times are source-local. Raw readings are preserved in the daily backups. The file contains no credentials, source device names or file paths. Nights without a stored record are not listed.</p>
   {error&&<div role="alert" className="export-error">{error} {catalog.length===0&&<button onClick={()=>setRetry(n=>n+1)}>Retry</button>}</div>}
   {catalog.length>0&&<><fieldset className="export-metrics"><legend>Metrics</legend><div className="chart-toolbar"><button type="button" onClick={()=>setPicked(catalog.map(m=>m.id))}>Select all</button><button type="button" onClick={()=>setPicked([])}>Clear</button></div>
    {catalog.map(m=><label key={m.id}><input type="checkbox" checked={picked.includes(m.id)} onChange={e=>setPicked(e.target.checked?[...picked,m.id]:picked.filter(id=>id!==m.id))}/>{m.label} ({m.clock?"HH:MM":m.unit})</label>)}</fieldset>

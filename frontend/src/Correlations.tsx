@@ -136,7 +136,7 @@ function PairGrid({grid,x,y,onPick}:{grid:CorrelationGrid;x:string;y:string;onPi
     return <button key={col.id} type="button" className={`cx-cell${sel?" sel":""}${k<.3?" weak":""}`} data-x={col.id} data-y={row.id} style={{background:`rgba(${rgb},${(.05+k*.5).toFixed(3)})`}}
      aria-label={`${name}, r ${rText(cell.r)}, ${cell.n} paired nights`} aria-pressed={sel} onMouseEnter={()=>setHot([r,c])} onFocus={()=>setHot([r,c])} onClick={()=>onPick(col.id,row.id)}>{rText(cell.r)}</button>;})];})}
  </div></div>
- <div className="cx-grid-foot"><span className="cx-cell-info" aria-live="polite">{info||"Hover a cell for its pair and paired nights."}</span><span className="cx-ramp">moves opposite <i/> moves together</span></div></>;
+ <div className="cx-grid-foot"><span className="cx-cell-info" aria-live="polite">{info||" "}</span><span className="cx-ramp">moves opposite <i/> moves together</span></div></>;
 }
 
 export function Correlations(){
@@ -183,7 +183,7 @@ export function Correlations(){
     <div className="cx-sub">{pair?.start&&pair.end?<><time dateTime={pair.start}>{fullDay(pair.start)}</time> – <time dateTime={pair.end}>{fullDay(pair.end)}</time> · {pair.days} days</>:" "}</div></div>
     <div ref={plotRef} className="cx-plot-box">{pair&&plotWidth>0&&<Scatter data={pair} width={plotWidth} height={height} colourFrom={colourFrom} colourTo={colourTo} fit={fit} focus={focus} setFocus={setFocus}/>}</div>
     <div className="cx-foot" ref={footRef}><label className="cx-switch"><input type="checkbox" checked={fit} onChange={e=>setFit(e.target.checked)}/><span aria-hidden="true"/>Best-fit line</label>
-     <span className="cx-age">older <i/> newer</span><span>Hover, or focus the plot and use ← →</span></div>
+     <span className="cx-age">older <i/> newer</span></div>
    </section>
    <div className="cx-side" ref={sideRef}>
     <section className="cx-card" aria-labelledby="cx-r-label">
@@ -198,7 +198,7 @@ export function Correlations(){
      <div className="cx-label" id="cx-counts">Nights used</div>
      <dl className="cx-counts"><div><dt>Paired nights</dt><dd>{pair?.n??0}</dd></div><div><dt>{pair?.x.label??"X"} missing</dt><dd>{pair?.excluded.missing_x??0}</dd></div>
       <div><dt>{pair?.y.label??"Y"} missing</dt><dd>{pair?.excluded.missing_y??0}</dd></div><div><dt>Both missing</dt><dd>{pair?.excluded.neither??0}</dd></div></dl>
-     <p className="cx-caveat"><b>Exploratory only.</b> r shows how closely two measurements move together in a straight line. It is not a significance test or evidence of cause, and it is unstable with few nights. Nights missing either reading are left out, never filled in.</p>
+     <p className="cx-caveat"><b>Exploratory only.</b> Shows association, not cause; unreliable with few nights.</p>
      {pair&&pair.pairs.length>0&&<details className="cx-table"><summary>Paired nights as a table</summary><div className="chart-table"><table><thead><tr><th>Wake date</th><th>{pair.x.label}</th><th>{pair.y.label}</th></tr></thead>
       <tbody>{pair.pairs.map(p=><tr key={p.date}><td>{p.date}</td><td>{pairText(pair.x,p.x)}</td><td>{pairText(pair.y,p.y)}</td></tr>)}</tbody></table></div></details>}
     </section>
@@ -206,13 +206,12 @@ export function Correlations(){
   </div>
   <section className="cx-card" aria-labelledby="cx-time">
    <div className="cx-head"><div><div className="cx-label">Over time</div><h2 id="cx-time">Both measurements, night by night</h2><div className="cx-sub">Each line is scaled to its own range so their shapes can be compared</div></div>
-    <div className="cx-legend"><span><i className="cx-key-x"/>{catalog.find(m=>m.id===x)?.label}</span><span><i className="cx-key-y"/>{catalog.find(m=>m.id===y)?.label}</span><span className="cx-dim">Drag to focus on a stretch · double-click to reset</span></div></div>
+    <div className="cx-legend"><span><i className="cx-key-x"/>{catalog.find(m=>m.id===x)?.label}</span><span><i className="cx-key-y"/>{catalog.find(m=>m.id===y)?.label}</span></div></div>
    <div ref={stripRef} className="cx-strip-box">{strip&&stripWidth>0&&strip.dates.length>0&&<Strip series={strip} x={x} y={y} width={stripWidth} paired={paired} focus={focus} setFocus={setFocus} brush={brush} onBrush={b=>{setBrush(b);setFocus(null);}}/>}</div>
   </section>
   <section className="cx-card" aria-labelledby="cx-every">
-   <div className="cx-label">Every pair</div><h2 id="cx-every">All measurements at a glance</h2><div className="cx-sub">r for each pair over the same nights · select a cell to explore it</div>
+   <div className="cx-label">Every pair</div><h2 id="cx-every">All measurements at a glance</h2>
    {grid&&<PairGrid grid={grid} x={x} y={y} onPick={(a,b)=>{setX(a);setY(b);setFocus(null);}}/>}
   </section>
-  <p className="cx-note">Sleep onset and wake time are not offered: clock times wrap around midnight, so a straight-line correlation would mislead. {pair?.method}.</p>
  </div>;
 }

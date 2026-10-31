@@ -16,7 +16,7 @@ test("preview identifies synthetic data and disconnected operational status", ()
   expect(html).toContain("87.5");
   expect(html).toContain("Pilot ceiling");
   expect(html).toContain("Skip to content");
-  expect(html).toContain("Mean SDNN");
+  expect(html).not.toMatch(/pilot-\d|PILOT SCORE|pilot-neutral|Mean SDNN/);
   expect(html).not.toContain("Analyze");
 });
 
@@ -35,7 +35,7 @@ test("live dashboard shows an unscored night with reasons, gaps and genuine zero
   expect(html).toContain("95.7");
   expect(html).toMatch(/metric-value">0 <small>°C/);
   expect(html).toContain("no recording");
-  expect(html).toContain("pilot-neutral");
+  expect(html).not.toMatch(/pilot-\d|PILOT SCORE|pilot-neutral|derive-\d|Source-local time/);
   expect(html).toContain("3 nights");
 });
 test("loading, error and empty live states are explicit and never show preview numbers", () => {

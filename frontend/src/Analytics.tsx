@@ -167,7 +167,7 @@ function Composition({summary}:{summary:Summary}){
    <text x={cx} y={cy-2} textAnchor="middle" className="ring-big">{asleep===null?"—":hoursText(asleep)}</text><text x={cx} y={cy+18} textAnchor="middle" className="ring-small">average asleep</text>
   </svg>
   <ul className="stage-legend">{parts.map(p=><li key={p.k}><span><i style={{background:STAGE_COLOR[p.k]}}/>{p.label}</span><span className="muted">{p.minutes===null?"no reading":`${Math.round(p.minutes)} min · ${Math.round(p.percent??0)}%`}</span></li>)}</ul>
-  <p className="note">Mean per recorded night. Deep and REM are shown for description only; they are not targets.</p>
+  <p className="note">Deep and REM are descriptive, not targets.</p>
  </section>;
 }
 
@@ -205,7 +205,7 @@ function ClockStrip({summary,tiles}:{summary:Summary;tiles:ChartData}){
   if(!vals.length){lo=0;hi=1440;}if(hi-lo<240){const mid=(lo+hi)/2;lo=Math.floor((mid-120)/60)*60;hi=lo+240;}
   return {label,id,y,stats,med,vals,lo,hi,near,ink:color(id)};
  });
- return <section className="an-card clock-strip" aria-labelledby="clock-heading"><h3 id="clock-heading"><span>Bedtime &amp; wake time</span><span className="dim">source-local clock</span></h3>
+ return <section className="an-card clock-strip" aria-labelledby="clock-heading"><h3 id="clock-heading"><span>Bedtime &amp; wake time</span></h3>
   <svg viewBox={`0 0 ${Wd} 220`} role="img" aria-label={rows.map(r=>`${r.label}: typical ${r.med===null?"unavailable":clockText(r.med)}`).join("; ")}>
    {rows.map(r=>{const x=(v:number)=>left+(v-r.lo)/(r.hi-r.lo)*iw;const every=r.hi-r.lo>480?120:60;return <g key={r.label} className="clock-row" data-row={r.id}>
     {r.stats?.q1!=null&&r.stats.q3!=null&&<rect x={x(r.near(r.stats.q1))} y={r.y-16} width={Math.max(2,x(r.near(r.stats.q3))-x(r.near(r.stats.q1)))} height="32" rx="8" fill={r.ink} opacity=".12"/>}
@@ -214,7 +214,7 @@ function ClockStrip({summary,tiles}:{summary:Summary;tiles:ChartData}){
     {r.med!==null&&<><line x1={x(r.med)} x2={x(r.med)} y1={r.y-20} y2={r.y+20} className="median"/><text x={x(r.med)} y={r.y-26} textAnchor="middle" className="tick typical">typical {clockText(r.med)}</text></>}
     {Array.from({length:Math.floor((r.hi-r.lo)/every)+1},(_,k)=>r.lo+k*every).map(t=><text key={t} x={x(t)} y={r.y+36} textAnchor="middle" className="tick dim-tick">{clockText(t)}</text>)}
    </g>;})}
-  </svg><p className="note">Each dot is one night. The band shows your middle 50%; typical is the median, with midnight crossings kept continuous.</p></section>;
+  </svg></section>;
 }
 
 export function Analytics(){
@@ -310,17 +310,12 @@ export function Analytics(){
       <div className="chart-toolbar zoom-row"><label>Zoom start<input type="range" aria-label="Zoom start" min={0} max={Math.max(0,total-1)} value={za} onChange={e=>setZoom([Math.min(Number(e.target.value),zb),zb])}/></label><label>Zoom end<input type="range" aria-label="Zoom end" min={0} max={Math.max(0,total-1)} value={zb} onChange={e=>setZoom([za,Math.max(Number(e.target.value),za)])}/></label><button onClick={()=>setZoom(null)}>Reset zoom</button>
        {hasHours&&<label className="inline"><input type="checkbox" checked={fit} onChange={e=>setFit(e.target.checked)}/>Zoom to fit hours axis</label>}
        <label className="inline"><input type="checkbox" checked={averages} onChange={e=>setAverages(e.target.checked)}/>Show averages</label></div>
-      <p className="hint">Hover or focus the chart and use Left/Right (Home/End) for exact values · drag in the strip to zoom · double-click to reset · zoom keeps the range and normalization baseline</p>
      </>}
-     <p className="muted">{normalized?"Z-score = (value − mean) / population standard deviation over the selected range. Constant series are unavailable; clock times are excluded.":"Metrics that share a unit share an axis (all sleep durations in hours), with at most two axes and six lines. Clock times use source-local wall time; midnight crossings are not elapsed durations."}</p>
-     {averages&&<p className="muted">Dotted line: {normalized?"the average, which is 0 for every normalized metric":"each metric's average over the whole selected range, not just the zoomed part; nights without a reading are left out. Clock times have no average"}.</p>}
-     {selection.rolling!=="off"&&<p className="muted">Dashed line: trailing {selection.rolling}-day calendar mean, shown only when at least {selection.rolling==="7"?4:15} of those {selection.rolling} nights were recorded. Missing nights are skipped, never counted as zero; early windows may include recorded nights before the range starts. Not available for clock times.</p>}
     </section>
     {win&&win.summary.nights>0&&<Composition summary={win.summary}/>}
    </div>
    {win&&win.summary.nights>0&&<><Tiles summary={win.summary} tiles={win.tiles} catalog={byId} selected={selection.metrics} onPick={pick}/>
-    <div className="an-row2"><StageBars tiles={win.tiles}/><ClockStrip summary={win.summary} tiles={win.tiles}/></div>
-    <p className="muted versions">{win.summary.versions.join(" · ")} · averages exclude nights without a reading</p></>}
+    <div className="an-row2"><StageBars tiles={win.tiles}/><ClockStrip summary={win.summary} tiles={win.tiles}/></div></>}
   </div>}
  </div>;
 }

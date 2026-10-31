@@ -9,7 +9,7 @@ test("rolling averages show coverage, skip clock times and persist in presets",a
  await open(page,"Analytics");await expect(page.locator(".main-svg")).toBeVisible();
  await choose(page,"Rolling average","7-day avg");
  await expect(line(page,"asleep_s").locator(".rolling-line").first()).toBeAttached();
- await expect(page.getByText(/Dashed line: trailing 7-day calendar mean/)).toBeVisible();
+ await expect(page.getByText(/Dashed line:/)).toHaveCount(0);
  await page.screenshot({path:"../.cache/rolling-desktop.png",fullPage:true});
  // The crosshair tooltip carries the coverage text (the table view was removed in U11).
  await page.locator(".chart-frame").focus();
