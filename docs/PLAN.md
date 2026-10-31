@@ -1147,7 +1147,7 @@ Shortened D strings (U22): D1 Correlations caveat becomes "**Exploratory only.**
 | U24 | done | **Good/bad delta colours** for the three KPI deltas, from one "higher is better" map (asleep_s, overall, hrv_mean). Rise = good colour, fall = bad colour, no change = neutral grey; arrows ▲/▼ stay so colour is never the only cue. Deep and REM get no tone (descriptive, S17/S18). Agent default: the accessible text adds "better" or "worse". Files: `Analytics.tsx`, `charts.ts` (pure tone helper), `style.css`, tests. |
 | U25 | done | **Toggle switches** for "Zoom to fit hours axis" and "Show averages": one shared switch style used by Analytics and the Correlations best-fit toggle (Correlations looks the same as now). Native checkbox kept underneath, so names, roles and keyboard behaviour are unchanged. Files: `Analytics.tsx`, `Correlations.tsx` (class name only), `style.css`. |
 | U26 | done | **Zoom strip with handles; sliders removed.** Two handles (`role="slider"`, names "Zoom start"/"Zoom end", value text is the full date), a window at least two nights wide, dimmed outside area, drag a handle to resize, drag inside the window to pan (agent default), drag on empty strip to draw a new window (as now), double-click resets (as now). Keyboard: Arrow ±1 night, PageUp/PageDown ±7, Home/End. "Reset zoom" pill only while zoomed. Pointer capture for mouse, pen and touch; reduced motion respected. Files: `Analytics.tsx` (`Brush`, toolbar), `style.css`, `charts-presets.spec.ts`, `averages.spec.ts`, new spec. |
-| U27 | awaiting_approval | **Owner acceptance** on real data. |
+| U27 | done | **Owner acceptance** on real data. |
 
 **Acceptance (R4-3)**
 - U24-1 [T] Unit: the tone helper returns good for a rise and bad for a fall in each of the three metrics, neutral for 0, none for null, and none for deep_s/rem_s.
@@ -1185,7 +1185,7 @@ Order: R4-1 (U19 to U22 in any order), then R4-2, then R4-3. R4-3 cannot start u
 | Tests | New `e2e/round4-visuals.spec.ts` (U24-2, U25-1, U26-1 to U26-5, 390 px grab test); `charts.test.ts` (U24-1); `averages.spec.ts` slider steps replaced with handle keyboard presses |
 | Not separately tested | U26-6 *(superseded by U28: the average now follows the zoom)*; U26-7 touch emulation is mouse-driven at 390 px (no touch device emulation); the handle's hit area is a 14 px reach computed in code, not an element at least 24 x 24 px |
 | G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-31): Ruff, Mypy, 218 backend tests, 48 frontend unit tests, build, 85 Playwright tests, performance budgets, secret scan 173 files PASS, `pip-audit` and `npm audit` clean |
-| U27 | Awaiting the owner's acceptance on real data |
+| U27 | Accepted by the owner on 2026-10-31 ("I like the improvements") |
 
 ## Improvements, round 5 (P32)
 
@@ -1202,7 +1202,7 @@ Owner-requested on 2026-10-31; request and answers in DECISIONS P32. **Owner app
 | ID | Status | Objective and bounded files |
 |---|---|---|
 | U28 | done | **Visible-window average.** A pure helper in `charts.ts` returns the mean of the non-null values of a sliced series (null when none). `MainChart` draws each metric's dotted line at that mean (converted to the axis unit like the values) and the label and tooltip "<metric> average" use the same number through one formatter, so the three can never disagree. Normalized mode keeps its single line at 0 labelled "average (0)". Clock metrics get no line. A window with no readings for a metric draws no line; its tooltip average reads "no reading". "Zoom to fit" keeps every line inside the plot (the visible mean is included in the axis domain as now). Files: `charts.ts`, `Analytics.tsx`, `charts.test.ts`, `averages.spec.ts`; docs below. |
-| U29 | awaiting_approval | **Owner acceptance** on real data. |
+| U29 | done | **Owner acceptance** on real data. |
 
 **Acceptance (R5-1)**
 - U28-1 [T] Unit: the helper returns the mean of observed values only (nulls excluded, not counted as zero), null for an all-null or empty window, and equals a hand-calculated value for a fixture with gaps.
@@ -1231,5 +1231,8 @@ Owner-requested on 2026-10-31; request and answers in DECISIONS P32. **Owner app
 | U28-8 | "zoom to fit keeps every average line in the plot, zoomed or not" |
 | U28-9 | `git diff --stat` for the commit lists no `backend/` file; `test_average_is_mean_of_observed_nights_whatever_the_rolling_setting` still passes |
 | G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-31): Ruff, Mypy, 218 backend tests, 49 frontend unit tests, build, 87 Playwright tests, performance budgets, secret scan 173 files PASS, `pip-audit` and `npm audit` clean |
-| U29 | Awaiting the owner's acceptance on real data |
+| U29 | Accepted by the owner on 2026-10-31 ("I like the improvements") |
 
+### Rounds 4 and 5 (P31, P32) status (2026-10-31)
+
+**Complete and accepted by the owner** (U19-U29 done). Commits: `25ebe72` (R4-1), `424e489` (R4-2/R4-3), `2663f2c` (R5-1). Any new work needs owner approval.
