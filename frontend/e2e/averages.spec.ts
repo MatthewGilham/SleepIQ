@@ -39,14 +39,59 @@ test("one dotted average line per metric at the independently derived mean",asyn
  await expect(page.locator(".main-svg .rolling-line").first()).toHaveAttribute("stroke-dasharray","5 5");
 });
 
-test("zooming keeps the whole-range average; zoom to fit keeps lines in the plot",async({page})=>{
+// P32: the line, its label and the tooltip describe the nights on screen. i = 90..119 is the unzoomed range.
+const win=(from:number,to:number)=>Array.from({length:to-from+1},(_,k)=>from+k);
+const labels=(idx:number[])=>({sleep:`avg ${hm(mean(idx.filter(recorded).map(i=>390+i%40)))}`,hrv:`avg ${mean(idx.filter(i=>recorded(i)&&i%9!==0).map(i=>35+i%23)).toFixed(0)} ms`});
+const WIN_20_29=win(110,119),WIN_0_22=win(90,111),WIN_10_19=win(100,109);
+async function strip(page:any){await page.locator(".brush").scrollIntoViewIfNeeded();return (await page.locator(".brush").boundingBox())!;}
+async function expectLabels(page:any,idx:number[]){
+ const want=labels(idx);
+ await expect(avg(page,"asleep_s").locator(".average-label")).toHaveText(want.sleep);
+ await expect(avg(page,"hrv_mean").locator(".average-label")).toHaveText(want.hrv);
+}
+
+test("the average follows the zoom: handles, panning and reset",async({page})=>{
  await open(page);
- await page.getByRole("slider",{name:"Zoom start"}).focus();for(let k=0;k<20;k++)await page.keyboard.press("ArrowRight");await expect(page.locator(".range-label")).toContainText("10 days");
- await expect(avg(page,"asleep_s").locator(".average-label")).toHaveText(ASLEEP_LABEL);
- await expect(avg(page,"hrv_mean").locator(".average-label")).toHaveText(HRV_LABEL);
+ // The stretches must really differ, or the test could pass without the line moving.
+ expect(labels(WIN_20_29).sleep).not.toBe(labels(last30).sleep);expect(labels(WIN_20_29).hrv).not.toBe(labels(last30).hrv);
+ await expectLabels(page,last30);
+ await page.getByRole("slider",{name:"Zoom start"}).focus();for(let k=0;k<20;k++)await page.keyboard.press("ArrowRight");
+ await expect(page.locator(".range-label")).toContainText("10 days");
+ await expectLabels(page,WIN_20_29);
+ // The line sits at the visible mean on its own axis (hours start at zero; top = 1.1 x the highest visible night).
+ const visibleH=WIN_20_29.filter(recorded).map(i=>(390+i%40)/60);
+ expect(Math.abs(await y1(avg(page,"asleep_s").locator("line"))-yAt(mean(visibleH),0,Math.max(...visibleH)*1.1))).toBeLessThanOrEqual(1);
+ // Tooltip repeats the same text as the label.
+ await page.locator(".chart-frame").focus();
+ await expect(page.locator('.chart-tip .tip-row.average[data-average="asleep_s"] span').last()).toHaveText(labels(WIN_20_29).sleep);
+ await expect(page.locator('.chart-tip .tip-row.average[data-average="hrv_mean"] span').last()).toHaveText(labels(WIN_20_29).hrv);
+ // Panning the window 10 nights to the left.
+ const box=await strip(page),y=box.y+box.height/2,px=(k:number)=>box.x+box.width*(56+k/29*788)/900;
+ await page.mouse.move(px(25),y);await page.mouse.down();await page.mouse.move(px(15),y,{steps:8});await page.mouse.up();
+ await expect(page.locator(".range-label")).toContainText("10 days");await expectLabels(page,WIN_10_19);
+ // Reset zoom returns to the whole range.
+ await page.getByRole("button",{name:"Reset zoom"}).click();await expect(page.locator(".range-label")).toContainText("30 days");await expectLabels(page,last30);
+ // The end handle also moves the line.
+ await page.getByRole("slider",{name:"Zoom end"}).focus();await page.keyboard.press("PageDown");await page.keyboard.press("ArrowLeft");
+ await expect(page.locator(".range-label")).toContainText("22 days");await expectLabels(page,WIN_0_22);
+});
+
+test("zoom to fit keeps every average line in the plot, zoomed or not",async({page})=>{
+ await open(page);
  await page.getByRole("checkbox",{name:"Zoom to fit hours axis"}).check();
- for(const line of await page.locator(".main-svg .average-line").all()){const y=await y1(line);expect(y).toBeGreaterThanOrEqual(T);expect(y).toBeLessThanOrEqual(T+IH);}
- await expect(avg(page,"asleep_s").locator(".average-label")).toHaveText(ASLEEP_LABEL);
+ const inside=async()=>{for(const line of await page.locator(".main-svg .average-line").all()){const y=await y1(line);expect(y).toBeGreaterThanOrEqual(T);expect(y).toBeLessThanOrEqual(T+IH);}};
+ await inside();
+ await page.getByRole("slider",{name:"Zoom start"}).focus();for(let k=0;k<20;k++)await page.keyboard.press("ArrowRight");
+ await expectLabels(page,WIN_20_29);await inside();
+});
+
+test("normalized mode keeps one line at 0 while zooming",async({page})=>{
+ await open(page);
+ await page.getByRole("group",{name:"Display"}).getByRole("button",{name:"Normalized",exact:true}).click();
+ await expect(page.locator(".main-svg .average-line")).toHaveCount(1);
+ await page.getByRole("slider",{name:"Zoom start"}).focus();for(let k=0;k<20;k++)await page.keyboard.press("ArrowRight");
+ await expect(page.locator(".range-label")).toContainText("10 days");
+ await expect(page.locator(".main-svg .average-line")).toHaveCount(1);await expect(page.locator(".main-svg .average-label")).toHaveText("average (0)");
 });
 
 test("Show averages is on by default, toggles every line and is not remembered",async({page})=>{

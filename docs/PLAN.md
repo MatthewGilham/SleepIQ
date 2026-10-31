@@ -1183,13 +1183,13 @@ Order: R4-1 (U19 to U22 in any order), then R4-2, then R4-3. R4-3 cannot start u
 | R4-2 deviation | The owner delegated the visual choices ("go with your recomendations"), so no separate preview was built (U23 `done` by delegation, not by owner viewing). The agent chose soft **sage `#8fcf9f` (good) / rose `#e0788f` (bad)**, neutral `#b4a0a3`; contrast on the card background `#1c1316` computed 10.05 / 6.28 / 7.36 (all above 4.5:1, U23-2). The owner looks at the built result in U27 and may ask for a different pair |
 | Built | U24 `deltaTone` helper plus coloured deltas (arrows kept, tooltip says better/worse); U25 `Switch` for "Zoom to fit hours axis" and "Show averages"; U26 zoom strip with two `role="slider"` handles, panning, draw-to-zoom, drag date label, "Reset zoom" pill only when zoomed, sliders removed. Correlations keeps its own `.cx-switch` with identical 30 x 17 px dimensions (agent default: the two share a look, not a class) |
 | Tests | New `e2e/round4-visuals.spec.ts` (U24-2, U25-1, U26-1 to U26-5, 390 px grab test); `charts.test.ts` (U24-1); `averages.spec.ts` slider steps replaced with handle keyboard presses |
-| Not separately tested | U26-6 is covered by the adapted `averages.spec.ts` (whole-range average kept while zoomed); U26-7 touch emulation is mouse-driven at 390 px (no touch device emulation); the handle's hit area is a 14 px reach computed in code, not an element at least 24 x 24 px |
+| Not separately tested | U26-6 *(superseded by U28: the average now follows the zoom)*; U26-7 touch emulation is mouse-driven at 390 px (no touch device emulation); the handle's hit area is a 14 px reach computed in code, not an element at least 24 x 24 px |
 | G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-31): Ruff, Mypy, 218 backend tests, 48 frontend unit tests, build, 85 Playwright tests, performance budgets, secret scan 173 files PASS, `pip-audit` and `npm audit` clean |
 | U27 | Awaiting the owner's acceptance on real data |
 
 ## Improvements, round 5 (P32)
 
-Owner-requested on 2026-10-31; request and answers in DECISIONS P32. **Status: planned, awaiting owner approval to implement.** One phase, one build task. Frontend and docs only: no backend, API, stored data, migration or dependency change. Common gates G-1 to G-4 apply and the phase ends with a scoped local commit. Status vocabulary as above.
+Owner-requested on 2026-10-31; request and answers in DECISIONS P32. **Owner approved implementation 2026-10-31 ("Yes implement U28 now"). U28 `done`; U29 awaiting owner acceptance.** One phase, one build task. Frontend and docs only: no backend, API, stored data, migration or dependency change. Common gates G-1 to G-4 apply and the phase ends with a scoped local commit. Status vocabulary as above.
 
 **Findings behind the plan (agent investigation, 2026-10-31)**
 - In `Analytics.tsx` `MainChart`, `mean(s)` returns `s.normalization.mean` (Python's whole-selected-range mean). `sliceSeries` keeps that field unchanged when zooming, which is why the line and its label never move. The tooltip rows use `averageText(s)` in `charts.ts`, which reads the same field, so label, line and tooltip must change together.
@@ -1201,8 +1201,8 @@ Owner-requested on 2026-10-31; request and answers in DECISIONS P32. **Status: p
 
 | ID | Status | Objective and bounded files |
 |---|---|---|
-| U28 | planned | **Visible-window average.** A pure helper in `charts.ts` returns the mean of the non-null values of a sliced series (null when none). `MainChart` draws each metric's dotted line at that mean (converted to the axis unit like the values) and the label and tooltip "<metric> average" use the same number through one formatter, so the three can never disagree. Normalized mode keeps its single line at 0 labelled "average (0)". Clock metrics get no line. A window with no readings for a metric draws no line; its tooltip average reads "no reading". "Zoom to fit" keeps every line inside the plot (the visible mean is included in the axis domain as now). Files: `charts.ts`, `Analytics.tsx`, `charts.test.ts`, `averages.spec.ts`; docs below. |
-| U29 | planned | **Owner acceptance** on real data. |
+| U28 | done | **Visible-window average.** A pure helper in `charts.ts` returns the mean of the non-null values of a sliced series (null when none). `MainChart` draws each metric's dotted line at that mean (converted to the axis unit like the values) and the label and tooltip "<metric> average" use the same number through one formatter, so the three can never disagree. Normalized mode keeps its single line at 0 labelled "average (0)". Clock metrics get no line. A window with no readings for a metric draws no line; its tooltip average reads "no reading". "Zoom to fit" keeps every line inside the plot (the visible mean is included in the axis domain as now). Files: `charts.ts`, `Analytics.tsx`, `charts.test.ts`, `averages.spec.ts`; docs below. |
+| U29 | awaiting_approval | **Owner acceptance** on real data. |
 
 **Acceptance (R5-1)**
 - U28-1 [T] Unit: the helper returns the mean of observed values only (nulls excluded, not counted as zero), null for an all-null or empty window, and equals a hand-calculated value for a fixture with gaps.
@@ -1218,4 +1218,18 @@ Owner-requested on 2026-10-31; request and answers in DECISIONS P32. **Status: p
 - U29-1 [O] Owner zooms from 90 days to a shorter stretch on their own data and confirms the single line follows the zoom and reads as the average of what is on screen. Pass = owner says accepted.
 
 **Docs to update at implementation (G-4), listed so none is missed:** DESIGN.md "Average lines" (change "whole selected range, not the zoomed part" to the visible window; keep the Normalized and clock-time rules); ARCHITECTURE.md timeseries contract line on `normalization.mean` (state it is no longer used for the line; the page computes the visible mean as a displayed figure, per P32); TESTING.md average-line section (zoom behaviour); this file: U08-2 and U26-6 marked superseded by U28, plus a verification-evidence table.
+
+### R5-1 verification evidence (2026-10-31)
+
+| Check | Evidence |
+|---|---|
+| Built | `visibleMean` and `averageText` (now fed by the sliced series' `raw` values) in `charts.ts`; `MainChart` draws the line at the visible mean; label and tooltip share `averageText`; Normalized keeps its single line at 0. No backend, API or dependency change |
+| U28-1 | `charts.test.ts`: `visibleMean` ignores nulls, follows a slice, null for all-null and empty; `averageText` cases for ordinary, normalized, no-reading and clock metrics |
+| U28-2 to U28-5 | `averages.spec.ts` "the average follows the zoom": expected means derived from the fixture formula for the full range, a keyboard-zoomed 10-night stretch (asserted to differ from the full-range value), a mouse-panned stretch, the end handle (22 nights) and Reset zoom; line y within 1 px of the independently derived value; tooltip average text equals the label |
+| U28-6 | "normalized mode keeps one line at 0 while zooming"; U08-3 to U08-5 tests unchanged and passing |
+| U28-7 | **Unit-only**: the fixture cannot give a browser window with no readings for a metric (unrecorded nights are isolated; the smallest window is two nights). Covered by the `visibleMean`/`averageText` unit tests |
+| U28-8 | "zoom to fit keeps every average line in the plot, zoomed or not" |
+| U28-9 | `git diff --stat` for the commit lists no `backend/` file; `test_average_is_mean_of_observed_nights_whatever_the_rolling_setting` still passes |
+| G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-31): Ruff, Mypy, 218 backend tests, 49 frontend unit tests, build, 87 Playwright tests, performance budgets, secret scan 173 files PASS, `pip-audit` and `npm audit` clean |
+| U29 | Awaiting the owner's acceptance on real data |
 

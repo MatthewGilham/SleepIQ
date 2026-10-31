@@ -1,6 +1,6 @@
 ﻿import {expect,test} from "vitest";
 import {ageColour,groupMetrics,nearestPoint,niceAxis,pairText,rText,scatterHeight,averageText,bezierAt,chartSegments,curveRuns,display,fileNameFrom,fitMetrics,formatValue,groupAxes,refusal,rollingNote,scatterLayout,sliceSeries,toAxis,withDefaults} from "./charts";
-import {deltaTone} from "./charts";
+import {deltaTone,visibleMean} from "./charts";
 import type {Pt} from "./charts";
 import type {Series} from "./charts";
 test("rolling notes always show coverage and never invent a mean",()=>{
@@ -73,13 +73,22 @@ test("durations are shown in hours and missing values say so",()=>{
  expect(display({id:"onset_minute",unit:"local time",clock:true},1439.6)).toBe("00:00");
  expect(display(hr,0.5,true)).toBe("0.50 z");
 });
-test("average labels format Python's whole-range mean and skip clock times",()=>{
- const norm=(mean:number|null)=>({n:3,mean,sd:1,reason:null,method:"z"});
- expect(averageText({id:"asleep_s",unit:"h",clock:false,normalization:norm(415/60)})).toBe("avg 6h 55m");
- expect(averageText({id:"hrv_mean",unit:"ms",clock:false,normalization:norm(44.4)})).toBe("avg 44 ms");
- expect(averageText({id:"hrv_mean",unit:"ms",clock:false,normalization:norm(44.4)},true)).toBe("average (0)");
- expect(averageText({id:"temp_mean",unit:"°C",clock:false,normalization:norm(null)})).toBe("no reading");
- expect(averageText({id:"onset_minute",unit:"local time",clock:true,normalization:norm(1400)})).toBeNull();
+test("average labels use the mean of the nights shown and skip clock times (P32)",()=>{
+ const sh=(id:string,unit:string,raw:(number|null)[],clock=false)=>({id,unit,clock,raw});
+ expect(averageText(sh("asleep_s","min",[410,null,420]))).toBe("avg 6h 55m");
+ expect(averageText(sh("hrv_mean","ms",[44,null,45,44]))).toBe("avg 44 ms");
+ expect(averageText(sh("hrv_mean","ms",[44,45]),true)).toBe("average (0)");
+ expect(averageText(sh("temp_mean","°C",[null,null]))).toBe("no reading");
+ expect(averageText(sh("hrv_mean","ms",[]),true)).toBe("no reading");
+ expect(averageText(sh("onset_minute","local time",[1400],true))).toBeNull();
+});
+test("visibleMean averages observed nights only and follows the slice (P32)",()=>{
+ const raw=[10,null,20,30,null,60];
+ expect(visibleMean({raw})).toBe(30);
+ expect(visibleMean({raw:raw.slice(2,4)})).toBe(25);
+ expect(visibleMean({raw:[null,null]})).toBeNull();
+ expect(visibleMean({raw:[]})).toBeNull();
+ expect(visibleMean({raw:[0,0,6]})).toBe(2);
 });
 
 test("correlation axes use round steps that cover every value (U17)",()=>{

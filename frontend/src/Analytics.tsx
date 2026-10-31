@@ -1,7 +1,7 @@
 import {useEffect,useRef,useState} from "react";
 import type {ReactNode} from "react";
 
-import {averageText,axisUnit,chartRequest,clockText,curveRuns,deltaTone,display,fitMetrics,hoursText,initialSelection,refusal,rollingNote,runPath,sliceSeries,toAxis,unitName,withDefaults} from "./charts";
+import {averageText,axisUnit,chartRequest,clockText,curveRuns,deltaTone,display,visibleMean,fitMetrics,hoursText,initialSelection,refusal,rollingNote,runPath,sliceSeries,toAxis,unitName,withDefaults} from "./charts";
 import {fullDay,shortDay,tickDays} from "./dashboardModel";
 import type {ChartData,Metric,Preset,Selection,Series,Summary} from "./charts";
 
@@ -90,8 +90,8 @@ function MainChart({series,dates,normalized,fit,averages,recorded,onReset}:{seri
  const [cursor,setCursor]=useState<number|null>(null);const svg=useRef<SVGSVGElement>(null),box=useRef<HTMLDivElement>(null);
  const n=dates.length,c=cursor!==null&&cursor<n?cursor:null;
  const value=(s:Series,v:number|null)=>normalized?v:toAxis(s,v);
- // U08: dotted mean over the whole selected range (Python's normalization.mean), so zooming never moves it. Normalized series all average 0.
- const mean=(s:Series)=>!averages||s.clock||s.normalization.mean===null?null:normalized?0:toAxis(s,s.normalization.mean);
+ // P32: dotted mean of the nights on screen, so it follows the zoom. Normalized mode keeps one reference line at 0.
+ const mean=(s:Series)=>{const m=visibleMean(s);return !averages||s.clock||m===null?null:normalized?0:toAxis(s,m);};
  const units:string[]=[];series.forEach(s=>{const u=axisUnit(s,normalized);if(!units.includes(u))units.push(u);});
  const axes=units.map((unit,k)=>{
   const members=series.filter(s=>axisUnit(s,normalized)===unit);
