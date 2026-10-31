@@ -6,7 +6,6 @@
 Build a secure, local-first Windows sleep analytics web app: Apple Watch / Apple Health → Health Auto Export → authenticated encrypted LAN ingestion → FastAPI → SQLite → React/TypeScript dashboard, charts, and versioned scoring. The **owner learns and makes meaningful decisions**; the agent designs, implements, tests and explains.
 
 ## Hard constraints
-- No scope creep: **no nocturia, manual daily log, notes, training, official Apple Sleep Score, general chatbot**, or excluded extras. Missing readings remain missing. Support configured Health Auto Export metrics, not the entire Health catalog.
 - **Never ship proof-of-concept HTTP+8-character-token receiver.** Permanent syncing requires encrypted authenticated trusted-LAN solution and owner approval. No public exposure, silent cloud sync, health-data telemetry or secret leakage.
 - Owner-approved choices in `docs/DECISIONS.md` are authoritative. Preserve individual readings, idempotent imports, time-zone/DST correctness, score versioning, 14 successful daily backups, manually launched shortcut.
 - Changes involving data deletion, real records, API spend, infrastructure/certificate/firewall permissions, security policy, irreversible migration, architecture or significant UX require owner approval.
@@ -61,3 +60,27 @@ Owner authorization (2026-10-29): agents may download, resolve, lock, install an
 Keep manifests/lockfiles synchronized, prefer locked installs, retain audit/test gates, and inspect unexpected package changes. Keep npm lifecycle scripts disabled unless a specific required build step has been inspected. This permission does not approve global/system installs, administrator privileges, arbitrary downloaded scripts, health-data/secret disclosure, paid services, changes to DNS/firewall/certificate trust, security-policy changes or a new architectural dependency choice. Existing phase-transition approval remains required.
 
 Repository instructions record owner consent; they do not override tool sandbox/network restrictions. Never change proxy, execution policy or sandbox controls to evade a restriction. If downloads are technically blocked, record the exact failure and use the smallest necessary owner-assisted install step; do not ask for consent already granted here.
+
+## Keep it small
+-100 lines beat 1000
+-No dead code, no feature I didn't ask for
+-Remove whatever you replaced
+
+## Touch only the task
+-Edit only the files the task needs
+-Leave unrelated code exactly as you found it
+
+## Success criteria first
+-Turn every request into a check that passess or fails
+-Write the test, watch it fail, then make it pass
+
+## Correct first, fast second
+-Ship the obviously correct version first
+-Optimise only when tests stay green
+
+## Loop with real tools
+-Use the shell, the test runner and the browser. Iterate until the check passes
+
+
+
+

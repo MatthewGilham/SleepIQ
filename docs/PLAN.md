@@ -1186,3 +1186,36 @@ Order: R4-1 (U19 to U22 in any order), then R4-2, then R4-3. R4-3 cannot start u
 | Not separately tested | U26-6 is covered by the adapted `averages.spec.ts` (whole-range average kept while zoomed); U26-7 touch emulation is mouse-driven at 390 px (no touch device emulation); the handle's hit area is a 14 px reach computed in code, not an element at least 24 x 24 px |
 | G-1 | `check.ps1 -Suite Full` exit 0 (2026-10-31): Ruff, Mypy, 218 backend tests, 48 frontend unit tests, build, 85 Playwright tests, performance budgets, secret scan 173 files PASS, `pip-audit` and `npm audit` clean |
 | U27 | Awaiting the owner's acceptance on real data |
+
+## Improvements, round 5 (P32)
+
+Owner-requested on 2026-10-31; request and answers in DECISIONS P32. **Status: planned, awaiting owner approval to implement.** One phase, one build task. Frontend and docs only: no backend, API, stored data, migration or dependency change. Common gates G-1 to G-4 apply and the phase ends with a scoped local commit. Status vocabulary as above.
+
+**Findings behind the plan (agent investigation, 2026-10-31)**
+- In `Analytics.tsx` `MainChart`, `mean(s)` returns `s.normalization.mean` (Python's whole-selected-range mean). `sliceSeries` keeps that field unchanged when zooming, which is why the line and its label never move. The tooltip rows use `averageText(s)` in `charts.ts`, which reads the same field, so label, line and tooltip must change together.
+- `s.values` in the sliced series already holds only the visible nights (nulls for unrecorded ones), so a mean of the non-null values of `s.values` is exactly "the average of what is on screen".
+- Normalized mode: z-scores use the whole-range mean and deviation (unchanged); its single line sits at 0 and stays there (P32 Q1).
+- Tests encoding the old behaviour: `averages.spec.ts` "zooming keeps the whole-range average ..." (U08-2 / U26-6), `charts.test.ts` "average labels format Python's whole-range mean ...". Docs encoding it: DESIGN.md "Average lines (U08)", ARCHITECTURE.md timeseries contract (line 331), TESTING.md "Layout and average-line browser tests", PLAN.md U08-2.
+
+### Phase R5-1 Averages follow the zoom
+
+| ID | Status | Objective and bounded files |
+|---|---|---|
+| U28 | planned | **Visible-window average.** A pure helper in `charts.ts` returns the mean of the non-null values of a sliced series (null when none). `MainChart` draws each metric's dotted line at that mean (converted to the axis unit like the values) and the label and tooltip "<metric> average" use the same number through one formatter, so the three can never disagree. Normalized mode keeps its single line at 0 labelled "average (0)". Clock metrics get no line. A window with no readings for a metric draws no line; its tooltip average reads "no reading". "Zoom to fit" keeps every line inside the plot (the visible mean is included in the axis domain as now). Files: `charts.ts`, `Analytics.tsx`, `charts.test.ts`, `averages.spec.ts`; docs below. |
+| U29 | planned | **Owner acceptance** on real data. |
+
+**Acceptance (R5-1)**
+- U28-1 [T] Unit: the helper returns the mean of observed values only (nulls excluded, not counted as zero), null for an all-null or empty window, and equals a hand-calculated value for a fixture with gaps.
+- U28-2 [T] Playwright, synthetic store, 30 days, Total asleep and Overnight HRV: unzoomed, each line's y and label equal the independently derived mean of all 30 nights (existing U08-1 values still pass, within 1 px).
+- U28-3 [T] Playwright: after zooming to the last 10 nights (by keyboard on the "Zoom start" handle) the label and line equal the independently derived mean of those 10 nights, differ from the unzoomed value, and the range label reads "10 days". The fixture formula must give a different mean for that stretch (asserted, so the test cannot pass vacuously).
+- U28-4 [T] Playwright: dragging the "Zoom end" handle, panning the window, and "Reset zoom" each update the line and label to the mean of the then-visible nights; after Reset zoom they equal the unzoomed values again.
+- U28-5 [T] Playwright: the tooltip "average" row for each metric has exactly the same text as that metric's line label at the same zoom (unzoomed and zoomed).
+- U28-6 [T] Playwright: Normalized mode still shows exactly one line at 0 labelled "average (0)" before and after zooming; Sleep onset and Wake time still have none; "Show averages" is on by default, unchecking removes every line and label, and it is not remembered (U08-3, U08-4, U08-5 unchanged and passing).
+- U28-7 [T] A window in which a metric has no readings draws no line for it and its tooltip average says "no reading". If the synthetic fixture cannot produce such a window in the browser, this is checked as a unit test of the helper and recorded here as unit-only.
+- U28-8 [T] With "Zoom to fit hours axis" on, every line stays inside the plot area at full range and when zoomed (extends U08-7).
+- U28-9 [T] `git diff --stat` lists no `backend/` file; the `normalization.mean` backend test (U08-8) is untouched and passes.
+- U28-10 [T] G-1: `check.ps1 -Suite Full` exit 0 with the updated and new tests; G-2/G-3 scoped staged list and commit; G-4 docs below.
+- U29-1 [O] Owner zooms from 90 days to a shorter stretch on their own data and confirms the single line follows the zoom and reads as the average of what is on screen. Pass = owner says accepted.
+
+**Docs to update at implementation (G-4), listed so none is missed:** DESIGN.md "Average lines" (change "whole selected range, not the zoomed part" to the visible window; keep the Normalized and clock-time rules); ARCHITECTURE.md timeseries contract line on `normalization.mean` (state it is no longer used for the line; the page computes the visible mean as a displayed figure, per P32); TESTING.md average-line section (zoom behaviour); this file: U08-2 and U26-6 marked superseded by U28, plus a verification-evidence table.
+
