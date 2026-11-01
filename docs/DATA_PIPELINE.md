@@ -63,7 +63,7 @@ The owner has since selected Since Last Sync. Whether it misses stages that Heal
 
 The single-file metadata report confirms expected metric/unit blocks and offset-bearing timestamp pairs, while leaving numerical validity, actual source identities, sleep-stage values and current automation settings unverified. Counts and progress evidence live only in PLAN.md.
 
-HR samples have equal start/end instants and Avg/Min/Max rather than qty. Apply the current D6/P4 arithmetic mean fallback to valid in-window Avg readings, with method label, sample count and coverage limitation; never infer measured coverage from point spacing. Estimated point interpolation is specified in [P34](#proposed-sleeping-hr-time-weighting-p34), accepted as an implementation policy in HR-1 but not implemented or active. Respiratory observations are also points. RHR and wrist temperature have positive-duration scope; do not assume instantaneous or full-night attribution.
+HR samples have equal start/end instants and Avg/Min/Max rather than qty. Active [P34](#proposed-sleeping-hr-time-weighting-p34) uses explicitly estimated point interpolation for eligible in-window Avg readings and labelled arithmetic fallback otherwise; never describe point spacing as measured coverage. D6/P4's simple-only point rule remains historical for derive-1. Respiratory observations are also points. RHR and wrist temperature have positive-duration scope; do not assume instantaneous or full-night attribution.
 
 Recognized observation ID and revision fields are absent throughout this file. Exact repeats may be deduplicated by a specified canonical content identity, but matching timestamps/source/metric alone do not prove that changed values replace older ones. Retain/flag ambiguous changes. Zero reported repeated_identity or changed_identity is inconclusive when no IDs exist. Cross-export delivery/retry/correction evidence and the precise Phase 2 identity algorithm remain unresolved.
 
@@ -139,7 +139,7 @@ The owner approved D1–D9 on 28 October 2026. The choices below are binding, wh
 ### D6. APPROVED — Prefer time-weighted sleeping heart rate; permit explicit mean fallback
 
 - Compute sleeping heart rate preferentially using a **time-weighted average** of validated Apple Health heart-rate `Avg` readings, *only when their time intervals represent reliable measurement coverage*. Clip eligible observations to the chosen overnight sleep window and avoid double-counting overlapping sample intervals. Specify the exact weighting, overlap and minimum-coverage rules in an owner-reviewed implementation proposal before coding.
-- If the export timestamps represent point samples, incompatible summary windows or unreliable coverage, **fall back to a simple arithmetic mean** of valid in-window readings rather than asserting false precision. This fallback must be **clearly labelled as a limitation** in the UI/API (e.g. `method=simple_mean_fallback`, sample count and optional reason).
+- Historical D6/P4 point rule (superseded for eligible individual points by P34): point samples, incompatible summaries or unreliable coverage use a labelled simple arithmetic mean. Active P34 explicitly estimates between suitable individual points with gap/coverage guards; incompatible, ambiguous or sparse data still uses `simple_mean_fallback` with sample count and reason. Neither method asserts measured continuous coverage.
 - HRV is a **different metric**: present overnight HRV as an aggregation of Apple Health SDNN (`qty`, ms) observations occurring within the sleep window; do not weight SDNN values by heart-rate sampling intervals or call the result a full-night SDNN measurement. P4 approves arithmetic mean with at least one valid overnight SDNN sample and visible sample count; one sample does not imply representative full-night coverage. Never invent missing SDNN samples.
 - Keep algorithms independent and replaceable, retain method/version metadata, and recompute past nightly results consistently when the policy changes.
 
@@ -185,11 +185,11 @@ The owner approved D1–D9 on 28 October 2026. The choices below are binding, wh
 - Implementing graph/reporting: read the nightly output contract §4, API contract in `ARCHITECTURE.md`, `DESIGN.md` charts section and tests.
 - Planning any nontrivial policy change: first surface options with pros/cons, wait for owner selection, then change this document and `DECISIONS.md` before coding.
 
-**Status:** the gap threshold, session heuristic, HR method and HRV aggregation were resolved by P3/P4/P18 and implemented in Phase 2. Time-weighted HR remains deferred under the active policy; P34 proposes explicitly estimated point interpolation subject to approval. Mixed-offset behaviour: onset/wake use the offsets of the first and last segment rows.
+**Status:** P3/P4/P18 session/HRV rules remain unchanged. Owner-approved P34 estimated point-HR weighting is implemented and active after the validated HR-4 rollout; the old simple-only rule remains reproducible in derive-1. Mixed-offset onset/wake behaviour is unchanged.
 
 ## Proposed sleeping HR time weighting (P34)
 
-**HR-2 candidate implementation, 2026-11-01.** Owner approved HR-2 entry after the HR-1 checkpoint. The pure integrator, nullable metadata and explicit candidate-only derive-2/score-3 rebuild are implemented; P4/P18 simple-mean HR remains active in the application. HR-3 consumer integration and HR-4 real-record operations remain separately gated. Phases/statuses/executed checks live only in [PLAN.md](PLAN.md#sleeping-hr-time-weighting---planning-only-p34-2026-11-01). This does not assert improved measurement accuracy.
+**Implemented and activated, 2026-11-01.** Following explicit owner approval and confirmation that exports were always unsummarized, the validated derive-2/score-3 history is active (generation 1). HR uses accepted point interpolation/coverage rules; unsupported/sparse future nights retain labelled simple fallback. HRV and non-HR calculations remain unchanged. Legacy rows/raw observations remain available. Phases/statuses/executed checks live only in [PLAN.md](PLAN.md#sleeping-hr-time-weighting---planning-only-p34-2026-11-01). This does not assert improved measurement accuracy.
 
 ### Accepted input and calculation contract
 
@@ -230,7 +230,7 @@ Input approval must distinguish future raw-point settings from historical files:
 
 `domain/heart_rate.py` is a pure calculation using the accepted HR-1 rules. `WeightedDeriveConfig` fingerprints the interpolation assumption and all derivation parameters. Explicit `rebuild(conn, derive=WEIGHTED_DERIVE, score=WEIGHTED_SCORE)` stores candidate rows only after checking exact version/config pairing and the additive schema. `rescore` uses the same guard; mismatched identities, modified policy under the same identity or stored candidate fingerprint disagreement fail before derived-row deletion. Old score/measurement rows, raw observations, HRV and non-HR metrics are retained.
 
-Migration `0003_weighted_hr` only adds nullable HR metadata columns; it does not change measurements, backfill history or activate anything. Legacy calculation remains compatible with schema `0002_health` and `0003_weighted_hr`; weighted selection requires the latter. HR-3 adds explicit owner rollout commands and coordinated active-pair consumers; there is still no automatic startup activation. No migration has been applied to owner data by the agent.
+Migration `0003_weighted_hr` only adds nullable HR metadata columns; by itself it does not change measurements, backfill history or activate anything. Legacy calculation remains compatible with schema `0002_health` and `0003_weighted_hr`; weighted selection requires the latter. The owner-authorized HR-4 rollout applied this migration and prepared/validated/activated separate history, preserving old rows/raw files. Startup never performs automatic migration or weighted activation.
 
 ### HR-3 consumers and explicit rollout
 
@@ -245,7 +245,7 @@ This document is final for planning. Implementation agents use `AGENTS.md` for t
 ## Phase 2 implemented contracts (P18)
 - Identity: the observed export has no provider IDs, so identity is a content fingerprint (metric, source, instants, offsets, stage, values); exact repeats are skipped. A different fingerprint in the same slot (or overlapping stage rows from an earlier batch of the same source) is stored `conflicting`; the first received stays active and affected nights are flagged `revised`.
 - Sessions: per-source chains joined by gaps up to 30 minutes (gaps are neither sleep nor Awake); overlapping rows resolve to the latest start without double counting and flag `overlapping_stages`; leading/trailing Awake trimmed; blocks under 3 h asleep are naps; Apple Watch source preferred (case-insensitive substring), others flagged; wake date is the local date at the window end in that row's offset.
-- Physiology: a reading whose midpoint is inside the window counts for the night (HR labelled `simple_mean_fallback` with n; HRV mean of SDNN with n); everything else is a general daily metric. Missing stays missing.
+- Historical derive-1 physiology: midpoint-inside attribution, HR `simple_mean_fallback` with n and mean SDNN HRV with n; outside readings are general daily metrics. Active derive-2 changes only nightly HR aggregation per P34 above. Missing stays missing.
 - Rebuild: `domain/rebuild.rebuild(conn, from_date)`; incremental equals clean rebuild. Derived tables carry derive-1 / pilot-1 versions and a config hash.
 - Rejected rows are counted by fixed reason codes only; raw JSON is retained content-addressed as `raw/<sha256>.json`.
 

@@ -2,6 +2,8 @@
 
 ## Weighted HR rollout (P34)
 
+**Current status:** the owner-confirmed historical rollout completed on 2026-11-01; derive-2/score-3 generation 1 is active, and dashboard/receiver checks passed. Fresh private recovery snapshots and an isolated real-data rollback rehearsal passed. Details and delegated local numerical validation (not a claimed personal owner CSV review) are recorded in PLAN.md. The procedure below remains the reference for future recovery/review; do not prepare an already-active history again without a deliberate reason.
+
 Run only after the P34 full release gate is recorded as passing in PLAN.md. Phase approval is recorded, but unknown historical export settings must be resolved: `-ConfirmIndividualHR` explicitly asserts that existing HR exports were individual readings suitable for interpolation. Summarize Data off for today's configuration does not prove older files. Keep health values/review files local; do not paste them into chat.
 
 1. Close SleepIQ's server window (Ctrl+C) and stop the receiver with `scripts/receiver-task.ps1 -Action Stop`. Do not disable/reconfigure the task, certificate, DNS or firewall. The mutating wrapper refuses listeners on 8765/8443; verify no old standalone receiver remains. Check available disk space: preparation retains a full snapshot plus isolated restore and a private comparison file, in addition to the unchanged 14 daily snapshots.
