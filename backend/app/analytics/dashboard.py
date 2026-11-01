@@ -6,7 +6,7 @@ from typing import Any
 
 from sqlalchemy import Engine, text
 
-from app.domain.config import DERIVE, SCORE
+from app.domain.config import DERIVE, SCORE, ScoreV2Config
 
 NEUTRAL = ("deep", "rem", "physiology")
 PHYSIOLOGY = (
@@ -19,6 +19,8 @@ PHYSIOLOGY = (
 
 def ceiling() -> float:
     """Best possible overall while Deep, REM and physiology stay neutral (config-derived)."""
+    if isinstance(SCORE, ScoreV2Config):
+        return 100.0
     weights = dict(SCORE.weights)
     total = sum(
         weight * (SCORE.neutral if name in NEUTRAL else 100.0) for name, weight in weights.items()

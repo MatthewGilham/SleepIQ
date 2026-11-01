@@ -1,11 +1,11 @@
-"""Pure, versioned SleepIQ pilot score and circular consistency (SCORING.md, P2)."""
+"""Pure, versioned SleepIQ scoring and circular consistency (SCORING.md, P2/P33)."""
 
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from itertools import pairwise
 
-from app.domain.config import SCORE, ScoreConfig
+from app.domain.config import SCORE, ScoreConfig, ScoreV2Config
 
 DAY_MINUTES = 1440.0
 
@@ -98,29 +98,53 @@ def score_night(
     hr_mean: float | None,
     hrv_mean: float | None,
     cfg: ScoreConfig = SCORE,
+    *,
+    deep_seconds: float | None = None,
+    rem_seconds: float | None = None,
 ) -> Score:
-    """S4/S16: any missing required input withholds the overall score; nothing is imputed."""
+    """S4: missing required inputs withhold the total; S16 HRV gating applies only to pilot-1."""
     missing: list[str] = []
     if not cons.available:
         missing.append(f"consistency:{cons.reason}")
     if hr_mean is None:
         missing.append("sleeping_hr")
-    if hrv_mean is None:
+    if hrv_mean is None and not isinstance(cfg, ScoreV2Config):
         missing.append("overnight_hrv")
     values: dict[str, tuple[float, bool]] = {
         "duration": (duration_score(asleep_seconds, cfg), False),
-        "efficiency": (efficiency_score(efficiency, cfg), False),
-        "deep": (cfg.neutral, True),
-        "rem": (cfg.neutral, True),
-        "physiology": (cfg.neutral, True),
     }
+    if not isinstance(cfg, ScoreV2Config):
+        values.update(
+            {
+                "efficiency": (efficiency_score(efficiency, cfg), False),
+                "deep": (cfg.neutral, True),
+                "rem": (cfg.neutral, True),
+                "physiology": (cfg.neutral, True),
+            }
+        )
     if cons.available and cons.score is not None:
         values["consistency"] = (cons.score, False)
+    if isinstance(cfg, ScoreV2Config):
+        for name, value, points in (
+            ("deep", None if deep_seconds is None else deep_seconds / 60, cfg.deep_points),
+            ("rem", None if rem_seconds is None else rem_seconds / 60, cfg.rem_points),
+            ("sleeping_hr", hr_mean, cfg.hr_points),
+        ):
+            if value is None or not math.isfinite(value):
+                if name not in missing:
+                    missing.append(name)
+            else:
+                # Flat outside either end, including the approved HR <45 plateau.
+                bounded = max(points[0][0], min(value, points[-1][0]))
+                values[name] = (min(100.0, max(0.0, interpolate(points, bounded))), False)
     weights = dict(cfg.weights)
     components: dict[str, dict[str, object]] = {
         name: {"score": value, "weight": weights[name], "neutral": neutral}
         for name, (value, neutral) in values.items()
     }
+    if isinstance(cfg, ScoreV2Config):
+        for name, weight in weights.items():
+            components.setdefault(name, {"score": None, "weight": weight, "neutral": False})
     if missing:
         return Score("insufficient_data", None, tuple(missing), components)
     overall = math.fsum(values[name][0] * weight for name, weight in weights.items()) / sum(

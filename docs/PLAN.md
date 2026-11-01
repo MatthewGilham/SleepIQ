@@ -1,5 +1,19 @@
 # SleepIQ implementation plan and progress
 
+## SleepIQ Score v2 (2026-11-01)
+
+Owner approved this scoped scoring update and confirmed HR below 45 bpm caps at 100 and HRV is never required for v2. Status: `done` (implementation and final gates passed; scoped local checkpoint contains this evidence). Implemented versioned 25/25/20/20/10 weights, stage and HR interpolation, preserved duration/consistency and withholding policy, independent HRV/efficiency metrics, historical rescore retaining pilot history, dashboard/preview labels and weights. No measurement algorithm or schema changes. Verification: threshold/interpolation/missing/boundary/history tests and `scripts/check.ps1 -Suite Full`, with results below.
+
+Verification log:
+
+- New `test_score_v2.py`: 44 tests failed before implementation (unsupported stage inputs), then passed. Scoring suite including historical tests: 67 passed.
+- First sandboxed full check: Ruff/Mypy passed; 248 backend tests passed, 16 setup errors from Windows temp-directory access. A workspace `--basetemp` also hit WinError 5. No permissions or sandbox settings were changed.
+- Approved tool escalation for the same synthetic-only full gate resolved temporary-directory access: 264 backend tests, 49 frontend tests, TypeScript/build passed; browser run was 88 passed/1 failed on the new expectation `100.0` versus the established formatter's `100`. Corrected the expectation and the preview's missing-sample caption; final full gate passed as recorded below.
+- History uses a guarded score-only transaction at dashboard startup when v2 rows are absent; verified backup-first manual `--scores-only` command also available. Real owner records were not opened or recalculated by the agent; next app launch performs the approved backfill. Restart both dashboard and receiver to load the new configuration in both processes. Pilot rows and unchanged nightly measurements are covered by synthetic tests. No schema, infrastructure or dependency change.
+- Final `scripts/check.ps1 -Suite Full`: **exit 0** on 2026-11-01, using the approved tool escalation solely to run the gate outside restricted temp-directory access. Ruff and Mypy passed; **264 backend tests, 49 frontend unit tests, 89 Playwright tests passed**; TypeScript/Vite build passed. Performance budgets passed on 944,042 synthetic observations / 1,826 nights (clean rebuild 3.609 s, incremental import 0.346 s); source secret scan **175 files, no findings**; pip-audit and npm audit **zero known vulnerabilities**. Synthetic backup/recovery and security suites included. No deferred test or operational permission change.
+- After the full gate, only this verification documentation and restoration of an unrelated formatting-only diff in the physiology query changed. Accepted runtime evidence remains valid: no executable behavior changed. Final Ruff, diff checks and source scan rerun before commit.
+- Documentation synchronized: SCORING/DECISIONS P33/PLAN plus affected PRODUCT/DESIGN/ARCHITECTURE/TESTING contracts. Final scoped diff reviewed; no private records, secrets, screenshots, dependencies or generated builds included. Local checkpoint hash is reported after verifying commit success. No next phase is started.
+
 Last updated: 2026-10-29.
 
 ## Authority and current state

@@ -48,4 +48,45 @@ class ScoreConfig:
 
 
 DERIVE = DeriveConfig()
-SCORE = ScoreConfig()
+PILOT_SCORE = ScoreConfig()  # Immutable pilot-1 definition retained for reproducibility.
+
+
+@dataclass(frozen=True)
+class ScoreV2Config(ScoreConfig):
+    version: str = "score-2"
+    weights: tuple[tuple[str, int], ...] = (
+        ("duration", 25),
+        ("consistency", 25),
+        ("deep", 20),
+        ("rem", 20),
+        ("sleeping_hr", 10),
+    )
+    # Owner preferences, not medical thresholds. Units: minutes and bpm respectively.
+    deep_points: tuple[tuple[float, float], ...] = (
+        (0, 0),
+        (30, 35),
+        (60, 70),
+        (75, 85),
+        (90, 100),
+    )
+    rem_points: tuple[tuple[float, float], ...] = (
+        (0, 0),
+        (30, 23.33),
+        (60, 46.67),
+        (90, 70),
+        (105, 85),
+        (120, 100),
+    )
+    hr_points: tuple[tuple[float, float], ...] = (
+        (45, 100),
+        (48, 100),
+        (50, 80),
+        (52, 60),
+        (54, 40),
+        (56, 20),
+        (58, 0),
+    )
+
+
+SCORE = ScoreV2Config()
+SCORE_VERSIONS = {PILOT_SCORE.version: PILOT_SCORE, SCORE.version: SCORE}

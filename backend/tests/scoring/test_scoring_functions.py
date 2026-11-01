@@ -1,6 +1,7 @@
 import math
 
 import pytest
+from app.domain.config import PILOT_SCORE
 from app.domain.scoring import (
     Consistency,
     Score,
@@ -71,7 +72,7 @@ def test_consistency_needs_seven_prior_nights_and_a_stable_baseline() -> None:
 def full(
     duration: int, efficiency: float, cons: float, hr: float | None, hrv: float | None
 ) -> Score:
-    return score_night(duration, efficiency, Consistency(True, score=cons, nights=30), hr, hrv)
+    return score_night(duration, efficiency, Consistency(True, score=cons, nights=30), hr, hrv, PILOT_SCORE)
 
 
 def test_owner_worked_examples() -> None:
@@ -88,7 +89,7 @@ def test_missing_required_input_withholds_score_without_imputation() -> None:
         result = full(8 * H, 0.95, 100, hr, hrv)
         assert (result.status, result.overall) == ("insufficient_data", None)
         assert result.missing == (label,)
-    unavailable = score_night(8 * H, 0.95, Consistency(False, "insufficient_history"), 55, 40)
+    unavailable = score_night(8 * H, 0.95, Consistency(False, "insufficient_history"), 55, 40, PILOT_SCORE)
     assert unavailable.missing == ("consistency:insufficient_history",)
 
 

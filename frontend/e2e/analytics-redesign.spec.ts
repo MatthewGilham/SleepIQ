@@ -37,7 +37,7 @@ test("KPI row: average sleep, score gauge, HRV and nights recorded match indepen
  await expect(kpi("overall").locator(".kpi-value")).toHaveText(`${mean(scores).toFixed(1)} /100`);
  await expect(kpi("overall")).toContainText(`n=${scores.length}`);
  await expect(kpi("overall").locator(".gauge-value")).toBeAttached();
- await expect(kpi("overall").getByRole("img",{name:/pilot ceiling 92\.5/})).toBeVisible();
+ await expect(kpi("overall").getByRole("img",{name:/maximum 100\.0/})).toBeVisible();
 });
 
 test("tiles: the nine agreed metrics (no wrist temperature since U12), no Core or resting heart rate, and a click focuses the main chart",async({page})=>{

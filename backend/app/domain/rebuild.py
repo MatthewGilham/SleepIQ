@@ -190,7 +190,7 @@ def _score_nights(
     for day in days:
         row = conn.execute(
             text(
-                "SELECT asleep_s, efficiency, onset_minute, wake_minute, hr_mean, hrv_mean "
+                "SELECT asleep_s, efficiency, onset_minute, wake_minute, hr_mean, hrv_mean, deep_s, rem_s "
                 "FROM nightly_metrics WHERE wake_date = :d AND derivation_version = :v"
             ),
             {"d": day.isoformat(), "v": derive.version},
@@ -209,7 +209,16 @@ def _score_nights(
             },
         ).all()
         cons = consistency(row.onset_minute, row.wake_minute, [tuple(p) for p in prior], score)
-        result = score_night(row.asleep_s, row.efficiency, cons, row.hr_mean, row.hrv_mean, score)
+        result = score_night(
+            row.asleep_s,
+            row.efficiency,
+            cons,
+            row.hr_mean,
+            row.hrv_mean,
+            score,
+            deep_seconds=row.deep_s,
+            rem_seconds=row.rem_s,
+        )
         details = {
             "components": result.components,
             "missing": list(result.missing),
@@ -240,6 +249,30 @@ def _score_nights(
                 "t": now,
             },
         )
+
+
+def rescore(
+    conn: Connection,
+    derive: DeriveConfig = DERIVE,
+    score: ScoreConfig = SCORE,
+    now: int | None = None,
+) -> int:
+    """Recalculate all stored nights for one version; preserve metrics and other score versions.
+
+    Caller owns the write guard and transaction, so a failed rescore rolls back atomically.
+    """
+    days = [
+        date.fromisoformat(day)
+        for day in conn.execute(
+            text(
+                "SELECT wake_date FROM nightly_metrics WHERE derivation_version=:v ORDER BY wake_date"
+            ),
+            {"v": derive.version},
+        ).scalars()
+    ]
+    conn.execute(text("DELETE FROM nightly_scores WHERE score_version=:v"), {"v": score.version})
+    _score_nights(conn, days, derive, score, int(time.time()) if now is None else now)
+    return len(days)
 
 
 def rebuild(

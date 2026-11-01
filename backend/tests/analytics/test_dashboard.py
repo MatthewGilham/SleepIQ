@@ -18,8 +18,8 @@ def client(data: Path) -> TestClient:
     )
 
 
-def test_ceiling_matches_pilot_documentation():
-    assert ceiling() == pytest.approx(92.5)
+def test_ceiling_matches_v2_documentation():
+    assert ceiling() == pytest.approx(100)
 
 
 def test_empty_store_has_no_latest_night(scratch: Path):
@@ -56,8 +56,8 @@ def test_scored_night_stages_trend_and_missing_hrv(scratch: Path):
     assert latest["wake_date"] == "2026-10-28"
     hrv = next(p for p in latest["physiology"] if p["id"] == "hrv")
     assert hrv["value"] is None and hrv["n"] == 0
-    assert latest["score"]["overall"] is None and "overnight_hrv" in latest["score"]["missing"]
-    assert latest["score"]["ceiling"] == pytest.approx(92.5)
+    assert latest["score"]["overall"] is not None and latest["score"]["missing"] == []
+    assert latest["score"]["ceiling"] == pytest.approx(100)
     # Stage rows sum back to the recorded window and begin at session start.
     assert latest["stages"][0]["start_s"] == 0
     assert sum(s["duration_s"] for s in latest["stages"]) == latest["session_s"]

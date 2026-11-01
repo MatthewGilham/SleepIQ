@@ -4,8 +4,8 @@ import type {DashboardData,Latest,Stage,TrendRange} from "./dashboardModel";
 
 const order:Stage[]=["Awake","REM","Core","Deep"];
 const colors:Record<Stage,string>={Awake:"var(--stage-awake)",REM:"var(--stage-rem)",Core:"var(--stage-core)",Deep:"var(--stage-deep)"};
-const names=["duration","consistency","efficiency","deep","rem","physiology"] as const;
-const labels:Record<string,string>={duration:"Duration",consistency:"Consistency",efficiency:"Efficiency",deep:"Deep",rem:"REM",physiology:"HR / HRV"};
+const names=["duration","consistency","deep","rem","sleeping_hr"] as const;
+const labels:Record<string,string>={duration:"Duration",consistency:"Consistency",efficiency:"Efficiency",deep:"Deep",rem:"REM",sleeping_hr:"Sleeping HR"};
 
 function Metric({label,value,unit,detail}:{label:string;value:string|null;unit?:string;detail:string}){
  return <article className="metric"><p>{label}</p><div className={value===null?"missing":"metric-value"}>{value??"Missing data"} {value!==null&&<small>{unit}</small>}</div>{detail&&<span>{detail}</span>}</article>;
@@ -59,8 +59,8 @@ export function Dashboard({data}:{data:DashboardData}){
  return <>
  <div className="hero-grid"><section className="panel score-panel"><div className="panel-title"><h2>SleepIQ score</h2></div>
   <div className="score-content"><div className="score-ring" style={{"--progress":scored?`${score!.overall!*3.6}deg`:"0deg"} as React.CSSProperties}><div>{scored?<><strong>{number(score!.overall)}</strong><span>/ 100</span></>:<strong className="no-score">Insufficient<br/>data</strong>}</div></div>
-   <div className="score-description"><h3>{scored?"Your night at a glance.":"This night has no overall score."}</h3><p>{scored?"Duration, timing and efficiency, brought together in one transparent score.":missingText(score?.missing??[])||"The score has not been computed for this night."}</p>{night.flags.length>0&&<span className="subtle-tag">Flags: {night.flags.map(f=>f.replace(/_/g," ")).join(", ")}</span>}</div></div>
-  <div className="score-footer">{score&&<span>Pilot ceiling <b>{number(score.ceiling)}</b> <span title="Deep, REM and physiology use neutral pilot values.">ⓘ</span></span>}</div></section>
+   <div className="score-description"><h3>{scored?"Your night at a glance.":"This night has no overall score."}</h3><p>{scored?"Duration, timing, sleep stages and sleeping heart rate, brought together in one transparent score.":missingText(score?.missing??[])||"The score has not been computed for this night."}</p>{night.flags.length>0&&<span className="subtle-tag">Flags: {night.flags.map(f=>f.replace(/_/g," ")).join(", ")}</span>}</div></div>
+  <div className="score-footer">{score&&<span>Max score <b>{number(score.ceiling)}</b> <span title="User-defined scoring preferences; not medical thresholds.">ⓘ</span></span>}</div></section>
  <section className="panel night-panel"><div className="panel-title"><h2>The shape of your night</h2><span aria-hidden="true">☾</span></div><div className="sleep-total"><span className="dur-part">{Math.floor(minutes/60)}<span className="dur-unit">h</span></span> <span className="dur-part">{String(minutes%60).padStart(2,"0")}<span className="dur-unit">m</span></span></div><p className="muted">Total time asleep</p>
   <div className="night-track"><span>☾</span><i/><span>☀</span></div><div className="sleep-times"><div><small>Sleep onset · {shortDay(night.onset_local)}</small><strong>{clock(night.onset_local)}</strong></div><div><small>Wake time · {shortDay(night.wake_local)}</small><strong>{clock(night.wake_local)}</strong></div></div></section>
  <section className="panel consistency"><div className="panel-title"><h2>Consistency</h2><span>◷</span></div>

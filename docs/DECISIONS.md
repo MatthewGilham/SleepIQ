@@ -185,3 +185,10 @@ Questions as asked and **owner answer ("Im happy with your recomendations", 2026
 
 Agent defaults (owner may change): nights without a reading are left out of the mean, never counted as zero (unchanged); a visible window with no readings for a metric draws no line and the tooltip says "no reading" (unchanged wording); bedtime and wake time still have no average; "Show averages" stays on by default and unsaved; the API field `normalization.mean` (whole-range, Python) is unchanged and still used for Normalized z-scores, only the line stops using it; rolling-average lines already follow the zoom and are unchanged. Plan: PLAN.md "Improvements, round 5 (P32)".
 
+
+
+## P33 SleepIQ Score v2 (2026-11-01)
+
+Owner approved implementation with duration 25%, consistency 25%, Deep 20%, REM 20%, sleeping HR 10%. Activate the exact continuous piecewise-linear Deep/REM/HR curves in SCORING.md, including literal REM 23.33/46.67 anchors. Follow-up: **"A cap at 100, HRV shouldnt be required at all for the sleepIQscore"** approves 100 for HR below 45 bpm and removes HRV as a required input. HRV and efficiency remain independently available and contribute no points. S4 withholding remains for the five required v2 components; duration, consistency and Apple Health measurement algorithms remain unchanged. These are personal scoring preferences, not medical thresholds.
+
+This supersedes S9 weights, S12/S16 HRV requirement and neutral physiology, S18 neutral stages and P2 pilot ceiling for the active version only. Preserve `pilot-1` definition/hash and historical outputs; add `score-2`, recalculate historical scores consistently, and select v2 throughout charts/exports. Scoped implementation includes dashboard startup backfill in one guarded transaction and the backup-first `--scores-only` command; no raw-record or nightly-measurement changes. Dashboard and preview show five weighted components and Max score 100; Analytics gauge marks 100. Existing hiding of on-screen version identifiers remains. Approval is for this scoring update, not a new unrelated phase or infrastructure action.

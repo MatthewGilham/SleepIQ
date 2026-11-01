@@ -46,10 +46,10 @@ function Ring({fraction,ink,size=74,stroke=8}:{fraction:number;ink:string;size?:
 function Gauge({value,ceiling}:{value:number|null;ceiling:number}){
  const at=(f:number)=>{const a=Math.PI*(1-f);return `${(45+36*Math.cos(a)).toFixed(2)},${(48-36*Math.sin(a)).toFixed(2)}`;};
  const [cx,cy]=at(ceiling/100).split(",").map(Number);
- return <svg viewBox="0 0 90 56" width="90" className="gauge" role="img" aria-label={`Gauge: ${value===null?"no score":value.toFixed(1)} of 100; pilot ceiling ${ceiling.toFixed(1)}`}>
+ return <svg viewBox="0 0 90 56" width="90" className="gauge" role="img" aria-label={`Gauge: ${value===null?"no score":value.toFixed(1)} of 100; maximum ${ceiling.toFixed(1)}`}>
   <path d={`M${at(0)} A36 36 0 0 1 ${at(1)}`} fill="none" stroke="var(--an-track)" strokeWidth="8" strokeLinecap="round"/>
   {value!==null&&value>0&&<path d={`M${at(0)} A36 36 0 0 1 ${at(Math.min(1,value/100))}`} fill="none" stroke={color("overall")} strokeWidth="8" strokeLinecap="round" className="glow gauge-value" style={{color:color("overall")}}/>}
-  <circle cx={cx} cy={cy} r="2.5" fill="var(--an-text)" className="gauge-ceiling"><title>Pilot ceiling {ceiling.toFixed(1)}</title></circle></svg>;
+  <circle cx={cx} cy={cy} r="2.5" fill="var(--an-text)" className="gauge-ceiling"><title>Max score {ceiling.toFixed(1)}</title></circle></svg>;
 }
 function deltaText(id:string,m:Metric|undefined,delta:number|null,days:number):ReactNode{
  if(delta===null||!m)return <span className="muted">No earlier nights to compare</span>;

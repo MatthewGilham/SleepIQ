@@ -67,7 +67,7 @@ def test_selected_metrics_units_missing_values_and_versions(store):
     assert float(last[4]) == pytest.approx(450 / 460 * 100)
     assert rows[2][2] == ""  # missing HRV is an empty cell, never 0
     assert rows[2][1] == "7.5"
-    assert last[-3:] == ["insufficient_data", "derive-1", "pilot-1"]
+    assert last[-3:] == ["insufficient_data", "derive-1", "score-2"]
 
 
 def test_custom_range_is_inclusive_and_only_recorded_nights_are_listed(store):

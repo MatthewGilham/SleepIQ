@@ -24,7 +24,7 @@ CATALOG = [
     Metric("hrv_mean", "Overnight HRV", "ms", "Mean of overnight SDNN samples"),
     Metric("resp_mean", "Respiratory rate", "breaths/min", "Overnight sample mean"),
     Metric("temp_mean", "Sleeping wrist temperature", "°C", "Samples attributed by midpoint"),
-    Metric("overall", "SleepIQ score", "/100", "pilot-1; ceiling 92.5"),
+    Metric("overall", "SleepIQ score", "/100", "score-2; maximum 100"),
     Metric("consistency", "Consistency", "/100", "Previous 30 calendar days"),
     Metric(
         "onset_minute",

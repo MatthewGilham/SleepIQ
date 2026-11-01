@@ -63,9 +63,8 @@ def test_consistency_unlocks_after_seven_prior_nights_with_hand_calculated_score
         assert (status, overall) == ("insufficient_data", None)
         assert details["missing"] == ["consistency:insufficient_history"]
     status, overall, details = result[day(7).isoformat()]
-    # duration 7.5 h = 87.5 (x0.30); consistency 100 (x0.25); efficiency 97.8% -> 100 (x0.15);
-    # Deep, REM and physiology neutral 75 (x0.30 together): 26.25 + 25 + 15 + 22.5.
-    assert status == "scored" and overall == pytest.approx(88.75, abs=1e-9)
+    # Duration 87.5, consistency 100, Deep 60 min = 70, REM 120 min = 100, HR 52 = 60.
+    assert status == "scored" and overall == pytest.approx(86.875, abs=1e-9)
     assert details["consistency"]["baseline_nights"] == 7  # type: ignore[index]
     assert details["consistency"]["provisional"] is True  # type: ignore[index]
     assert result[day(9).isoformat()][2]["consistency"]["baseline_nights"] == 9  # type: ignore[index]
@@ -80,10 +79,10 @@ def test_late_onset_lowers_consistency_by_the_approved_penalty(scratch: Path) ->
     assert status == "scored"
     assert details["consistency"]["onset_deviation_min"] == pytest.approx(20)  # type: ignore[index]
     assert details["consistency"]["wake_deviation_min"] == pytest.approx(20)  # type: ignore[index]
-    assert overall == pytest.approx(26.25 + 25 * 0.9 + 15 + 22.5)  # consistency 90
+    assert overall == pytest.approx(21.875 + 25 * 0.9 + 14 + 20 + 6)  # consistency 90
 
 
-def test_missing_hrv_or_hr_withholds_score_but_keeps_the_night_and_other_metrics(
+def test_missing_hr_withholds_score_but_hrv_is_optional_and_metrics_remain(
     scratch: Path,
 ) -> None:
     data, engine = new_store(scratch)
@@ -92,8 +91,8 @@ def test_missing_hrv_or_hr_withholds_score_but_keeps_the_night_and_other_metrics
     groups[9] = night_blocks(day(9), hr=None)
     store.import_bytes(engine, data, payload(merge(*groups)))
     result = scores(engine)
-    assert result[day(8).isoformat()][:2] == ("insufficient_data", None)
-    assert result[day(8).isoformat()][2]["missing"] == ["overnight_hrv"]
+    assert result[day(8).isoformat()][0] == "scored"
+    assert result[day(8).isoformat()][2]["missing"] == []
     assert result[day(9).isoformat()][2]["missing"] == ["sleeping_hr"]
     assert result[day(7).isoformat()][0] == "scored"
     with engine.connect() as conn:

@@ -1,6 +1,6 @@
 export type Stage = "Awake"|"REM"|"Core"|"Deep";
 export type Physiology = {id:string;label:string;value:number|null;n:number};
-export type Component = {score:number;weight:number;neutral:boolean};
+export type Component = {score:number|null;weight:number;neutral:boolean};
 export type DashboardScore = {status:"scored"|"insufficient_data";overall:number|null;consistency:number|null;version:string;ceiling:number;missing:string[];components:Record<string,Component>;consistency_detail:{available?:boolean;reason?:string|null;baseline_nights?:number;provisional?:boolean;onset_deviation_min?:number|null;wake_deviation_min?:number|null}};
 export type Latest = {wake_date:string;source:string;onset_local:string;wake_local:string;start_offset_min:number;end_offset_min:number;session_s:number;asleep_s:number;core_s:number;deep_s:number;rem_s:number;awake_s:number;efficiency:number;physiology:Physiology[];flags:string[];stages:{stage:Stage;start_s:number;duration_s:number}[];score:DashboardScore|null};
 export type DashboardData = {synthetic:boolean;versions:string[];import:{batches:number;last_received_utc:number|null;nights:number};latest:Latest|null;trend:{dates:string[];asleep_h:(number|null)[]};previous_night?:string|null;next_night?:string|null};
@@ -44,7 +44,7 @@ export function axisTicks(onset:string,sessionSeconds:number):string[]{
 // Position of a stage bar inside the 960-wide timeline: x from 72 to 950.
 export function stageBar(start:number,length:number,session:number){return {x:72+start/session*878,width:Math.max(1,length/session*878)};}
 export function number(value:number|null,digits=1):string|null{return value===null?null:String(Number(value.toFixed(digits)));}
-export function contribution(component:Component|undefined,total:number):string{return component?(component.score*component.weight/total).toFixed(1):"—";}
+export function contribution(component:Component|undefined,total:number):string{return component?.score!=null?(component.score*component.weight/total).toFixed(1):"—";}
 export function consistencyNote(detail:DashboardScore["consistency_detail"]):string{
  if(detail.available)return detail.provisional?"Provisional: fewer than 14 qualifying nights":"Previous 30 calendar days";
  return detail.reason==="insufficient_history"?`Not enough history yet (${detail.baseline_nights??0} prior nights; needs at least 7)`:"Unavailable";

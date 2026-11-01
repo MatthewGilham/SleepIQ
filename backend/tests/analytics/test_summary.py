@@ -88,7 +88,7 @@ def test_period_means_stages_and_clock_match_hand_calculation(store):
     }
     # Scores need consistency history, so no night here has an overall score: n=0, never 0 points.
     assert m["overall"]["n"] == 0 and m["overall"]["mean"] is None
-    assert result["ceiling"] == pytest.approx(92.5)
+    assert result["ceiling"] == pytest.approx(100)
 
 
 def test_previous_period_without_recorded_nights_gives_null_delta(store):

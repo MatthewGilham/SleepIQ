@@ -11,7 +11,7 @@ for(const name of pages)test(`${name}: no version or filler text`,async({page})=
 });
 test("kept lines are still present",async({page})=>{
  await page.goto("/");
- await expect(page.getByText("Pilot ceiling")).toBeVisible();
+ await expect(page.getByText("Max score")).toBeVisible();
  await expect(page.getByText("Not clinically calibrated.")).toBeVisible();
  await expect(page.getByText("TRANSPARENT BY DESIGN")).toBeVisible();
  await expect(page.getByText("Local-first by design")).toBeVisible();
@@ -25,5 +25,5 @@ test("kept lines are still present",async({page})=>{
 test("dashboard score card rows are plain names",async({page})=>{
  await page.goto("/");
  const rows=await page.locator(".breakdown-row > span").allInnerTexts();
- expect(rows).toEqual(["Duration","Consistency","Efficiency","Deep","REM","HR / HRV"]);
+ expect(rows).toEqual(["Duration","Consistency","Deep","REM","Sleeping HR"]);
 });

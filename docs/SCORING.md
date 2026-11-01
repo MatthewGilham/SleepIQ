@@ -1,5 +1,36 @@
 # SleepIQ — Scoring Engine and Consistency Specification
 
+## Active SleepIQ Score v2 - owner approved 2026-11-01 (P33)
+
+Active configuration: `score-2` in `backend/app/domain/config.py` (`ScoreV2Config`, `SCORE`). The following v2 rules supersede the pilot rules below; the remaining document preserves the pilot specification and decision history.
+
+| Component | Weight | Piecewise-linear anchors (input to score) |
+| --- | ---: | --- |
+| Duration | 25% | Unchanged: 6 h = 40, 7 h = 75, 8 h+ = 100; below 6 h, max(0, 40 + 35 * (hours - 6)) |
+| Consistency | 25% | Unchanged: prior 30 calendar dates, minimum 7 eligible nights; circular onset/wake baselines, 0.5 points/minute deducted separately, bounded and averaged equally |
+| Deep | 20% | Minutes: 0 = 0, 30 = 35, 60 = 70, 75 = 85, 90+ = 100 |
+| REM | 20% | Minutes: 0 = 0, 30 = 23.33, 60 = 46.67, 90 = 70, 105 = 85, 120+ = 100 |
+| Sleeping HR | 10% | bpm: <=48 = 100 (including below 45, explicitly approved), 50 = 80, 52 = 60, 54 = 40, 56 = 20, 58+ = 0 |
+
+Interpolate continuously between adjacent anchors; cap components to 0-100. REM 23.33/46.67 are the exact approved anchors, not rounded substitutes for thirds. HR 49 earns 90 and 51 earns 70. These are user-defined preferences, not medical thresholds. Total = 0.25 Duration + 0.25 Consistency + 0.20 Deep + 0.20 REM + 0.10 Sleeping HR. Maximum 100; retain calculation precision and one-decimal presentation.
+
+HRV and efficiency contribute no points and are never required for v2. Both remain independent dashboard, chart, correlation and export metrics. S4 withholding remains: unavailable duration, consistency, Deep, REM or sleeping HR prevents an overall score; no imputation, partial total or weight redistribution. Zero observed stage minutes scores zero, not missing. Existing stage derivation supplies zero when no intervals of that stage are present; measurement semantics are unchanged. Fewer than seven prior eligible nights or an undefined circular baseline still withholds the overall score. Available components and all five weights remain visible when a required input is unavailable.
+
+### Historical calculation and verification
+
+`pilot-1` remains reproducible using `PILOT_SCORE`; its original configuration hash and algorithm are retained. `SCORE_VERSIONS` registers both definitions. Score rows are keyed by date/version; v2 recomputation preserves pilot outputs, raw observations and nightly metrics. No schema migration is needed.
+
+Restart both the dashboard and the always-on receiver after installing this update, so both processes load the active configuration. The dashboard app fills missing v2 history before serving charts, in one guarded transaction, then selects `score-2` for all dashboard, analytics and CSV queries. Reopening a fully scored store does not rewrite scores. Imports continue scoring affected nights with the active version. To explicitly rescore all stored nights with a verified backup first, run from the repository root with the owner's existing private paths:
+
+```powershell
+$env:PYTHONPATH = 'backend'
+.\.venv\Scripts\python.exe -m app.ingest.rebuild_cli --data-root '<existing data root>' --backups '<existing backup root>' --scores-only
+```
+
+The command reads local records only; the agent verifies it against synthetic fixtures and does not inspect owner records. `rescore` is atomic under the caller's transaction/write guard; failures roll back. New formula edits require a new version. Tests cover all exact anchors, intermediate points, tails, missing/zero inputs, HRV independence, pilot reproduction, repeated historical recalculation, startup backfill, unchanged measurements and rollback.
+
+## Historical pilot specification (pilot-1)
+
 **Status:** Pilot specification updated for approved P2 (28 October 2026); numerical constants/curves approved, later refinements remain gated.
 
 **Depends on:** `PRODUCT.md` v1.0; `ARCHITECTURE.md` v1.0; `DATA_PIPELINE.md` v1.0  

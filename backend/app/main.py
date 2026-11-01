@@ -8,6 +8,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.responses import JSONResponse, Response
 
@@ -15,8 +16,11 @@ from app import certstatus
 from app.analytics.api import router
 from app.analytics.export import router as export_router
 from app.db.cleanup import remove_retired_settings
+from app.db.coordinator import write_guard
 from app.db.engine import open_engine
 from app.db.scheduler import BackupService
+from app.domain.config import DERIVE, SCORE
+from app.domain.rebuild import rescore
 
 
 def create_app(
@@ -103,6 +107,19 @@ def create_app(
             raise ValueError("Initialized chart store required")
         engine = open_engine(database)
         remove_retired_settings(engine)
+        # Populate the active scoring version for every historical night before serving charts.
+        # This changes only derived scores; pilot outputs and nightly measurements stay intact.
+        with write_guard(chart_data), engine.begin() as conn:
+            missing = conn.execute(
+                text(
+                    "SELECT 1 FROM nightly_metrics n WHERE n.derivation_version=:dv "
+                    "AND NOT EXISTS (SELECT 1 FROM nightly_scores s WHERE s.wake_date=n.wake_date "
+                    "AND s.derivation_version=:dv AND s.score_version=:sv) LIMIT 1"
+                ),
+                {"dv": DERIVE.version, "sv": SCORE.version},
+            ).first()
+            if missing:
+                rescore(conn)
         app.include_router(router(engine, chart_data, chart_synthetic))
         app.include_router(export_router(engine))
 

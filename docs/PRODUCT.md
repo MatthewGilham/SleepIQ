@@ -62,7 +62,7 @@ Measurements that cannot be reliably calculated must be reported as missing or u
 - **Sleep consistency contributes to the overall score from the first version**.
 - Consistency compares sleep onset and final wake time with an appropriate baseline calculated from the **preceding 30 calendar days**, excluding the scored night.
 - Handle clock times spanning midnight, daylight-saving changes, sparse history, and missing readings explicitly.
-- Start development with a **clearly labelled simple placeholder formula**. Approved weights and pilot constants/curves are recorded in DECISIONS.md P2 and SCORING.md; changes require approval. Disclose the 92.5 pilot ceiling.
+- Use **SleepIQ Score v2** (P33): duration 25%, consistency 25%, Deep 20%, REM 20%, sleeping HR 10%, with the approved curves in SCORING.md. Maximum 100; HRV and efficiency remain independent metrics and are not score requirements. Preserve pilot-1 history; formula changes require approval and a new version.
 - For v1, editing the isolated **Python scoring module/configuration** is sufficient; dashboard-based formula editing is not required. Explain how to change it safely and how to rerun calculations.
 - Formula parameters and definitions must be easy to replace after release; changing the selected formula triggers a consistent historical recalculation.
 - Preserve formula version history and make it possible to distinguish scores computed with different versions.
