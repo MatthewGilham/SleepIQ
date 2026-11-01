@@ -1,12 +1,12 @@
 # SleepIQ implementation plan and progress
 
-## Sleeping HR time weighting - planning only (P34, 2026-11-01)
+## Sleeping HR time weighting (P34, 2026-11-01)
 
-**Authorization/completion:** HR-1 `5d5f3ae`, HR-2 `784dbff`, HR-3 `20c9209`. Owner approved remaining scope with "Yes i approve all", then confirmed historical Summarize Data always off and instructed "Complete it" (2026-11-01), authorizing locally validated live rollout. HR-4 activation and operational checks passed; final scoped documentation checkpoint is recorded below/reported after commit verification. HRV is unchanged. Existing unrelated Phase 5 operational acceptance items remain separate.
+**Authorization/completion:** HR-1 `5d5f3ae`, HR-2 `784dbff`, HR-3 `20c9209`, HR-4 `be3f509`. Owner approved remaining scope with "Yes i approve all", then confirmed historical Summarize Data always off and instructed "Complete it" (2026-11-01), authorizing locally validated live rollout. HR-4 activation, operational checks and scoped documentation commit succeeded. HRV is unchanged. Existing unrelated Phase 5 operational acceptance items remain separate.
 
 ### Objective and proposed policy
 
-Weight overnight HR by elapsed time rather than sample frequency. A 10:40-11:00 segment contributes exactly 1,200 seconds. This can reduce uneven-sampling bias; it is not proof of greater accuracy or continuous measurement. Canonical proposed maths, source rules and fallback: [DATA_PIPELINE.md](DATA_PIPELINE.md#proposed-sleeping-hr-time-weighting-p34). Keep sleep windows (including interior Awake/gaps), HRV/other measurements, equal weighting of nights in Analytics, scoring curves/weights and security boundaries fixed.
+Weight overnight HR by elapsed time rather than sample frequency. A 10:40-11:00 segment contributes exactly 1,200 seconds. This can reduce uneven-sampling bias; it is not proof of greater accuracy or continuous measurement. Canonical proposed maths, source rules and fallback: [DATA_PIPELINE.md](DATA_PIPELINE.md#sleeping-hr-time-weighting-p34). Keep sleep windows (including interior Awake/gaps), HRV/other measurements, equal weighting of nights in Analytics, scoring curves/weights and security boundaries fixed.
 
 Owner's instruction to implement the presented plan accepts its recommended policy: linear interpolation; maximum connected HR gap **30 minutes**; weighted result only at **>=70% of the full session window covered**; otherwise retain the labelled current simple mean. These are engineering limits, not validated physiological cutoffs. HR gap is independent of the existing sleep-session joining rule. HR-1 must resolve exported `Avg` semantics and compatibility before HR-2 coding; equal start/end fields alone are insufficient.
 
@@ -48,7 +48,7 @@ Full gate `powershell -NoProfile -File scripts/check.ps1 -Suite Full` passed; ev
 
 ### Phase HR-4 - Owner-approved historical recalculation and rollout
 
-Status: `done` (live activation, privacy-preserving numerical/API/browser checks and isolated real-data rollback rehearsal passed; final local documentation commit verified before reporting the checkpoint complete). Owner confirmed historical Summarize Data always off and instructed "Complete it" (2026-11-01). HR-3 `20c9209` full gate satisfied. All 396 nights use weighted HR; no fallback/missing HR in this prepared history. Legacy outputs/raw records and HRV retained. Dashboard/HTTPS receiver running on derive-2/score-3, generation 1; backup state healthy. No claim that owner personally inspected the CSV or performed these checks.
+Status: `done`; HR-4 completion checkpoint **`be3f509`** verified. Live activation, privacy-preserving numerical/API/browser checks and isolated real-data rollback rehearsal passed. All 396 nights use weighted HR; no fallback/missing HR in this prepared history. Legacy outputs/raw records and HRV retained. Dashboard/HTTPS receiver running on derive-2/score-3, generation 1; backup state healthy. No claim that owner personally inspected the CSV or performed these checks.
 
 | Subphase | Deliverable | Pass/fail exit criteria |
 | --- | --- | --- |
@@ -116,6 +116,10 @@ Actual verification and completion:
 - Isolated **real-data** rollback rehearsal passed on a fresh verified private copy of the activated store: legacy rebuild/selection succeeded, raw observations and weighted history preserved; live pair remained derive-2/score-3 generation 1. The real store was not rolled back. Recovery/rehearsal copies remain private and are not silently deleted.
 - Runtime source/manifests/locks remain identical to the passing HR-3 full gate (**314 backend / 53 unit / 90 browser**, lint/types/build/performance/security/audits). That evidence is reused because only documentation changed; live validation/recovery checks above are additional evidence, not invented reruns of synthetic gates. Final documentation/link/diff/source checks and scoped local commit follow; unrelated PLAN notes and owner screenshot excluded. No remaining P34 owner input or phase work; broader R01 phone/other owner acceptance is not claimed completed.
 - Final `.venv/Scripts/python.exe scripts/scan_source.py`: **188 files, no findings**. Inline documentation checks: **7 affected documents / 8 added local links and anchors passed**; `git diff --check` passed. The following verification-note update changes no links or executable inputs. Scoped phase-end documentation diff reviewed; commit success/hash verified and reported in handoff, with private data/checkpoints/review nonce/generated helpers and unrelated owner work excluded.
+
+### Post-rollout documentation review (2026-11-01)
+
+Owner requested documentation confirmation after completion. HR-4 was already committed as `be3f509`; corrected leftover P34 planning-only headings/future-tense descriptions, synchronized their internal links and recorded the verified completion hash in the current summary. Historical approval/verification entries are retained. Documentation checks passed: **8 affected files / 15 added local links and anchors**, four P34 phases marked done, old internal link targets removed; `git diff --check` passed. Source secret scan: **188 files, no findings**. No application/data/service changes; the previously passing runtime/live/recovery evidence remains applicable and application tests were not needlessly rerun. Verification-note addition changes no links or executable inputs. Scoped documentation commit excludes unrelated investigation notes and the owner's screenshot.
 
 ## SleepIQ Score v2 (2026-11-01)
 
