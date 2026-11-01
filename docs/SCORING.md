@@ -2,6 +2,8 @@
 
 ## Active SleepIQ Score v2 - owner approved 2026-11-01 (P33)
 
+**P34 planning note:** weighted sleeping HR is proposed, not active. If approved, a changed nightly HR value can change the HR component and overall score, even with identical curves/weights. Recommend a new score identity (proposed score-3) tied to a new derivation (proposed derive-2) to retain existing score-2/pilot-1 outputs under the current score-table key. No curve recalibration, weight change, HRV requirement or consistency change is proposed. Sparse-data simple fallback retains current HR availability; no-HR still withholds the score. Approve versioning and real-history rollout separately; P33 startup rescore permission does not authorize measurement recalculation. See [P34 calculation](DATA_PIPELINE.md#proposed-sleeping-hr-time-weighting-p34) and [phased plan](PLAN.md#sleeping-hr-time-weighting---planning-only-p34-2026-11-01).
+
 Active configuration: `score-2` in `backend/app/domain/config.py` (`ScoreV2Config`, `SCORE`). The following v2 rules supersede the pilot rules below; the remaining document preserves the pilot specification and decision history.
 
 | Component | Weight | Piecewise-linear anchors (input to score) |

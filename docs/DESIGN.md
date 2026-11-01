@@ -1,5 +1,9 @@
 # SleepIQ — Interface and Interaction Design
 
+## Proposed sleeping HR explanation (P34; planning only)
+
+Weighted HR would need discoverable method and estimated coverage, e.g. "Time-weighted estimate; 6h 12m of 8h window (78%)", or "Simple average; insufficient coverage", plus sample count. Use an accessible info/tooltip treatment reviewed in a synthetic preview, respecting P31's removal of permanent technical captions and on-screen version strings. Support keyboard as well as pointer access; do not describe estimated coverage as measured watch wear or guaranteed accuracy. No-HR remains unavailable; HRV is unchanged. Proposed thresholds/maths: [DATA_PIPELINE.md](DATA_PIPELINE.md#proposed-sleeping-hr-time-weighting-p34). UI production changes require approval in [HR-3](PLAN.md#phase-hr-3---api-display-exports-and-safe-version-selection); no UI change is authorized by planning.
+
 **Status:** Complete v1.0 design brief; detailed visual choices are agent proposals requiring owner approval at the design checkpoint. **Audience:** frontend designer/agent, reviewer, Playwright author. **Read with:** `PRODUCT.md` relevant sections and approved API contracts; not the entire repository.
 
 ## 1. Experience

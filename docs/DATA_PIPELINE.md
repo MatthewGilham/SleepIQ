@@ -15,7 +15,7 @@ The [official REST API guide](https://help.healthyapps.dev/en/health-auto-export
 
 Distinguish sidebar Manual Export (file creation) from Manual Export inside an API automation (sends actual data to its configured URL). Keep real uploads disabled while the synthetic receiver is in use.
 
-Granularity needs verification: the guide describes Summarize Data OFF as disaggregated where possible, but also says multiple selected metrics are always aggregated. Do not promise preserved individual readings from configuration alone; compare actual export shapes and, if needed, present separate-metric alternatives before changing the approved acquisition design.
+Granularity needs verification. The earlier reviewed guide described multiple selected metrics as always aggregated; the current guide reviewed during HR-1 instead describes Summarize Data OFF as individual readings where available. This documentation change does not verify actual or historical export settings. Do not promise preserved individual readings from configuration alone; compare permitted shape/configuration evidence before changing the approved acquisition design.
 
 Documented date-range options include overlapping days and Since Last Sync; the guide does not establish safe retry/checkpoint behaviour after failure or correction ordering. Extra automation/session headers are untrusted metadata, not proven record IDs or revision clocks. Validate batching, date coverage and failure/retry semantics empirically before relying on them; retain bounded payload limits rather than adopting generic large-upload advice.
 
@@ -63,7 +63,7 @@ The owner has since selected Since Last Sync. Whether it misses stages that Heal
 
 The single-file metadata report confirms expected metric/unit blocks and offset-bearing timestamp pairs, while leaving numerical validity, actual source identities, sleep-stage values and current automation settings unverified. Counts and progress evidence live only in PLAN.md.
 
-HR samples have equal start/end instants and Avg/Min/Max rather than qty. Apply the already approved D6/P4 arithmetic mean fallback to valid in-window Avg readings, with method label, sample count and coverage limitation; never infer duration weights from point spacing. Respiratory observations are also points. RHR and wrist temperature have positive-duration scope; do not assume instantaneous or full-night attribution.
+HR samples have equal start/end instants and Avg/Min/Max rather than qty. Apply the current D6/P4 arithmetic mean fallback to valid in-window Avg readings, with method label, sample count and coverage limitation; never infer measured coverage from point spacing. Estimated point interpolation is specified in [P34](#proposed-sleeping-hr-time-weighting-p34), accepted as an implementation policy in HR-1 but not implemented or active. Respiratory observations are also points. RHR and wrist temperature have positive-duration scope; do not assume instantaneous or full-night attribution.
 
 Recognized observation ID and revision fields are absent throughout this file. Exact repeats may be deduplicated by a specified canonical content identity, but matching timestamps/source/metric alone do not prove that changed values replace older ones. Retain/flag ambiguous changes. Zero reported repeated_identity or changed_identity is inconclusive when no IDs exist. Cross-export delivery/retry/correction evidence and the precise Phase 2 identity algorithm remain unresolved.
 
@@ -185,7 +185,46 @@ The owner approved D1–D9 on 28 October 2026. The choices below are binding, wh
 - Implementing graph/reporting: read the nightly output contract §4, API contract in `ARCHITECTURE.md`, `DESIGN.md` charts section and tests.
 - Planning any nontrivial policy change: first surface options with pros/cons, wait for owner selection, then change this document and `DECISIONS.md` before coding.
 
-**Status:** the gap threshold, session heuristic, HR method and HRV aggregation were resolved by P3/P4/P18 and implemented in Phase 2. Time-weighted HR is deferred until interval-style HR data exists. Mixed-offset behaviour: onset/wake use the offsets of the first and last segment rows.
+**Status:** the gap threshold, session heuristic, HR method and HRV aggregation were resolved by P3/P4/P18 and implemented in Phase 2. Time-weighted HR remains deferred under the active policy; P34 proposes explicitly estimated point interpolation subject to approval. Mixed-offset behaviour: onset/wake use the offsets of the first and last segment rows.
+
+## Proposed sleeping HR time weighting (P34)
+
+**HR-1 contract review, 2026-11-01.** Owner subsequently instructed "Implement the plan", accepting the recommended policy and authorizing HR-1 entry. HR-2 entry and real-record operations remain separately gated. P4/P18 simple-mean HR remains active in the application. Phases/statuses/executed checks live only in [PLAN.md](PLAN.md#sleeping-hr-time-weighting---planning-only-p34-2026-11-01). This does not assert improved measurement accuracy.
+
+### Proposed input and calculation contract
+
+1. Use valid active HR `Avg`, never `qty`, RHR, Min/Max or conflicting/rejected rows. Confirm exporter point-`Avg` semantics: equal start/end does not establish that an `Avg` is suitable for interpolation. Incompatible buckets require a revised proposal. Existing sleep window remains first asleep start to last asleep end, including interior Awake/gaps. UTC elapsed seconds; only inclusive in-window points, no previous/next-night points or edge extrapolation.
+2. Proposed source rule: HR stream matching the selected sleep source label if present; otherwise the sole watch-labelled HR stream if unambiguous; otherwise current simple fallback with `ambiguous_source`. Never connect sources. Confirm labels can support this in HR-1. Fallback retains current eligible-row semantics. Sort by UTC; equal-time equal-value points collapse only for integration; different values at one instant require fallback with `ambiguous_timestamp`. Preserve all raw records/correction rules. Nonpoint HR intervals use existing midpoint/simple mean with `unsupported_interval`, not inferred coverage.
+3. Connect successive distinct points `(t0,h0)` and `(t1,h1)` by a straight line only when `0 < t1-t0 <= maximum_gap`. Proposed gap limit: **30 minutes**, independent of sleep-session gap. Longer gaps are wholly excluded, not shortened. Duration `d=t1-t0`; area `A=(h0+h1)/2*d`; weighted HR `sum(A)/sum(d)`. Non-overlapping segments within one stream stay inside the window; no whole-hour rounding or extrapolation. Future genuine measurement intervals require a separate coverage/overlap contract.
+4. Estimated covered seconds = union length of accepted segments. Coverage = covered seconds / full window seconds, including interior Awake/gaps. This is interpolation support, not proven measurement/wear time. Accepted implementation policy: **>=70% coverage** and >=1 accepted positive-duration segment (>=2 distinct contributing points), with a **30-minute** maximum HR gap. Compare `10 * covered_s >= 7 * window_s` using integers to avoid floating-point threshold ambiguity. These are engineering limits, not validated physiological cutoffs; no runtime change before later phase approval.
+5. Eligible method: proposed `time_weighted_linear`. Otherwise return existing `simple_mean_fallback` with reason (`insufficient_points`, `long_gaps`, `low_coverage`, `ambiguous_source`, `ambiguous_timestamp`, `unsupported_interval`); freeze reason precedence in HR-1. No eligible readings: null/count 0, never substitution. Single reading: simple mean, zero coverage. Coverage is null when ambiguity/unsupported semantics prevent estimation. An absent reading is never a zero HR value.
+6. Store/expose method, eligible/contributing counts, estimated covered/window seconds, coverage fraction and fallback reason; finalize field names in HR-1. `hr_mean` remains consumer value; `hr_n` counts points contributing to returned mean (current eligible count on fallback). Version/hash policy constants. HRV SDNN averaging, other physiology, general daily HR, equal weighting across nights, rolling/correlation and zoom-average policies are unchanged.
+
+### Independent synthetic references
+
+- 22:40=50 bpm to 23:00=60 bpm: **20 minutes**, area 66,000 bpm-seconds, segment mean **55 bpm**. Segment maths alone does not establish overnight coverage.
+- Add 23:10=80 bpm: durations 20 and 10 minutes, means 55 and 70. Weighted HR `(55*20+70*10)/30 = 60 bpm`; equal sample mean **63.333333... bpm**.
+- Exactly 30 minutes connects; 30 minutes + 1 second does not. Exactly 70% coverage qualifies; one second below threshold does not. Excluded gaps/edges enter coverage denominator but not HR-mean denominator.
+
+### Owner checkpoint before implementation
+
+| Option | Benefit | Limitation |
+| --- | --- | --- |
+| Linear interpolation with gap/coverage guards (recommended) | Actual elapsed time matters; reduces sample-frequency bias | Assumes smooth change; unrecorded spikes unknown; sparse nights fall back |
+| Last-value hold with same guards | Simple assumption that previous value persists | Directional bias around changes; assumes constant HR between points |
+| Keep simple mean until genuine coverage intervals exist | No new point-to-time assumption | Leaves uneven point sampling unresolved for current export |
+
+The instruction to implement accepts the recommended linear method, 30-minute/70% limits, source/boundary/fallback rules and retained-history approach. Sparse fallback preserves score availability but creates a labelled mix of methods across nights. Strict missing-on-low-coverage would be a separate owner choice and could withhold scores. The running P18 calculation remains unchanged until rollout approval.
+
+### HR-1 input evidence and deterministic result contract
+
+The official [REST guide](https://help.healthyapps.dev/en/health-auto-export/automations/rest-api/) describes JSON Summarize Data off as individual readings where available and on as grouped readings; Time Grouping determines group size. This supersedes the older public-documentation observation in section 1. The official [HR JSON format](https://help.healthyapps.dev/en/health-auto-export/export-format/health-metrics/) defines `Avg` over a measurement period, without proving point semantics for every mode. Existing shape evidence establishes equal start/end. **Owner confirmed Summarize Data is off; Time Grouping is unknown (2026-11-01).** Together these support an explicit individual-point working assumption for synthetic implementation of the current configuration, not a claim of continuous coverage or certification of past exports. No fixed grouping duration is needed: interpolation uses each point's actual timestamp. Do not infer hourly buckets or silently interpolate known summarized data. No private file/live API was read in this review. Historical eligibility and final live activation remain HR-4 gates.
+
+HR-1 metadata contract: retain `hr_mean`, `hr_n`, `hr_method`; propose nullable `hr_eligible_n`, `hr_contributing_n`, `hr_covered_s`, `hr_window_s`, `hr_coverage`, `hr_fallback_reason`, `derivation_config_hash`. Old rows stay null for new fields. Eligible count includes all currently eligible active in-window HR rows; contributing count is distinct timestamps in accepted segments after integration-only collapse. Weighted `hr_n=hr_contributing_n`; fallback `hr_n=hr_eligible_n`, preserving current arithmetic over original eligible rows. Never invent old coverage.
+
+Reason priority: no eligible readings -> null value/method/reason, count 0; then any eligible nonpoint interval -> `unsupported_interval`; unresolved stream -> `ambiguous_source`; unequal same-instant values in selected stream -> `ambiguous_timestamp`; fewer than two distinct selected points -> `insufficient_points`; no accepted segments despite >=2 points -> `long_gaps`; positive coverage below 70% -> `low_coverage`; otherwise `time_weighted_linear` with null fallback reason. Coverage/contributors are null for unsupported/ambiguous input; known empty segment sets have zero coverage/contributors. Retain precision until display.
+
+Input approval must distinguish future raw-point settings from historical files: present settings do not certify older imports. Unknown/incompatible periods retain the old mean until separately validated or covered by an explicitly approved assumption. Do not change acquisition settings, replace stored readings or reconstruct hourly bucket bounds from adjacent timestamps without approval.
 
 ## Documentation package completion
 

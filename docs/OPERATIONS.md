@@ -1,5 +1,11 @@
 # SleepIQ Windows operations guide
 
+## Proposed weighted-HR rollout (P34; not available yet)
+
+This is a planning notice, not an executable procedure. Current HR behaviour and existing commands remain unchanged. Do not run a rebuild/migration to try to enable weighted HR. The future owner-approved procedure must verify a current pre-change snapshot and isolated restore, coordinate all writers (including receiver), prepare retained candidate history without activating it, and let the owner review results locally before an explicit active-version switch. An older same-day daily snapshot is not sufficient to prove current pre-change recovery.
+
+Keep old measurement/score versions and raw observations. Proposed rollback selects the retained old pair with compatible code/config, preserving any subsequent imports for rebuild; do not assume destructive live restore. No credentials, private exports or readings are sent to an agent. Migration, real-history recalculation and activation require concrete authorization beyond planning or general phase approval. Approval/evidence and final runbook work: [PLAN.md](PLAN.md#phase-hr-4---owner-approved-historical-recalculation-and-rollout).
+
 For the owner, on the Windows PC that runs SleepIQ. Evidence of what has actually been demonstrated lives only in [PLAN.md](PLAN.md) (R01 sections). Setup background: [SETUP.md](SETUP.md), [SECURE_SETUP.md](SECURE_SETUP.md), [RECOVERY.md](RECOVERY.md).
 
 ## Day to day

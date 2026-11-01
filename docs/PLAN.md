@@ -1,5 +1,80 @@
 # SleepIQ implementation plan and progress
 
+## Sleeping HR time weighting - planning only (P34, 2026-11-01)
+
+**Authorization:** planning completed; owner subsequently instructed "Implement the plan" (2026-11-01). This authorizes HR-1 entry and the documented recommended calculation policy. HR-2 and later entry still require separate approval under AGENTS.md/P8; no real-record operation is authorized. HRV is excluded. P4/P18 remain active in the running application until a separately approved rollout. This does not advance or close existing Phase 5 operational acceptance items.
+
+### Objective and proposed policy
+
+Weight overnight HR by elapsed time rather than sample frequency. A 10:40-11:00 segment contributes exactly 1,200 seconds. This can reduce uneven-sampling bias; it is not proof of greater accuracy or continuous measurement. Canonical proposed maths, source rules and fallback: [DATA_PIPELINE.md](DATA_PIPELINE.md#proposed-sleeping-hr-time-weighting-p34). Keep sleep windows (including interior Awake/gaps), HRV/other measurements, equal weighting of nights in Analytics, scoring curves/weights and security boundaries fixed.
+
+Owner's instruction to implement the presented plan accepts its recommended policy: linear interpolation; maximum connected HR gap **30 minutes**; weighted result only at **>=70% of the full session window covered**; otherwise retain the labelled current simple mean. These are engineering limits, not validated physiological cutoffs. HR gap is independent of the existing sleep-session joining rule. HR-1 must resolve exported `Avg` semantics and compatibility before HR-2 coding; equal start/end fields alone are insufficient.
+
+### Phase HR-1 - Agree calculation and compatibility contracts
+
+Status: `awaiting_approval` (HR-1 contract/input review and checks passed; HR-2 entry approval required; verified local checkpoint hash reported in handoff). Owner approved HR-1 entry with "Implement the plan" (2026-11-01). Prerequisite to application/schema/test implementation. Risk: high (assumptions and history). One agent; no delegation or paid calls authorized.
+
+| Subphase | Deliverable / likely future files | Pass/fail exit criteria |
+| --- | --- | --- |
+| HR-1.1 Input semantics | Confirm point-`Avg` interpretation/source identity from existing evidence; further private shape/cadence checks require separate owner supervision, counts/settings only. DATA_PIPELINE/DECISIONS | Explicit evidence/limitations; no assumed hourly coverage or private readings in model context. Incompatible bucket summaries require a revised proposal before coding. |
+| HR-1.2 Policy checkpoint | Compare linear interpolation, last-value hold and keeping mean until genuine intervals exist; synthetic gap/coverage demonstrations | Owner explicitly approves method, gap/coverage limits, source/boundary/fallback rules together; exact expected results agreed and P34 approval recorded. |
+| HR-1.3 Version/activation contract | Review additive nullable HR quality fields, derivation config fingerprint, retained history and coordinated active-version selection. config/migration/rebuild/startup/import/receiver contracts | Approve new derivation identity (proposed derive-2) and score identity (proposed score-3, same v2 curves). Existing score PK is `(wake_date, score_version)`: a derivation bump alone cannot preserve two score-2 outputs. Define atomic activation, mismatched-process guard and rollback without deleting observations. |
+
+Exit: reviewed contract, documentation checks and explicit owner approval of HR-2 entry. No real-record operations. Overall plan approval does not authorize every later phase.
+
+### Phase HR-2 - Calculation and persistence on synthetic stores
+
+Status: `planned`; depends on HR-1 approval. Risk: high (versioned derivation). Suggested executor: one reasoning-capable agent, high effort.
+
+| Subphase | Deliverable / likely future files | Pass/fail exit criteria |
+| --- | --- | --- |
+| HR-2.1 Calculation first | Small pure HR function, proposed `backend/app/domain/heart_rate.py`; approved config; proposed `backend/tests/domain/test_weighted_hr.py` | Write independent expected-value tests, observe failure, implement. Exact minutes, irregular spacing, sources/time ties, gaps/coverage boundaries, edges and both DST transitions pass TESTING.md P34 matrix. Estimated support never labelled measured coverage. |
+| HR-2.2 Storage and rebuild | Additive migration; domain/rebuild.py, config.py; migration/rebuild/history tests | Store value/method/count/coverage/reason reproducibly; labelled simple fallback; missing null. Retain old derivation/score rows; HRV/other metrics unchanged. Incremental/backfilled imports equal clean rebuild; repeat import/rebuild idempotent. New identities exist without activation on owner data. |
+| HR-2.3 Compatibility/recovery | Synthetic score-2/score-3 coexistence, failure rollback, isolated restore and startup guards | Preserve pilot-1/score-2 values/hashes; identical v2 score function for identical inputs; only HR-driven score differences. Failed migration/derivation leaves old active version usable. No automatic real-history rewrite at startup. |
+
+Exit: targeted domain/ingest/scoring/migration/recovery suites, applicable Foundation/security gates, synchronized docs and reviewed local phase commit per AGENTS.md. Record actual commands/results. Failed/unavailable required checks block checkpoint; explicit approval required before HR-3.
+
+### Phase HR-3 - API, display, exports and safe version selection
+
+Status: `planned`; depends on HR-2 checkpoint and explicit entry approval. Risk: medium/high (consumer consistency). Suggested executor: one general coding agent, high effort for version selection, medium for UI/tests.
+
+| Subphase | Deliverable / likely future files | Pass/fail exit criteria |
+| --- | --- | --- |
+| HR-3.1 Consumers | analytics/dashboard.py, api.py, catalog.py, export.py; API/export tests | Dashboard/charts/summaries/rolling/correlations/CSV use one active pair. Expose HR method/count/estimated coverage/fallback; HR-selected CSV includes metadata. Across-night means remain equal-weight; HRV values unchanged. |
+| HR-3.2 UI review | Dashboard.tsx, model/types, Analytics tooltip, synthetic preview, unit/Playwright fixtures | Owner reviews discoverable method/coverage/fallback information with P31 minimal-text policy. No permanently restored technical captions or visible versions without approval. Keyboard/pointer access; sparse/no-HR states; layouts pass. |
+| HR-3.3 Release candidate | Startup/receiver/rebuild command and active-pair selection; OPERATIONS instructions | Candidate history can be built before changing active pair; dashboard and both writers cannot silently activate or mix versions. Full gate, performance/security/audits/backup/isolated recovery pass; scoped local commit reviewed and verified. |
+
+Planned full gate: `powershell -File scripts/check.ps1 -Suite Full` (not run for P34). Explain limitations and obtain HR-4 entry approval separately from authorization for real-record operations.
+
+### Phase HR-4 - Owner-approved historical recalculation and rollout
+
+Status: `planned`; depends on HR-3 checks/commit, explicit entry approval and concrete authorization for migration/backfill/activation. Risk: high (owner records). Suggested executor: owner-operated local procedure with agent guidance; no agent reading private records.
+
+| Subphase | Deliverable | Pass/fail exit criteria |
+| --- | --- | --- |
+| HR-4.1 Prepare/compare | Verified current pre-change snapshot (not an older same-day snapshot), isolated restore, exclusive writer coordination, sufficient disk; owner-run candidate recomputation before activation | Stable source snapshot through candidate build/comparison; observations/raw/old metrics/scores preserved. Owner reviews weighted/fallback/unavailable counts and numerical results locally; no health values sent to agent. Abort safely on failure/unsuitable coverage. |
+| HR-4.2 Activate | Owner approves candidate results before explicit atomic active-pair change; coordinated dashboard/receiver restart | Both processes use same pair; no stale writer; history/future nights consistent. HRV/other metrics match old derivation; curves/weights identical. |
+| HR-4.3 Verify/handoff | Owner HR/score/chart/CSV smoke check; rollback rehearsal; final docs/evidence and checked local phase commit | Rollback selects retained old versions with compatible code/config, preserving subsequent raw imports for rebuild. No destructive live restore/deletion assumed. Required checks recorded; operational limits disclosed; no further phase starts. |
+
+### Acceptance and planning evidence
+
+- **HR-W1:** seconds-based approved maths, full precision, independently calculated examples and exact threshold boundaries.
+- **HR-W2:** union of accepted estimated intervals / full window; long gaps, edges, ambiguity and single samples never imply continuous coverage.
+- **HR-W3:** HRV/other measurements, session/date ownership and across-night averaging unchanged; only nightly HR and its score consequences differ.
+- **HR-W4:** raw records/old outputs retained; versioned synthetic rebuild/backfill/rollback deterministic; no unsupervised real-data access or startup recalculation.
+- **HR-W5:** metadata reaches HR consumers; approved minimal UI distinguishes estimated weighting/fallback; release/security/recovery gates pass before rollout.
+
+Planning verification (2026-11-01): inline Python check (`@' ... '@ | .venv/Scripts/python.exe -`) inspected additions in all **9 affected documents**: **16 local file links/heading anchors checked, zero issues**; independently asserted segment duration/area, 60 bpm weighted versus 63.333333... sample mean, exact/below 70% coverage and 20-minute elapsed intervals across both UK DST transitions. Verified all seven named future backend test directories exist. `git diff --check`: **passed**. Reviewed scoped documentation diff; existing unrelated PLAN notes and untracked owner screenshot preserved. Application tests/full release gate not run: no application code, configuration, dependencies or schema changed. No migration, install, private-data access or live recalculation. P34 remains planning only; implementation approval is pending.
+
+### HR-1 implementation-entry review (2026-11-01)
+
+- Owner authorization recorded above/in P34 follow-up. HR-1.2 policy accepted by "Implement the plan"; no repeat policy questionnaire. HR-2 entry not yet authorized.
+- HR-1.1: owner confirmed Summarize Data off and Time Grouping unknown. Rechecked the official REST guide: off provides individual readings where available. With existing equal-start/end shape evidence, accept an explicitly documented point-input working assumption for synthetic implementation; elapsed weights use actual timestamps, not a grouping preset. This is not proof of past export settings or wear coverage. Historical eligibility remains an HR-4 limitation; no private records/app endpoints accessed.
+- HR-1.3: inspected schema/configs, startup backfill, import/rebuild and both ingest schema-head checks. DATA_PIPELINE specifies nullable HR fields/counts/reason priority; ARCHITECTURE specifies active-pair setting/generation, stale-process guards, immutable legacy configs and transactional activation. Old binaries lack guards and must be stopped during separately approved rollout. No schema/active-pair implementation or activation.
+- Verification: `.venv/Scripts/python.exe -m pytest backend/tests/ingest/test_parse_adapter.py backend/tests/scoring/test_rescore_v2.py -q -p no:cacheprovider --tb=short`: **12 passed** (existing synthetic parser/history tests, not new weighted-HR tests). `.venv/Scripts/python.exe scripts/scan_source.py`: **176 source files, no findings**. Inline Python documentation/independent arithmetic check: **9 documents, 16 added local links/anchors passed**, weighted-versus-sample mean, exact gap/coverage thresholds and both DST transitions passed. `git diff --check`: **passed**. No application lint/type/build/full-gate run: this phase has changed documentation only; runtime was not modified.
+- Input/contract review is complete. After settings confirmation, reran inline Python checks: **9 documents/16 local links and anchors passed**, independent weighting/gap/coverage/DST arithmetic and explicit unknown-grouping disclosure passed. Reran `.venv/Scripts/python.exe scripts/scan_source.py`: **176 source files, no findings**; `git diff --check` passed. Previously recorded 12-test synthetic parser/history evidence remains applicable because only documentation changed. P33 lint/type/build/full-gate evidence remains applicable to unchanged runtime, not a newly executed P34 gate; no weighted-HR code/test is claimed. The subsequent checkpoint-note edit changes no links, arithmetic examples or executable inputs.
+- Scoped local commit preparation includes only P34's nine documentation files; unrelated PLAN diagnostic/average-explanation notes and owner screenshot excluded. Commit must succeed and be verified before this phase checkpoint is reported complete. HR-2 entry remains pending under AGENTS.md/P8, separate from the accepted calculation policy. Remaining limit: unknown historical export configuration is an HR-4 gate, not assumed validated by current Summarize Data setting.
+
 ## SleepIQ Score v2 (2026-11-01)
 
 Owner approved this scoped scoring update and confirmed HR below 45 bpm caps at 100 and HRV is never required for v2. Status: `done` (implementation and final gates passed; scoped local checkpoint contains this evidence). Implemented versioned 25/25/20/20/10 weights, stage and HR interpolation, preserved duration/consistency and withholding policy, independent HRV/efficiency metrics, historical rescore retaining pilot history, dashboard/preview labels and weights. No measurement algorithm or schema changes. Verification: threshold/interpolation/missing/boundary/history tests and `scripts/check.ps1 -Suite Full`, with results below.

@@ -1,5 +1,19 @@
 # SleepIQ — System Architecture
 
+## Proposed sleeping HR versioning (P34; planning only)
+
+**HR-1 refinement after "Implement the plan":** contract work is authorized; code awaits HR-2 entry. Reuse `app_settings` for a non-secret active-pair record (proposed `derivation.active.v1`: derivation identity, score identity, policy hash, monotonic generation). Absent record means legacy derive-1/score-2, never automatic weighted activation. Keep immutable legacy configs; new derivation config/hash includes gap/coverage/point-semantics policy; score-3 copies v2 exactly except identity.
+
+Upgraded processes capture the active record/generation at startup; mutations recheck under the existing writer guard before writes, and reads reject stale process state until restart. Candidate-only rebuilds use explicit versions and never update the active key. Activation verifies completeness and unchanged source input, then transactionally updates the entire active record. New input between candidate build and activation invalidates the candidate. Version-dependent reads/startup score backfill must use the selected pair, not module-level default arguments. Both schema-head checks (`ingest/cli.py`, `ingest/service.py`) need the additive migration.
+
+Legacy binaries cannot enforce a generation check they do not contain: rollout must stop and verify absence of old receiver/dashboard before migration/activation, then restart compatible versions. Retain old algorithms in the upgraded build so rollback selects the old pair and rebuilds subsequent raw imports, rather than launching old binaries against an unknown schema. Process/snapshot/activation work remains owner-authorized HR-4 scope; no production command/process was executed in HR-1.
+
+Current runtime remains derive-1 / score-2. P34 proposes a pure Python point-HR integrator behind the existing nightly `hr_mean` interface, with additive nullable method/coverage/reason metadata, policy configuration fingerprint and a new derivation identity. No new service/library or transport changes are proposed. Canonical calculation: [DATA_PIPELINE.md](DATA_PIPELINE.md#proposed-sleeping-hr-time-weighting-p34); phases/approvals: [PLAN.md](PLAN.md#sleeping-hr-time-weighting---planning-only-p34-2026-11-01).
+
+Compatibility constraint: nightly metrics key `(wake_date, derivation_version)` supports parallel derivations, but nightly scores key `(wake_date, score_version)` does not support two derivations under one score identity. Recommended minimal design is retain derive-1/pilot-1/score-2 and use proposed derive-2/score-3 for weighted HR, copying v2 scoring curves/weights exactly; a schema key redesign is not assumed. Rebuild deletions must remain scoped to requested versions; historical score definitions/config hashes must remain reproducible.
+
+Before coding, approve additive fields and explicit active-pair selection/rollback across dashboard, receiver, import, rebuild and read APIs. Preparing candidate history must not activate it or trigger startup backfill against real records. Migration/backfill/active-pair switch requires separate concrete authorization. Prevent a stale receiver from writing a different active version; coordinate writers, verified backup, candidate transaction and atomic activation. All HR consumers use one pair and expose estimated method/coverage; HRV/other measurements remain identical across derivations. Existing auth, TLS, local storage and backup-retention contracts are unchanged.
+
 **Status:** Approved v1.0 — A1–A7 owner-approved (28 October 2026); implementation details and later domain/security choices remain subject to their own decision gates  
 **Depends on:** `PRODUCT.md` (approved product scope v1.0)  
 **Audience:** Owner, planner, backend/frontend coding agents  

@@ -1,5 +1,23 @@
 # SleepIQ — Testing and Quality Gates
 
+## Proposed weighted sleeping HR acceptance (P34; not implemented)
+
+Calculation contract: [DATA_PIPELINE.md](DATA_PIPELINE.md#proposed-sleeping-hr-time-weighting-p34); phases/executed evidence: [PLAN.md](PLAN.md#sleeping-hr-time-weighting---planning-only-p34-2026-11-01). Tests below are future requirements, not executed tests. Freeze approved policies before writing code; write independent expected-value tests and observe failure before implementation. No new health fixtures from owner records.
+
+| Area | Required pass/fail cases |
+| --- | --- |
+| Mathematics | Constant HR invariant; irregular spacing distinguishes sample mean; 22:40=50/23:00=60/23:10=80 gives 60 bpm over 30 minutes; segment 10:40-11:00 has 1,200 seconds; precision retained; independent area/duration references, not the implementation calling itself |
+| Coverage | Full-window denominator; union coverage <=100%; exact approved minimum and one second below; gap exactly at approved limit and one second over; disjoint accepted segments, uncovered edges, all-long gaps, two/one/no readings; estimated versus unknown coverage labelled correctly |
+| Boundaries/time | In-window boundary points included; no edge extrapolation or outside points; midnight, spring-forward/fall-back and mixed offsets use actual UTC seconds; interior Awake/gaps treated as current window policy |
+| Source/quality | Unsorted input deterministic; selected source/unique watch/ambiguous source; no cross-source joins; equal-time same-value integration deduplication; equal-time disagreements; active/conflicting/implausible/nonpoint rows; fallback reason precedence and correct sample counts |
+| Non-HR regression | HRV mean/count/missingness, other physiology, general daily HR, sleep stages/session/date ownership identical between old/new derivations; equal night weights for summary/rolling/zoom means and paired-night correlation policies preserved |
+| History/integration | Additive migration/old-store readability; old rows/definitions/hashes retained; new score identity uses identical v2 curves; only HR component can differ; incremental equals clean rebuild, late import/backfill/duplicates deterministic, candidate runs idempotent; new raw imports survive rollback |
+| Activation/recovery | Candidate build cannot auto-activate on startup/import; dashboard/receiver/CLI share active pair; stale writer rejected; failure/lock/insufficient disk/backup failure leaves old active data usable; verified pre-change snapshot, synthetic restore, transaction rollback and active-pair rollback |
+| Performance | Exercise dense weighted and sparse fallback nights in synthetic rebuild/import/API budgets; the existing sparse fixture alone must not hide an unmeasured weighted path |
+| API/UI/CSV | Metadata and missing/fallback agree across consumers; HR-selected CSV includes approved quality columns; no HRV changes; owner-reviewed info accessible by pointer/keyboard, no visible version strings; no layout overflow; preview is synthetic |
+
+Planned targeted commands after implementation: `.venv/Scripts/python.exe -m pytest backend/tests/domain backend/tests/ingest backend/tests/scoring backend/tests/analytics backend/tests/export backend/tests/persistence backend/tests/security -q -p no:cacheprovider`, `npm --prefix frontend test`, and targeted Playwright specs after a build. Add migration/recovery tests in the existing applicable suites. Final gate: `powershell -File scripts/check.ps1 -Suite Full` (includes build/types, browser, performance, source secrets, dependency audits and synthetic recovery/security tests). Required unavailable/failed checks block the phase checkpoint; record exact outcomes only in PLAN.md. Documentation-only P34 planning uses link/anchor/consistency checks and independent arithmetic, not claims of application test coverage.
+
 **Status:** Complete v1.0. **Audience:** all coding agents, reviewer and CI author. **Principle:** tests protect data integrity, reproducibility, privacy and user-visible behavior; they are written alongside the feature, not at project end.
 
 ## 1. Test strategy and commands
