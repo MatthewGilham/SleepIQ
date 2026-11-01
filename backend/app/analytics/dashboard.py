@@ -6,7 +6,9 @@ from typing import Any
 
 from sqlalchemy import Engine, text
 
-from app.domain.config import DERIVE, SCORE, ScoreV2Config
+from app.analytics.quality import hr_quality
+from app.domain.config import SCORE, ScoreV2Config
+from app.domain.versions import active_pair
 
 NEUTRAL = ("deep", "rem", "physiology")
 PHYSIOLOGY = (
@@ -59,17 +61,18 @@ NEIGHBOUR = {
 }
 
 
-def _neighbour(conn: Any, wake_date: str, later: bool) -> str | None:
+def _neighbour(conn: Any, wake_date: str, later: bool, derive: str) -> str | None:
     """Nearest stored wake date after (or before) this one; unrecorded days are skipped."""
-    found = conn.execute(text(NEIGHBOUR[later]), {"v": DERIVE.version, "d": wake_date}).scalar()
+    found = conn.execute(text(NEIGHBOUR[later]), {"v": derive, "d": wake_date}).scalar()
     return str(found) if found is not None else None
 
 
 def dashboard(engine: Engine, synthetic: bool, wake_date: date | None = None) -> dict[str, Any]:
     """Read model for `wake_date`, or the latest stored night when omitted."""
     with engine.connect() as conn:
+        pair = active_pair(conn)
         query = "SELECT * FROM nightly_metrics WHERE derivation_version=:v"
-        params: dict[str, Any] = {"v": DERIVE.version}
+        params: dict[str, Any] = {"v": pair.derive}
         if wake_date is not None:
             query += " AND wake_date=:d"
             params["d"] = wake_date.isoformat()
@@ -83,11 +86,11 @@ def dashboard(engine: Engine, synthetic: bool, wake_date: date | None = None) ->
         batches = conn.execute(text("SELECT count(*), max(received_utc) FROM import_batches")).one()
         nights = conn.execute(
             text("SELECT count(*) FROM nightly_metrics WHERE derivation_version=:v"),
-            {"v": DERIVE.version},
+            {"v": pair.derive},
         ).scalar_one()
         result: dict[str, Any] = {
             "synthetic": synthetic,
-            "versions": [DERIVE.version, SCORE.version],
+            "versions": pair.versions,
             "import": {
                 "batches": batches[0],
                 "last_received_utc": batches[1],
@@ -106,13 +109,13 @@ def dashboard(engine: Engine, synthetic: bool, wake_date: date | None = None) ->
                     "SELECT * FROM nightly_scores WHERE wake_date=:d AND score_version=:s "
                     "AND derivation_version=:v"
                 ),
-                {"d": night["wake_date"], "s": SCORE.version, "v": DERIVE.version},
+                {"d": night["wake_date"], "s": pair.score, "v": pair.derive},
             )
             .mappings()
             .first()
         )
-        result["previous_night"] = _neighbour(conn, night["wake_date"], later=False)
-        result["next_night"] = _neighbour(conn, night["wake_date"], later=True)
+        result["previous_night"] = _neighbour(conn, night["wake_date"], later=False, derive=pair.derive)
+        result["next_night"] = _neighbour(conn, night["wake_date"], later=True, derive=pair.derive)
         start, end = night["session_start_utc"], night["session_end_utc"]
         stages = [
             {"stage": r[0], "start_s": r[1] - start, "duration_s": r[2] - r[1]}
@@ -132,7 +135,7 @@ def dashboard(engine: Engine, synthetic: bool, wake_date: date | None = None) ->
                 "SELECT wake_date, asleep_s FROM nightly_metrics WHERE derivation_version=:v "
                 "AND wake_date<=:d ORDER BY wake_date"
             ),
-            {"v": DERIVE.version, "d": night["wake_date"]},
+            {"v": pair.derive, "d": night["wake_date"]},
         ).all()
     by_day = {r[0]: r[1] for r in history}
     last = datetime.fromisoformat(night["wake_date"]).date()
@@ -158,7 +161,8 @@ def dashboard(engine: Engine, synthetic: bool, wake_date: date | None = None) ->
         "awake_s": night["awake_s"],
         "efficiency": night["efficiency"],
         "physiology": [
-            {"id": key, "label": label, "value": night[f"{key}_mean"], "n": night[f"{key}_n"]}
+            {"id": key, "label": label, "value": night[f"{key}_mean"], "n": night[f"{key}_n"],
+             **({"quality": hr_quality(night)} if key == "hr" else {})}
             for key, label in PHYSIOLOGY
         ],
         "flags": json.loads(night["flags_json"]),

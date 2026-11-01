@@ -2,9 +2,9 @@
 
 ## Active SleepIQ Score v2 - owner approved 2026-11-01 (P33)
 
-**P34 HR-2 candidate note:** weighted sleeping HR is implemented for explicit synthetic candidate rebuilds, not active in the app. Candidate `score-3` uses `ScoreV2Config(version="score-3")` with identical curves/weights and candidate derive-2 measurements; existing score-2/pilot-1 rows and definitions remain intact. Changed HR can change its component and total; synthetic tests verify all other components remain identical. Sparse-data fallback preserves HR availability; no-HR still withholds the score and HRV remains optional. Activation/real-history rollout remain separate gates; P33 startup rescore permission does not authorize measurement recalculation. See [P34 calculation](DATA_PIPELINE.md#proposed-sleeping-hr-time-weighting-p34) and [phased plan](PLAN.md#sleeping-hr-time-weighting---planning-only-p34-2026-11-01).
+**P34 implementation:** `score-3` uses `ScoreV2Config(version="score-3")` with identical v2 curves/weights and derive-2 HR measurements. HR-3 consumers use the stored active pair; absent setting selects legacy derive-1/score-2. Explicit owner preparation/review/activation retains score-2/pilot-1 rows and definitions. Changed HR can change its component and total; other components remain identical. Sparse fallback preserves HR availability; no-HR still withholds the score and HRV is optional. Incomplete activated history fails startup rather than silently recalculating it. No owner history has been activated by the agent. See [P34 calculation](DATA_PIPELINE.md#proposed-sleeping-hr-time-weighting-p34) and [phased plan](PLAN.md#sleeping-hr-time-weighting---planning-only-p34-2026-11-01).
 
-Active configuration: `score-2` in `backend/app/domain/config.py` (`ScoreV2Config`, `SCORE`). The following v2 rules supersede the pilot rules below; the remaining document preserves the pilot specification and decision history.
+Legacy default: `score-2` in `backend/app/domain/config.py` (`ScoreV2Config`, `SCORE`); weighted selection uses `WEIGHTED_SCORE` (`score-3`) through the validated active-pair record. Both use the following v2 rules; the rest preserves pilot history.
 
 | Component | Weight | Piecewise-linear anchors (input to score) |
 | --- | ---: | --- |

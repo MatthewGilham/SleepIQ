@@ -2,9 +2,9 @@
 
 ## Weighted sleeping HR acceptance (P34)
 
-**HR-2 coverage now implemented:** `backend/tests/domain/test_weighted_hr.py` contains independent integral/coverage/source/time references; `backend/tests/scoring/test_weighted_rebuild.py` covers candidate history, unchanged HRV/other metrics, sparse/missing fallback, incremental versus clean rebuild, policy/version guards, legacy/additive schema compatibility, failed migration/rebuild, nonactivation at startup and isolated restore of both histories/metadata. Later active-pair/UI/CSV/browser acceptance in the matrix remains HR-3 work. Actual results and red/green evidence are recorded only in PLAN.md.
+**Implemented coverage:** `test_weighted_hr.py` and `test_weighted_rebuild.py` cover the HR-2 calculation/history/recovery contract. `backend/tests/scoring/test_weighted_rollout.py` adds fresh same-day snapshots, reviewed activation across consumers, input/candidate/backup changes, invalid state, stale app/receiver, failed activation transaction, no startup repair of incomplete weighted history and rollback preserving new imports. `frontend/src/hrQuality.test.ts` checks wording/missing/unknown coverage; `frontend/e2e/weighted-hr.spec.ts` checks keyboard/popup/chart fallback, with a labelled synthetic mock and ignored screenshot. Performance now benchmarks dense weighted rebuilds and a sparse fallback import before querying active weighted APIs. Actual outcomes live only in PLAN.md.
 
-Calculation contract: [DATA_PIPELINE.md](DATA_PIPELINE.md#proposed-sleeping-hr-time-weighting-p34); phases/executed evidence: [PLAN.md](PLAN.md#sleeping-hr-time-weighting---planning-only-p34-2026-11-01). The matrix defines acceptance across HR-2/HR-3; active-pair/UI/CSV cases remain future requirements. Freeze approved policies before writing code; write independent expected-value tests and observe failure before implementation. No new health fixtures from owner records.
+Calculation contract: [DATA_PIPELINE.md](DATA_PIPELINE.md#proposed-sleeping-hr-time-weighting-p34); phases/executed evidence: [PLAN.md](PLAN.md#sleeping-hr-time-weighting---planning-only-p34-2026-11-01). The matrix defines acceptance across HR-2/HR-3; owner-operated real rollout/smoke checks are HR-4 evidence, never inferred from synthetic results. No health fixtures from owner records.
 
 | Area | Required pass/fail cases |
 | --- | --- |

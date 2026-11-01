@@ -17,6 +17,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT), str(ROOT / "backend")]
 from app.domain.rebuild import rebuild
+from app.domain.config import WEIGHTED_DERIVE, WEIGHTED_SCORE
+from app.domain.versions import set_active
 from app.ingest.store import import_bytes
 from app.main import create_app
 from fastapi.testclient import TestClient
@@ -102,10 +104,22 @@ def main() -> int:
             with engine.begin() as conn:
                 rebuild(conn)
         timed("clean rebuild, all nights", results, clean_rebuild)
+        def weighted_rebuild():
+            with engine.begin() as conn:
+                rebuild(conn, derive=WEIGHTED_DERIVE, score=WEIGHTED_SCORE)
+                set_active(conn, True)  # This store is synthetic and owned by this benchmark.
+        timed("clean rebuild, weighted HR", results, weighted_rebuild)
         with engine.connect() as conn:
-            stored = conn.execute(text("SELECT count(*) FROM nightly_metrics")).scalar_one()
+            stored = conn.execute(text("SELECT count(*) FROM nightly_metrics WHERE derivation_version='derive-2'")).scalar_one()
+            weighted_nights = conn.scalar(text("SELECT count(*) FROM nightly_metrics "
+                                               "WHERE derivation_version='derive-2' AND hr_method='time_weighted_linear'"))
+        if args.hr_per_night >= 30 and weighted_nights != stored:
+            raise ValueError("Dense benchmark failed to exercise weighted HR")
         new_night = payload(night_blocks(last + timedelta(days=1)))
         timed("incremental import of one night", results, lambda: import_bytes(engine, data, new_night))
+        with engine.connect() as conn:
+            assert conn.scalar(text("SELECT hr_method FROM nightly_metrics WHERE "
+                                    "derivation_version='derive-2' ORDER BY wake_date DESC LIMIT 1")) == "simple_mean_fallback"
         app = create_app(chart_data=data)
         body = {"metrics": ["asleep_s", "hr_mean", "hrv_mean", "efficiency"], "range": "all"}
         with TestClient(app, base_url="http://localhost", client=("127.0.0.1", 50123)) as client:

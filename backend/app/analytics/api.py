@@ -15,9 +15,10 @@ from sqlalchemy import Engine, text
 
 from app.analytics.catalog import BY_ID, CATALOG, Metric
 from app.analytics.dashboard import NightNotFound, dashboard
+from app.analytics.quality import hr_quality
 from app.analytics.stats import ROLLING_MINIMUM, least_squares, pearson, rolling_mean
 from app.db.coordinator import write_guard
-from app.domain.config import DERIVE, SCORE
+from app.domain.versions import ActivePair, active_pair
 
 KEY = "charts.presets.v1"
 # Metrics removed from the catalog; old saved presets drop them silently on load (U03).
@@ -94,21 +95,28 @@ def normalize(values: list[float | None]) -> tuple[list[float | None], dict[str,
     }
 
 
-def _rows(engine: Engine) -> dict[str, Any]:
+class NightRows(dict[str, Any]):
+    def __init__(self, pair: ActivePair, rows: Any) -> None:
+        super().__init__((r["wake_date"], r) for r in rows)
+        self.pair = pair
+
+
+def _rows(engine: Engine) -> NightRows:
     # Fixed columns, bound values. No user SQL fragments or raw payloads.
     with engine.connect() as conn:
+        pair = active_pair(conn)
         rows = (
             conn.execute(
                 text("""SELECT n.*, s.overall, s.consistency, s.status AS score_status
           FROM nightly_metrics n LEFT JOIN nightly_scores s ON n.wake_date=s.wake_date
           AND n.derivation_version=s.derivation_version AND s.score_version=:score
           WHERE n.derivation_version=:derive ORDER BY n.wake_date"""),
-                {"score": SCORE.version, "derive": DERIVE.version},
+                {"score": pair.score, "derive": pair.derive},
             )
             .mappings()
             .all()
         )
-    return {r["wake_date"]: r for r in rows}
+    return NightRows(pair, rows)
 
 
 def _bounds(indexed: dict[str, Any], window: Window) -> tuple[date, date]:
@@ -171,7 +179,7 @@ def series(engine: Engine, selection: Selection) -> dict[str, Any]:
             "end": None,
             "dates": [],
             "series": [],
-            "versions": [DERIVE.version, SCORE.version],
+            "versions": indexed.pair.versions,
         }
     start, end = _bounds(indexed, selection)
     dates = _days(start, end)
@@ -192,6 +200,7 @@ def series(engine: Engine, selection: Selection) -> dict[str, Any]:
             details.append(
                 {
                     "n": row[count_key] if row and count_key else None,
+                    **({"hr_quality": hr_quality(row)} if row and key == "hr_mean" else {}),
                     "flags": json.loads(row["flags_json"]) if row else [],
                     "offset_minutes": row[
                         "start_offset_min" if key == "onset_minute" else "end_offset_min"
@@ -227,7 +236,7 @@ def series(engine: Engine, selection: Selection) -> dict[str, Any]:
         "end": end.isoformat(),
         "dates": dates,
         "series": output,
-        "versions": [DERIVE.version, SCORE.version],
+        "versions": indexed.pair.versions,
     }
 
 
@@ -238,7 +247,7 @@ def correlation(engine: Engine, pairing: Pairing) -> dict[str, Any]:
         "x": asdict(x),
         "y": asdict(y),
         "method": CORRELATION_METHOD,
-        "versions": [DERIVE.version, SCORE.version],
+        "versions": indexed.pair.versions,
     }
     if not indexed:
         return {
@@ -267,7 +276,9 @@ def correlation(engine: Engine, pairing: Pairing) -> dict[str, Any]:
         elif yv is None:
             excluded["missing_y"] += 1
         else:
-            pairs.append({"date": day, "x": xv, "y": yv})
+            pairs.append({"date": day, "x": xv, "y": yv,
+                          **({"hr_quality": hr_quality(row)}
+                             if row and "hr_mean" in (pairing.x, pairing.y) else {})})
     xs, ys = [p["x"] for p in pairs], [p["y"] for p in pairs]
     r, reason = pearson(xs, ys)
     return {
@@ -286,13 +297,13 @@ def correlation(engine: Engine, pairing: Pairing) -> dict[str, Any]:
 
 def correlation_matrix(engine: Engine, window: Window) -> dict[str, Any]:
     """Pearson r for every pair of non-clock metrics over the same calendar days (U17, F7)."""
+    indexed = _rows(engine)
     metrics = [m for m in CATALOG if not m.clock]
     result: dict[str, Any] = {
         "metrics": [{"id": m.id, "label": m.label, "unit": m.unit} for m in metrics],
         "method": CORRELATION_METHOD,
-        "versions": [DERIVE.version, SCORE.version],
+        "versions": indexed.pair.versions,
     }
-    indexed = _rows(engine)
     if not indexed:
         return {**result, "start": None, "end": None, "days": 0, "cells": []}
     start, end = _bounds(indexed, window)

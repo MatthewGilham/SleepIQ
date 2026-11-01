@@ -10,28 +10,36 @@ from sqlalchemy import text
 from app.db.backup import create_daily
 from app.db.coordinator import write_guard
 from app.db.engine import open_engine
-from app.domain.config import DERIVE, DeriveConfig
+from app.domain.config import DeriveConfig
 from app.domain.rebuild import rebuild, rescore
+from app.domain.versions import active_pair, ensure_current
 
 
 def run(
     data: Path,
     backups: Path,
     today: date,
-    derive: DeriveConfig = DERIVE,
+    derive: DeriveConfig | None = None,
     scores_only: bool = False,
 ) -> int:
     """Verified snapshot first, then recompute everything; observations are never modified."""
     database = data / "sleepiq.sqlite3"
-    with write_guard(data):
-        create_daily(database, data / "raw", backups, today)
     engine = open_engine(database)
     try:
+        with engine.connect() as conn:
+            pair = active_pair(conn)
+        if derive is not None and derive.version != pair.derive:
+            raise ValueError("Explicit rebuild must match the active pair; use rollout tooling")
+        selected = derive or pair.derive_config
+        with write_guard(data):
+            create_daily(database, data / "raw", backups, today)
         with write_guard(data), engine.begin() as conn:
+            ensure_current(conn, pair)
             if scores_only:
-                return rescore(conn, derive)
-            rebuild(conn, None, derive)
-            return int(conn.execute(text("SELECT count(*) FROM nightly_metrics")).scalar() or 0)
+                return rescore(conn, selected, pair.score_config)
+            rebuild(conn, None, selected, pair.score_config)
+            return int(conn.scalar(text("SELECT count(*) FROM nightly_metrics WHERE derivation_version=:v"),
+                                   {"v": pair.derive}) or 0)
     finally:
         engine.dispose()
 

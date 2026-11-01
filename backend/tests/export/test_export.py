@@ -123,6 +123,8 @@ def test_export_has_no_resting_heart_rate_column(store):
         "Consistency (/100)",
         "Sleep onset (HH:MM source-local)",
         "Wake time (HH:MM source-local)",
+        "hr_method", "hr_n", "hr_eligible_n", "hr_contributing_n", "hr_covered_s",
+        "hr_window_s", "hr_coverage", "hr_fallback_reason", "derivation_config_hash",
         "flags",
         "score_status",
         "derivation_version",

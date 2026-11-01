@@ -8,7 +8,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import text
+from sqlalchemy import Engine, text
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.responses import JSONResponse, Response
 
@@ -19,8 +19,9 @@ from app.db.cleanup import remove_retired_settings
 from app.db.coordinator import write_guard
 from app.db.engine import open_engine
 from app.db.scheduler import BackupService
-from app.domain.config import DERIVE, SCORE
+from app.domain.config import DERIVE
 from app.domain.rebuild import rescore
+from app.domain.versions import ActivePair, active_pair, ensure_current
 
 
 def create_app(
@@ -58,6 +59,18 @@ def create_app(
                 await task
 
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
+    version_engine: Engine | None = None
+    configured_pair: ActivePair | None = None
+
+    def stale() -> bool:
+        if version_engine is None or configured_pair is None:
+            return False
+        try:
+            with version_engine.connect() as conn:
+                ensure_current(conn, configured_pair)
+            return False
+        except ValueError:
+            return True
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost"])
 
     @app.middleware("http")
@@ -96,8 +109,14 @@ def create_app(
                 request._body = b"".join(chunks)
             if chart_data is None:
                 return JSONResponse({"detail": "Chart store not configured"}, status_code=503)
+            if stale():
+                return JSONResponse({"detail": "Calculation changed; restart SleepIQ"},
+                                    status_code=503, headers={"Cache-Control": "no-store"})
         response = await call_next(request)
         if protected:
+            if stale():
+                return JSONResponse({"detail": "Calculation changed; restart SleepIQ"},
+                                    status_code=503, headers={"Cache-Control": "no-store"})
             response.headers["Cache-Control"] = "no-store"
         return response
 
@@ -106,20 +125,28 @@ def create_app(
         if not database.is_file():
             raise ValueError("Initialized chart store required")
         engine = open_engine(database)
+        version_engine = engine
         remove_retired_settings(engine)
         # Populate the active scoring version for every historical night before serving charts.
         # This changes only derived scores; pilot outputs and nightly measurements stay intact.
         with write_guard(chart_data), engine.begin() as conn:
+            configured_pair = active_pair(conn)
+            if configured_pair.derive != DERIVE.version and not conn.scalar(text(
+                "SELECT count(*) FROM nightly_metrics WHERE derivation_version=:v"
+            ), {"v": configured_pair.derive}):
+                raise ValueError("Active weighted history is incomplete; owner review required")
             missing = conn.execute(
                 text(
                     "SELECT 1 FROM nightly_metrics n WHERE n.derivation_version=:dv "
                     "AND NOT EXISTS (SELECT 1 FROM nightly_scores s WHERE s.wake_date=n.wake_date "
                     "AND s.derivation_version=:dv AND s.score_version=:sv) LIMIT 1"
                 ),
-                {"dv": DERIVE.version, "sv": SCORE.version},
+                {"dv": configured_pair.derive, "sv": configured_pair.score},
             ).first()
             if missing:
-                rescore(conn)
+                if configured_pair.derive != DERIVE.version:
+                    raise ValueError("Active weighted history is incomplete; owner review required")
+                rescore(conn, derive=configured_pair.derive_config, score=configured_pair.score_config)
         app.include_router(router(engine, chart_data, chart_synthetic))
         app.include_router(export_router(engine))
 
@@ -133,6 +160,10 @@ def create_app(
         if backup_service is not None:
             state = asdict(backup_service.state)
         result: dict[str, object] = {"backup": state}
+        if configured_pair is not None:
+            result["versions"] = configured_pair.versions
+            result["generation"] = configured_pair.generation
+            result["restart_required"] = stale()
         if certificate_status is not None:
             result["certificate"] = certstatus.read(certificate_status)
         return result

@@ -19,6 +19,7 @@ from sqlalchemy import Connection, Engine, text
 from app.db.coordinator import write_guard
 from app.domain.rebuild import latest_night, rebuild
 from app.domain.sessions import local_date
+from app.domain.versions import ActivePair, active_pair, ensure_current
 from app.ingest.parse import (
     PARSER_VERSION,
     Observation,
@@ -115,7 +116,8 @@ def _insert(conn: Connection, batch: int, obs: Observation) -> tuple[bool, bool]
 
 
 def import_bytes(
-    engine: Engine, data: Path, body: bytes, *, received_utc: int | None = None
+    engine: Engine, data: Path, body: bytes, *, received_utc: int | None = None,
+    expected_pair: ActivePair | None = None,
 ) -> ImportResult:
     """Validate and import one export body. Raises UnsupportedExport before storing anything."""
     if len(body) > MAX_BYTES:
@@ -129,6 +131,9 @@ def import_bytes(
     raw = data / "raw"
     with write_guard(data):
         with engine.connect() as conn:
+            pair = active_pair(conn)
+            if expected_pair is not None:
+                ensure_current(conn, expected_pair)
             known = conn.execute(
                 text("SELECT id FROM import_batches WHERE sha256 = :d"), {"d": digest}
             ).scalar()
@@ -137,7 +142,7 @@ def import_bytes(
         created = _write_raw(raw, digest, body)
         try:
             with engine.begin() as conn:
-                return _commit(conn, digest, body, parsed, received_utc)
+                return _commit(conn, digest, body, parsed, received_utc, pair)
         except BaseException:
             if created:
                 (raw / f"{digest}.json").unlink(missing_ok=True)
@@ -145,7 +150,8 @@ def import_bytes(
 
 
 def _commit(
-    conn: Connection, digest: str, body: bytes, parsed: ParsedBatch, received_utc: int | None
+    conn: Connection, digest: str, body: bytes, parsed: ParsedBatch, received_utc: int | None,
+    pair: ActivePair,
 ) -> ImportResult:
     new = duplicate = conflicting = 0
     touched: list[int] = []
@@ -183,8 +189,9 @@ def _commit(
         # Rebuild from just before the earliest change, or from the latest stored night so that
         # its "possibly incomplete" flag is re-evaluated against the newly arrived data.
         earliest = local_date(min(touched), 0) - timedelta(days=2)
-        latest = latest_night(conn)
-        start = rebuild(conn, min(earliest, latest) if latest else earliest)
+        latest = latest_night(conn, pair.derive_config)
+        start = rebuild(conn, min(earliest, latest) if latest else earliest,
+                        derive=pair.derive_config, score=pair.score_config)
         result.rebuilt_from = start.isoformat()
     summary = {
         "new": new,

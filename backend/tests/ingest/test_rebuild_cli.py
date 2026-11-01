@@ -32,9 +32,8 @@ def test_clean_rebuild_applies_a_changed_source_preference_without_touching_obse
     # A label matching no preference is flagged until the owner-chosen preference changes.
     body = body.replace(b"Synthetic Apple Watch", b"Synthetic Band")
     store.import_bytes(engine, data, body)
-    before = (
-        engine.connect().execute(text("SELECT count(*), sum(start_utc) FROM observations")).one()
-    )
+    with engine.connect() as conn:
+        before = conn.execute(text("SELECT count(*), sum(start_utc) FROM observations")).one()
     engine.dispose()
     assert "non_preferred_source" in flags(data)
     backups = scratch / "backups"
@@ -42,9 +41,8 @@ def test_clean_rebuild_applies_a_changed_source_preference_without_touching_obse
     run(data, backups, date(2026, 1, 4), replace(DERIVE, preferred_source="band"))
     assert "non_preferred_source" not in flags(data)
     engine = open_engine(data / "sleepiq.sqlite3")
-    after = (
-        engine.connect().execute(text("SELECT count(*), sum(start_utc) FROM observations")).one()
-    )
+    with engine.connect() as conn:
+        after = conn.execute(text("SELECT count(*), sum(start_utc) FROM observations")).one()
     engine.dispose()
     assert tuple(before) == tuple(after)
     assert len(list(backups.iterdir())) == 1  # verified snapshot taken first

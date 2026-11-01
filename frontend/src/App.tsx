@@ -4,6 +4,7 @@ import { DataExport } from "./DataExport";
 import { Dashboard, TrendPanel } from "./Dashboard";
 import { arrowDirection, importText, loadDashboard, longDay, nightFromSearch, searchForNight, shortDay } from "./dashboardModel";
 import type { DashboardData } from "./dashboardModel";
+import {HRInfo} from "./HRInfo";
 import { backupLabel, loadBackupStatus } from "./backup";
 import { loadCertificateLabel } from "./certificate";
 import { useEffect, useState } from "react";
@@ -31,7 +32,7 @@ const stages = [
 const colors = { Awake: "var(--stage-awake)", REM: "var(--stage-rem)", Core: "var(--stage-core)", Deep: "var(--stage-deep)" };
 export function metricValue(value: string | null) { return value ?? "Missing data"; }
 function Metric({label, value, unit, detail}: {label:string;value:string|null;unit?:string;detail:string}) {
-  return <article className="metric"><p>{label}</p><div className={value === null ? "missing" : "metric-value"}>{metricValue(value)} {value !== null && <small>{unit}</small>}</div><span>{detail}</span></article>;
+  return <article className="metric"><p>{label}{label==="Sleeping heart rate"&&<HRInfo quality={{method:value===null?null:"time_weighted_linear",n:value===null?0:18,covered_s:value===null?0:22320,window_s:28800,coverage:value===null?0:0.775,fallback_reason:null}}/>}</p><div className={value === null ? "missing" : "metric-value"}>{metricValue(value)} {value !== null && <small>{unit}</small>}</div><span>{detail}</span></article>;
 }
 function Timeline() {
   let elapsed = 0;

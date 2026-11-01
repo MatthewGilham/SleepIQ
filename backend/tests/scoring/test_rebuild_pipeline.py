@@ -47,8 +47,14 @@ def snapshot(engine: Engine) -> list[list[tuple[object, ...]]]:
         ),
     )
     with engine.connect() as conn:
-        out = [[tuple(r) for r in conn.execute(text(q))] for q in sql]
-    out[0] = [r[:-1] for r in out[0]]  # drop computed_utc
+        # Column names remain stable when additive migrations append quality metadata.
+        out = [
+            [
+                tuple(v for k, v in r._mapping.items() if k != "computed_utc")
+                for r in conn.execute(text(q))
+            ]
+            for q in sql
+        ]
     return out
 
 
@@ -126,6 +132,8 @@ def test_incremental_rebuild_equals_clean_rebuild_for_backfill_and_gaps(scratch:
     data, engine = fresh(scratch, "inc")
     for piece in pieces:
         store.import_bytes(engine, data, piece)
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE nightly_metrics SET computed_utc=0"))
     ref_data, ref = fresh(scratch, "clean")
     store.import_bytes(ref, ref_data, nights_payload(day(0), 35))
     assert snapshot(engine) == snapshot(ref)

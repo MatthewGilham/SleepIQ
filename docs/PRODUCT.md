@@ -47,7 +47,7 @@ Display available measurements with units, definitions and missing-data indicato
 - Sleep onset (sleep 'bedtime' for this application), final wake time, and total sleep duration.
 - Core, Deep, REM, and Awake time; sleep efficiency derived using a documented convention.
 - Sleeping heart rate (bpm), derived from readings within the defined overnight sleep interval.
-- P34 proposes estimated time-weighted sleeping HR only; current simple mean remains active. HRV is unchanged. Method/coverage assumptions, history preservation and approval gates: [DATA_PIPELINE.md](DATA_PIPELINE.md#proposed-sleeping-hr-time-weighting-p34), [PLAN.md](PLAN.md#sleeping-hr-time-weighting---planning-only-p34-2026-11-01). Do not present weighting as guaranteed greater accuracy.
+- P34 provides estimated time-weighted sleeping HR with explicit method/coverage/fallback information and owner-reviewed activation; absent activation retains the existing simple mean. HRV is unchanged. Assumptions/history/gates: [DATA_PIPELINE.md](DATA_PIPELINE.md#proposed-sleeping-hr-time-weighting-p34), [PLAN.md](PLAN.md#sleeping-hr-time-weighting---planning-only-p34-2026-11-01). Weighting is not guaranteed greater accuracy.
 - **Overnight HRV — SDNN (ms)**, derived from valid timestamped HRV readings within the sleep interval; avoid labelling daily HRV as overnight HRV.
 - ~~Resting heart rate (bpm)~~ — removed from the dashboard, charts and export by owner decision (P27, U03); still stored.
 - Respiratory rate (breaths/min), appropriately scoped to sleep when supported by sample timestamps.

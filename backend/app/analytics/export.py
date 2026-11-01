@@ -13,7 +13,10 @@ from sqlalchemy import Engine
 
 from app.analytics.api import Window, _bounds, _rows, _value
 from app.analytics.catalog import BY_ID, Metric
-from app.domain.config import DERIVE, SCORE
+from app.analytics.quality import hr_quality
+
+HR_COLUMNS = ["hr_method", "hr_n", "hr_eligible_n", "hr_contributing_n", "hr_covered_s",
+              "hr_window_s", "hr_coverage", "hr_fallback_reason", "derivation_config_hash"]
 
 BOM = "﻿"  # lets Excel read UTF-8 (for example the degree sign) correctly
 FORMULA_STARTS = ("=", "+", "-", "@", "\t", "\r")
@@ -55,12 +58,14 @@ def nightly_csv(engine: Engine, request: ExportRequest) -> tuple[str, str, int]:
     """Return (filename, CSV text, night count). Only nights with a stored record are listed."""
     indexed = _rows(engine)
     metrics = [BY_ID[m] for m in request.metrics]
+    quality_columns = HR_COLUMNS if "hr_mean" in request.metrics else []
     out = io.StringIO()
     writer = csv.writer(out)
     writer.writerow(
         [
             "wake_date",
             *map(header, metrics),
+            *quality_columns,
             "flags",
             "score_status",
             "derivation_version",
@@ -73,14 +78,17 @@ def nightly_csv(engine: Engine, request: ExportRequest) -> tuple[str, str, int]:
         start, end = _bounds(indexed, request)
         rows = [r for d, r in indexed.items() if start <= date.fromisoformat(d) <= end]
     for row in rows:
+        quality = {f"hr_{key}": value for key, value in hr_quality(row).items()}
+        quality["derivation_config_hash"] = row.get("derivation_config_hash")
         writer.writerow(
             [
                 row["wake_date"],
                 *(cell(_value(row, m), m) for m in metrics),
+                *(safe_text(str(quality[k])) if quality[k] is not None else "" for k in quality_columns),
                 safe_text("; ".join(json.loads(row["flags_json"]))),
                 row["score_status"] or "not_computed",
-                DERIVE.version,
-                SCORE.version,
+                indexed.pair.derive,
+                indexed.pair.score,
             ]
         )
     name = f"sleepiq-nightly-{start}_{end}.csv" if start and end else "sleepiq-nightly-empty.csv"

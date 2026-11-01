@@ -20,11 +20,11 @@ CATALOG = [
     Metric("deep_s", "Deep", "min", "Recorded Deep stages; descriptive", 1 / 60),
     Metric("rem_s", "REM", "min", "Recorded REM stages; descriptive", 1 / 60),
     Metric("efficiency", "Sleep efficiency", "%", "Stage-based asleep / recorded stages", 100),
-    Metric("hr_mean", "Sleeping heart rate", "bpm", "Simple mean fallback; coverage unknown"),
+    Metric("hr_mean", "Sleeping heart rate", "bpm", "Time-weighted estimate where supported; otherwise simple mean"),
     Metric("hrv_mean", "Overnight HRV", "ms", "Mean of overnight SDNN samples"),
     Metric("resp_mean", "Respiratory rate", "breaths/min", "Overnight sample mean"),
     Metric("temp_mean", "Sleeping wrist temperature", "°C", "Samples attributed by midpoint"),
-    Metric("overall", "SleepIQ score", "/100", "score-2; maximum 100"),
+    Metric("overall", "SleepIQ score", "/100", "Versioned SleepIQ score; maximum 100"),
     Metric("consistency", "Consistency", "/100", "Previous 30 calendar days"),
     Metric(
         "onset_minute",

@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState} from "react";
 import type {ReactNode} from "react";
+import {hrQualityText} from "./HRInfo";
 
 import {averageText,axisUnit,chartRequest,clockText,curveRuns,deltaTone,display,visibleMean,fitMetrics,hoursText,initialSelection,refusal,rollingNote,runPath,sliceSeries,toAxis,unitName,withDefaults} from "./charts";
 import {fullDay,shortDay,tickDays} from "./dashboardModel";
@@ -128,6 +129,7 @@ function MainChart({series,dates,normalized,fit,averages,recorded,onReset}:{seri
    <div className="chart-tip" role="status" aria-live="polite" hidden={c===null} style={c===null?undefined:tipLeft>62?{right:`calc(${100-tipLeft}% + 14px)`}:{left:`calc(${tipLeft}% + 14px)`}}>
     {c!==null&&<><b><time dateTime={dates[c]}>{fullDay(dates[c])}</time></b>
      {series.map(s=><div key={s.id} className="tip-row" data-metric={s.id}><span style={{color:color(s.id)}}>● {s.label}</span><span>{display(s,s.values[c],normalized)}</span></div>)}
+     {series.filter(s=>s.id==="hr_mean"&&s.details[c]?.hr_quality).map(s=><div key="hr-quality" className="tip-row hr-quality">{hrQualityText(s.details[c].hr_quality!)}</div>)}
      {averages&&series.filter(s=>!s.clock).map(s=><div key={`a-${s.id}`} className="tip-row average" data-average={s.id}><span>{s.label} average</span><span>{averageText(s,normalized)}</span></div>)}
      {series.filter(s=>s.rolling).map(s=><div key={`r-${s.id}`} className="tip-row rolling"><span>{s.label}</span><span>{rollingNote(s.rolling!,c,v=>display(s,v,normalized))}</span></div>)}
      {recorded&&!recorded.has(dates[c])&&<div className="tip-row"><span>No recorded sleep this night</span></div>}</>}

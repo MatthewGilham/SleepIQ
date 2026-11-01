@@ -5,6 +5,7 @@ the same number of calendar days ending the day before the selected range starts
 """
 
 import math
+from collections import Counter
 from datetime import date, timedelta
 from statistics import fmean, quantiles
 from typing import Any
@@ -14,7 +15,6 @@ from sqlalchemy import Engine
 from app.analytics.api import Window, _bounds, _rows, _value
 from app.analytics.catalog import CATALOG
 from app.analytics.dashboard import ceiling
-from app.domain.config import DERIVE, SCORE
 
 STAGES = (("deep", "deep_s"), ("rem", "rem_s"), ("core", "core_s"), ("awake", "awake_s"))
 METHOD = {
@@ -68,6 +68,10 @@ def _period(indexed: dict[str, Any], start: date, end: date) -> dict[str, Any]:
             "min": min(values) if values else None,
             "max": max(values) if values else None,
         }
+        if metric.id == "hr_mean":
+            metrics[metric.id]["methods"] = dict(Counter(
+                r["hr_method"] or "missing" for r in rows
+            ))
     return {
         "start": start.isoformat(),
         "end": end.isoformat(),
@@ -81,7 +85,7 @@ def _period(indexed: dict[str, Any], start: date, end: date) -> dict[str, Any]:
 def summary(engine: Engine, window: Window) -> dict[str, Any]:
     indexed = _rows(engine)
     base: dict[str, Any] = {
-        "versions": [DERIVE.version, SCORE.version],
+        "versions": indexed.pair.versions,
         "ceiling": ceiling(),
         "method": METHOD,
     }

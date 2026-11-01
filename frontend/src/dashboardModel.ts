@@ -1,5 +1,6 @@
 export type Stage = "Awake"|"REM"|"Core"|"Deep";
-export type Physiology = {id:string;label:string;value:number|null;n:number};
+import type {HRQuality} from "./HRInfo";
+export type Physiology = {id:string;label:string;value:number|null;n:number;quality?:HRQuality};
 export type Component = {score:number|null;weight:number;neutral:boolean};
 export type DashboardScore = {status:"scored"|"insufficient_data";overall:number|null;consistency:number|null;version:string;ceiling:number;missing:string[];components:Record<string,Component>;consistency_detail:{available?:boolean;reason?:string|null;baseline_nights?:number;provisional?:boolean;onset_deviation_min?:number|null;wake_deviation_min?:number|null}};
 export type Latest = {wake_date:string;source:string;onset_local:string;wake_local:string;start_offset_min:number;end_offset_min:number;session_s:number;asleep_s:number;core_s:number;deep_s:number;rem_s:number;awake_s:number;efficiency:number;physiology:Physiology[];flags:string[];stages:{stage:Stage;start_s:number;duration_s:number}[];score:DashboardScore|null};

@@ -1302,3 +1302,10 @@
 @media(max-width:1180px){.cx-main{grid-template-columns:minmax(0,1fr)}.cx-side{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.cx-pair{grid-template-columns:minmax(0,1fr)}.cx-swap{justify-self:center}.cx-row{grid-template-columns:minmax(0,1fr)}.cx-side{grid-template-columns:minmax(0,1fr)}.cx-r{font-size:52px}.cx-card{padding:16px}}
 @media(prefers-reduced-motion:reduce){.cx *{transition:none!important;animation:none!important}}
+/* HR provenance is available on demand without restoring permanent technical captions. */
+.metric{position:relative}
+.hr-info{display:inline-flex;margin-left:7px;vertical-align:middle}
+.hr-info button{border:0;background:transparent;color:var(--muted);padding:2px 4px;cursor:pointer;font:inherit;line-height:1}
+.hr-info button:focus-visible{outline:2px solid #ffb199;outline-offset:3px;border-radius:4px}
+.hr-pop{position:absolute;z-index:80;right:8px;top:36px;width:min(280px,calc(100vw - 48px));padding:12px;border:1px solid #75504c;border-radius:10px;background:#241a1d;color:#f4e6df;font-size:12px;font-weight:400;line-height:1.6;box-shadow:0 8px 24px #0008}
+.chart-tip .hr-quality{display:block;max-width:280px;white-space:normal;color:#c9b2aa;font-size:11px;line-height:1.5;padding-top:5px}

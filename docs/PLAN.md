@@ -2,7 +2,7 @@
 
 ## Sleeping HR time weighting - planning only (P34, 2026-11-01)
 
-**Authorization:** HR-1 checkpoint committed as `5d5f3ae`; owner explicitly approved HR-2 entry: "Yes you have approval" (2026-11-01), in response to the HR-2 implementation request. HR-3/later entry still require separate approval under AGENTS.md/P8; no real-record operation is authorized. HRV is excluded. P4/P18 remain active in the running application until a separately approved rollout. This does not advance or close existing Phase 5 operational acceptance items.
+**Authorization:** HR-1 checkpoint `5d5f3ae`, HR-2 checkpoint `784dbff`. Owner then replied **"Yes i approve all"** to the remaining-phase checkpoint (2026-11-01), approving HR-3 and HR-4 scope. Continue through their required gates without repeating phase permission questions; this does not waive passing release checks, owner historical-input confirmation or owner-local candidate review before activation. HRV is excluded. Existing Phase 5 operational acceptance items remain separate.
 
 ### Objective and proposed policy
 
@@ -24,7 +24,7 @@ Exit: reviewed contract, documentation checks and explicit owner approval of HR-
 
 ### Phase HR-2 - Calculation and persistence on synthetic stores
 
-Status: `awaiting_approval` (HR-2 implementation and gates passed; local checkpoint being finalized, then HR-3 entry approval required). Owner approved entry with "Yes you have approval" (2026-11-01). Risk: high (versioned derivation). Scope: pure calculation, additive metadata migration, explicit candidate-only derive-2/score-3 rebuild and synthetic compatibility/recovery tests; defaults remain derive-1/score-2. HR-3 UI/API/active-pair integration and HR-4 live work excluded.
+Status: `done`; checkpoint `784dbff` verified, owner approved remaining phases. Scope: pure calculation, additive metadata migration, explicit candidate-only derive-2/score-3 rebuild and synthetic compatibility/recovery tests; defaults remain derive-1/score-2 until activation.
 
 | Subphase | Deliverable / likely future files | Pass/fail exit criteria |
 | --- | --- | --- |
@@ -36,7 +36,7 @@ Exit: targeted domain/ingest/scoring/migration/recovery suites, applicable Found
 
 ### Phase HR-3 - API, display, exports and safe version selection
 
-Status: `planned`; depends on HR-2 checkpoint and explicit entry approval. Risk: medium/high (consumer consistency). Suggested executor: one general coding agent, high effort for version selection, medium for UI/tests.
+Status: `done` (implementation and full gates passed; scoped local checkpoint hash reported after commit verification). Owner approved entry and remaining scope with "Yes i approve all" (2026-11-01). HR-2 prerequisite satisfied. API/UI/CSV, coordinated active versions and owner rollout tooling delivered; no owner records accessed or activated.
 
 | Subphase | Deliverable / likely future files | Pass/fail exit criteria |
 | --- | --- | --- |
@@ -44,11 +44,11 @@ Status: `planned`; depends on HR-2 checkpoint and explicit entry approval. Risk:
 | HR-3.2 UI review | Dashboard.tsx, model/types, Analytics tooltip, synthetic preview, unit/Playwright fixtures | Owner reviews discoverable method/coverage/fallback information with P31 minimal-text policy. No permanently restored technical captions or visible versions without approval. Keyboard/pointer access; sparse/no-HR states; layouts pass. |
 | HR-3.3 Release candidate | Startup/receiver/rebuild command and active-pair selection; OPERATIONS instructions | Candidate history can be built before changing active pair; dashboard and both writers cannot silently activate or mix versions. Full gate, performance/security/audits/backup/isolated recovery pass; scoped local commit reviewed and verified. |
 
-Planned full gate: `powershell -File scripts/check.ps1 -Suite Full` (not run for P34). Explain limitations and obtain HR-4 entry approval separately from authorization for real-record operations.
+Full gate `powershell -NoProfile -File scripts/check.ps1 -Suite Full` passed; evidence below. HR-4 scope is preapproved by the follow-up "approve all" instruction, so do not ask again for phase entry; historical suitability and private candidate-review acknowledgement remain substantive input gates.
 
 ### Phase HR-4 - Owner-approved historical recalculation and rollout
 
-Status: `planned`; depends on HR-3 checks/commit, explicit entry approval and concrete authorization for migration/backfill/activation. Risk: high (owner records). Suggested executor: owner-operated local procedure with agent guidance; no agent reading private records.
+Status: `planned`; owner approved scope with "Yes i approve all", conditional on HR-3 checks/commit and owner-local candidate review. Asked owner whether Summarize Data was off for historical imports; pending. Owner-operated local rollout keeps health values out of agent context; no agent reading private records.
 
 | Subphase | Deliverable | Pass/fail exit criteria |
 | --- | --- | --- |
@@ -84,6 +84,17 @@ Planning verification (2026-11-01): inline Python check (`@' ... '@ | .venv/Scri
 - First sandboxed `powershell -NoProfile -File scripts/security.ps1`: source secret scan **180 files, no findings**, but pip-audit unavailable due cache access/proxy refusal (`WinError 10061`, sandbox proxy 127.0.0.1:9). No proxy/security settings changed. Reran the same gate with tool-approved escalation: **exit 0**, source scan **180 files, no findings**, pip-audit **no known vulnerabilities**, npm audit **0 vulnerabilities**. Only dependency metadata sent to advisory services; no install/dependency change.
 - Inline Python documentation/legacy-configuration checks passed: **6 affected documents / 5 added local links and anchors**, legacy derivation fields identical to HR-1 commit, pilot-1 and score-2 configuration hashes unchanged. `git diff --check` passed. Only documentation changed after the passing executable gates, so runtime evidence remains applicable. New browser/active-pair/CSV acceptance and weighted-path performance work belongs to HR-3, not claimed complete by Foundation. Unrelated PLAN diagnostics/average-explanation notes and owner screenshot remain excluded.
 - Local checkpoint preparation: stage only the HR-2 implementation, synthetic tests and affected specifications/approval/evidence, excluding unrelated PLAN notes; verify staged diff and successful commit before reporting checkpoint complete. No live migration/recalculation/activation, infrastructure changes or dependency updates performed. Next phase requires explicit HR-3 entry approval and includes API/UI/CSV, active-pair integration and full release/performance/browser gates; HR-4 live operations remain separately gated.
+
+### HR-3 integration progress (2026-11-01)
+
+- Owner approved all remaining phases; HR-2 commit verified as `784dbff`. Historical-input question pending; no owner records or live endpoints accessed. Active selection and all quality fields now integrated across dashboard, timeseries, summaries, correlation and CSV. HR-only CSV gains method/coverage/count/fingerprint columns. Stale app/receiver checks, paired imports/rebuild, explicit rollout CLI/wrapper, current pre-change checkpoint/isolated restore, local private comparison CSV, reviewed atomic activation and raw-preserving rollback implemented. No automatic migration/weighted activation at startup.
+- Red: new rollout tests initially failed collection (missing module), then uncovered a Windows path-length failure in the checkpoint layout. Shortened the generated recovery path, retaining unique checkpoints and existing snapshot verification. Focused rollout tests now **11 passed**; combined API/analytics/export/normal rebuild run **59 passed** before adding the two extra activation-failure/incomplete-history cases. Existing rebuild test leaked checked-out read connections and intermittently locked SQLite in the combined run; changed its two reads to context managers, preserving its assertions and legacy custom-source preference support.
+- New frontend unit tests initially hit sandbox `spawn EPERM`; tool-approved rerun `npm.cmd --prefix frontend test`: **53 passed**. `npm.cmd --prefix frontend run build`: TypeScript/Vite passed. `npm.cmd --prefix frontend run test:e2e -- weighted-hr.spec.ts` with tool-approved browser access: **1 passed**, isolated synthetic server only. Ignored screenshot `.cache/weighted-hr-info.png` visually reviewed; on-demand popup fits the existing card and restores no permanent captions. Synthetic mock is explicitly test data, not proof of live weighted coverage.
+- Ruff/Mypy passed (46 application source files); targeted rollout/rebuild run after comparison-file and fixture fixes: **12 passed**. Synthetic workflow covers no activation at preparation, unchanged versions/HRV until switch, all selected consumers, invalid token/input/candidate/snapshot, stale processes, startup refusing incomplete weighted history, failed activation rollback and rollback retaining subsequent imports. Full release gate, new dense-weighted/sparse-fallback performance workload, PowerShell parse and final source/doc checks pending; no phase checkpoint claimed complete yet.
+- First full gate: Ruff/Mypy passed; backend **313 passed/1 failed**. Existing incremental-versus-clean snapshot helper dropped the last column assuming it was `computed_utc`; the additive migration appended quality fields, exposing a clock-dependent comparison failure (and accidentally excluding the policy hash). Changed the helper to exclude `computed_utc` by column name and forced distinct synthetic computation times, preserving comparison of all quality fields. Targeted regression passed. This corrects the test's original intended comparison, not a measurement/score change. Full gate rerun required.
+- PowerShell parser check for `scripts/weighted-hr.ps1` passed. Inline documentation check: **9 changed documents / 8 added local links and anchors passed**; diff whitespace check passed. Owner history input and private candidate review remain pending; no live operations performed.
+- Final `powershell -NoProfile -File scripts/check.ps1 -Suite Full` with tool-approved escalation: **exit 0**, **314 backend tests / 53 frontend unit tests / 90 Playwright tests passed**, Ruff/Mypy/TypeScript/Vite passed. Synthetic migration, activation-transaction rollback, history preservation, isolated restore, TLS and security suites included. Performance on **944,042 observations / 1,826 nights**: legacy rebuild **3.484 s**, weighted rebuild **4.856 s**, sparse fallback incremental import **0.390 s**; all API/time budgets passed. Source secret scan **188 files, no findings**; pip-audit **no known vulnerabilities**, npm audit **0 vulnerabilities**. No dependency, trust, firewall or permission changes; no owner health records opened.
+- Only verification/status documentation changed after the passing full gate; executable evidence remains applicable. Final scope review/checkpoint excludes unrelated PLAN investigation notes, owner screenshot, ignored builds/test outputs/private data. No browser result or screenshot is claimed to show live weighted data. HR-4 remains pending owner historical-input confirmation and local numerical candidate review; no repeated phase permission is needed.
 
 ## SleepIQ Score v2 (2026-11-01)
 

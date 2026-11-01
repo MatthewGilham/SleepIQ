@@ -7,6 +7,7 @@ from sqlalchemy import text
 
 from app.db.engine import open_engine
 from app.db.migrate import SUPPORTED_HEALTH_REVISIONS
+from app.domain.versions import active_pair
 from app.ingest.store import import_bytes
 
 
@@ -22,9 +23,10 @@ def make_handler(data: Path) -> Callable[[bytes], dict[str, object]]:
             raise ValueError(
                 "Store is not at the current schema; run the owner import CLI --migrate"
             )
+        expected = active_pair(conn)
 
     def handle(body: bytes) -> dict[str, object]:
-        result = import_bytes(engine, data, body)
+        result = import_bytes(engine, data, body, expected_pair=expected)
         return {
             "status": result.status,
             "new": result.new,

@@ -1,4 +1,6 @@
 import {useRef,useState} from "react";
+import {HRInfo} from "./HRInfo";
+import type {HRQuality} from "./HRInfo";
 import {TREND_RANGES,axisTicks,clock,consistencyNote,contribution,duration,hourTicks,missingText,number,shortDay,stageBar,tickDays,trendWindow,units} from "./dashboardModel";
 import type {DashboardData,Latest,Stage,TrendRange} from "./dashboardModel";
 
@@ -7,8 +9,8 @@ const colors:Record<Stage,string>={Awake:"var(--stage-awake)",REM:"var(--stage-r
 const names=["duration","consistency","deep","rem","sleeping_hr"] as const;
 const labels:Record<string,string>={duration:"Duration",consistency:"Consistency",efficiency:"Efficiency",deep:"Deep",rem:"REM",sleeping_hr:"Sleeping HR"};
 
-function Metric({label,value,unit,detail}:{label:string;value:string|null;unit?:string;detail:string}){
- return <article className="metric"><p>{label}</p><div className={value===null?"missing":"metric-value"}>{value??"Missing data"} {value!==null&&<small>{unit}</small>}</div>{detail&&<span>{detail}</span>}</article>;
+function Metric({label,value,unit,detail,quality}:{label:string;value:string|null;unit?:string;detail:string;quality?:HRQuality}){
+ return <article className="metric"><p>{label}{quality&&<HRInfo quality={quality}/>}</p><div className={value===null?"missing":"metric-value"}>{value??"Missing data"} {value!==null&&<small>{unit}</small>}</div>{detail&&<span>{detail}</span>}</article>;
 }
 function Timeline({night}:{night:Latest}){
  const session=Math.max(1,night.session_s);
@@ -71,7 +73,7 @@ export function Dashboard({data}:{data:DashboardData}){
   <div className="stage-summary">{stageTotals.map(([s,v])=><div key={s}><i style={{background:colors[s]}}/><span>{s}</span><strong>{duration(v)}</strong></div>)}</div></section>
  <div className="section-heading"><h2>The details that matter</h2><span>Overnight measurements · {night.wake_date}</span></div>
  <section className="metrics-grid" aria-label="Nightly metrics"><Metric label="Sleep efficiency" value={number(night.efficiency*100)} unit="%" detail=""/>
-  {night.physiology.map(p=><Metric key={p.id} label={p.label} value={number(p.value)} unit={units[p.id]} detail={p.value===null?(p.id==="temp"?"No reading attributed to this night":"No overnight samples"):""}/>)}</section>
+  {night.physiology.map(p=><Metric key={p.id} label={p.label} value={number(p.value)} unit={units[p.id]} quality={p.quality} detail={p.value===null?(p.id==="temp"?"No reading attributed to this night":"No overnight samples"):""}/>)}</section>
  <div className="bottom-grid"><TrendPanel trend={data.trend}/>
  <section className="panel breakdown"><div className="panel-title"><h2>Behind the score</h2><span className="pill">TRANSPARENT BY DESIGN</span></div>
   {names.map(name=>{const c=score?.components[name];return <div className="breakdown-row" key={name}><span>{labels[name]}</span><small>{c?`${c.weight}%`:"—"}</small><b>{c?contribution(c,total):"—"}</b></div>;})}

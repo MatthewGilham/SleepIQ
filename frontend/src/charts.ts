@@ -4,7 +4,7 @@ export type Selection = {metrics:string[];range:Range;start:string|null;end:stri
 export type Preset = Selection & {id:string;name:string;default:boolean;revision:number};
 // Python computes rolling means over trailing calendar windows; null values mean below the observed-night minimum.
 export type Rolling = {window:number;minimum:number;values:(number|null)[]|null;counts:number[]|null;reason:string|null};
-export type Series = Metric & {values:(number|null)[];raw:(number|null)[];details:{n:number|null;flags:string[];offset_minutes:number|null}[];normalization:{n:number;mean:number|null;sd:number|null;reason:string|null;method:string};rolling:Rolling|null};
+export type Series = Metric & {values:(number|null)[];raw:(number|null)[];details:{n:number|null;flags:string[];offset_minutes:number|null;hr_quality?:import("./HRInfo").HRQuality}[];normalization:{n:number;mean:number|null;sd:number|null;reason:string|null;method:string};rolling:Rolling|null};
 export type ChartData = {synthetic?:boolean;dates:string[];start:string|null;end:string|null;series:Series[];versions:string[]};
 export type Pair = {date:string;x:number;y:number};
 export type Correlation = {synthetic?:boolean;x:Metric;y:Metric;start:string|null;end:string|null;days:number;pairs:Pair[];n:number;excluded:{missing_x:number;missing_y:number;neither:number};r:number|null;fit:{slope:number;intercept:number}|null;reason:string|null;method:string;versions:string[]};
