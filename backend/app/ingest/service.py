@@ -6,19 +6,19 @@ from pathlib import Path
 from sqlalchemy import text
 
 from app.db.engine import open_engine
+from app.db.migrate import SUPPORTED_HEALTH_REVISIONS
 from app.ingest.store import import_bytes
-
-HEAD = "0002_health"
 
 
 def make_handler(data: Path) -> Callable[[bytes], dict[str, object]]:
-    """Fail at startup (never mid-request) if the store is missing or not at the current schema."""
+    """Accept supported legacy/additive schemas without migrating or activating a version."""
     database = data / "sleepiq.sqlite3"
     if not database.is_file():
         raise ValueError("Initialized private data store required")
     engine = open_engine(database)
     with engine.connect() as conn:
-        if conn.execute(text("SELECT version_num FROM alembic_version")).scalar() != HEAD:
+        revision = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        if revision not in SUPPORTED_HEALTH_REVISIONS:
             raise ValueError(
                 "Store is not at the current schema; run the owner import CLI --migrate"
             )

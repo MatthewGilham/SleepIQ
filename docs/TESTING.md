@@ -1,8 +1,10 @@
 # SleepIQ — Testing and Quality Gates
 
-## Proposed weighted sleeping HR acceptance (P34; not implemented)
+## Weighted sleeping HR acceptance (P34)
 
-Calculation contract: [DATA_PIPELINE.md](DATA_PIPELINE.md#proposed-sleeping-hr-time-weighting-p34); phases/executed evidence: [PLAN.md](PLAN.md#sleeping-hr-time-weighting---planning-only-p34-2026-11-01). Tests below are future requirements, not executed tests. Freeze approved policies before writing code; write independent expected-value tests and observe failure before implementation. No new health fixtures from owner records.
+**HR-2 coverage now implemented:** `backend/tests/domain/test_weighted_hr.py` contains independent integral/coverage/source/time references; `backend/tests/scoring/test_weighted_rebuild.py` covers candidate history, unchanged HRV/other metrics, sparse/missing fallback, incremental versus clean rebuild, policy/version guards, legacy/additive schema compatibility, failed migration/rebuild, nonactivation at startup and isolated restore of both histories/metadata. Later active-pair/UI/CSV/browser acceptance in the matrix remains HR-3 work. Actual results and red/green evidence are recorded only in PLAN.md.
+
+Calculation contract: [DATA_PIPELINE.md](DATA_PIPELINE.md#proposed-sleeping-hr-time-weighting-p34); phases/executed evidence: [PLAN.md](PLAN.md#sleeping-hr-time-weighting---planning-only-p34-2026-11-01). The matrix defines acceptance across HR-2/HR-3; active-pair/UI/CSV cases remain future requirements. Freeze approved policies before writing code; write independent expected-value tests and observe failure before implementation. No new health fixtures from owner records.
 
 | Area | Required pass/fail cases |
 | --- | --- |

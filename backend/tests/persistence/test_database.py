@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 from app.db.engine import open_engine
-from app.db.migrate import upgrade
+from app.db.migrate import WEIGHTED_HR_REVISION, upgrade
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import IntegrityError
 
@@ -28,7 +28,7 @@ def test_upgrade_is_repeatable_and_preserves_settings(scratch: Path) -> None:
             assert connection.scalar(text("SELECT value_json FROM app_settings")) == '"dark"'
             assert connection.scalar(text("PRAGMA foreign_keys")) == 1
             assert (
-                connection.scalar(text("SELECT version_num FROM alembic_version")) == "0002_health"
+                connection.scalar(text("SELECT version_num FROM alembic_version")) == WEIGHTED_HR_REVISION
             )
     finally:
         engine.dispose()

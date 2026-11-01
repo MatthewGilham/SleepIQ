@@ -9,11 +9,22 @@ import json
 import math
 import time
 from bisect import bisect_right
+from dataclasses import asdict
 from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import Connection, text
 
-from app.domain.config import DERIVE, SCORE, DeriveConfig, ScoreConfig
+from app.db.migrate import WEIGHTED_HR_REVISION
+from app.domain.config import (
+    DERIVE,
+    SCORE,
+    WEIGHTED_DERIVE,
+    WEIGHTED_SCORE,
+    DeriveConfig,
+    ScoreConfig,
+    WeightedDeriveConfig,
+)
+from app.domain.heart_rate import HRReading, sleeping_hr
 from app.domain.scoring import consistency, score_night
 from app.domain.sessions import (
     Night,
@@ -31,6 +42,30 @@ PHYSIOLOGY = {
     "rhr": ("resting_heart_rate", "qty"),
     "temp": ("apple_sleeping_wrist_temperature", "qty"),
 }
+
+
+def _check_versions(conn: Connection, derive: DeriveConfig, score: ScoreConfig) -> None:
+    """Validate before any deletion: one score identity must never consume two derivations."""
+    if isinstance(derive, WeightedDeriveConfig) or score.version == WEIGHTED_SCORE.version:
+        if (
+            not isinstance(derive, WeightedDeriveConfig)
+            or derive.config_hash() != WEIGHTED_DERIVE.config_hash()
+            or score.config_hash() != WEIGHTED_SCORE.config_hash()
+        ):
+            raise ValueError("Unsupported weighted HR version/policy pair")
+        if conn.scalar(text("SELECT version_num FROM alembic_version")) != WEIGHTED_HR_REVISION:
+            raise ValueError("Weighted HR requires the additive metadata schema")
+        mismatch = conn.execute(
+            text(
+                "SELECT 1 FROM nightly_metrics WHERE derivation_version=:v AND "
+                "(derivation_config_hash IS NULL OR derivation_config_hash != :h) LIMIT 1"
+            ),
+            {"v": derive.version, "h": derive.config_hash()},
+        ).first()
+        if mismatch:
+            raise ValueError("Stored derivation policy does not match this version")
+    elif derive.version != DERIVE.version or score.version not in {"pilot-1", SCORE.version}:
+        raise ValueError("Unsupported derivation/score version pair")
 
 
 def _midnight(day: date) -> int:
@@ -134,9 +169,31 @@ def _store_night(
         "computed_utc": now,
     }
     for key, (metric, column) in PHYSIOLOGY.items():
+        if key == "hr" and isinstance(cfg, WeightedDeriveConfig):
+            rows = conn.execute(
+                text(
+                    "SELECT start_utc, end_utc, avg, source FROM observations "
+                    "WHERE metric='heart_rate' AND status='active' "
+                    "AND start_utc BETWEEN :first AND :end "
+                    "AND start_utc + end_utc BETWEEN :lo AND :hi ORDER BY start_utc, id"
+                ),
+                {
+                    "first": window.start - longest[metric] // 2 - 1,
+                    "end": window.end,
+                    "lo": 2 * window.start,
+                    "hi": 2 * window.end,
+                },
+            )
+            result = sleeping_hr(
+                [HRReading(*r) for r in rows], window.start, window.end, window.source, cfg
+            )
+            values.update({f"hr_{name}": value for name, value in asdict(result).items()})
+            values["derivation_config_hash"] = cfg.config_hash()
+            continue
         mean, count = _window_mean(conn, metric, column, window.start, window.end, longest[metric])
         values[f"{key}_mean"], values[f"{key}_n"] = mean, count
-    values["hr_method"] = "simple_mean_fallback" if values["hr_n"] else None
+    if not isinstance(cfg, WeightedDeriveConfig):
+        values["hr_method"] = "simple_mean_fallback" if values["hr_n"] else None
     columns = ", ".join(values)
     placeholders = ", ".join(f":{key}" for key in values)
     conn.execute(text(f"INSERT INTO nightly_metrics ({columns}) VALUES ({placeholders})"), values)
@@ -261,6 +318,7 @@ def rescore(
 
     Caller owns the write guard and transaction, so a failed rescore rolls back atomically.
     """
+    _check_versions(conn, derive, score)
     days = [
         date.fromisoformat(day)
         for day in conn.execute(
@@ -283,6 +341,7 @@ def rebuild(
     now: int | None = None,
 ) -> date:
     """Recompute nights/general metrics/scores with wake date >= from_date. Returns the start."""
+    _check_versions(conn, derive, score)
     stamp = int(time.time()) if now is None else now
     first = conn.execute(
         text("SELECT min(start_utc) FROM observations WHERE status = 'active'")

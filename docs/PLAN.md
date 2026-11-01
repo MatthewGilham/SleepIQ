@@ -2,7 +2,7 @@
 
 ## Sleeping HR time weighting - planning only (P34, 2026-11-01)
 
-**Authorization:** planning completed; owner subsequently instructed "Implement the plan" (2026-11-01). This authorizes HR-1 entry and the documented recommended calculation policy. HR-2 and later entry still require separate approval under AGENTS.md/P8; no real-record operation is authorized. HRV is excluded. P4/P18 remain active in the running application until a separately approved rollout. This does not advance or close existing Phase 5 operational acceptance items.
+**Authorization:** HR-1 checkpoint committed as `5d5f3ae`; owner explicitly approved HR-2 entry: "Yes you have approval" (2026-11-01), in response to the HR-2 implementation request. HR-3/later entry still require separate approval under AGENTS.md/P8; no real-record operation is authorized. HRV is excluded. P4/P18 remain active in the running application until a separately approved rollout. This does not advance or close existing Phase 5 operational acceptance items.
 
 ### Objective and proposed policy
 
@@ -12,7 +12,7 @@ Owner's instruction to implement the presented plan accepts its recommended poli
 
 ### Phase HR-1 - Agree calculation and compatibility contracts
 
-Status: `awaiting_approval` (HR-1 contract/input review and checks passed; HR-2 entry approval required; verified local checkpoint hash reported in handoff). Owner approved HR-1 entry with "Implement the plan" (2026-11-01). Prerequisite to application/schema/test implementation. Risk: high (assumptions and history). One agent; no delegation or paid calls authorized.
+Status: `done`; HR-1 checkpoint verified as `5d5f3ae`, and owner approved HR-2 entry. Historical export configuration remains an HR-4 verification gate. One agent; no delegation or paid calls authorized.
 
 | Subphase | Deliverable / likely future files | Pass/fail exit criteria |
 | --- | --- | --- |
@@ -24,7 +24,7 @@ Exit: reviewed contract, documentation checks and explicit owner approval of HR-
 
 ### Phase HR-2 - Calculation and persistence on synthetic stores
 
-Status: `planned`; depends on HR-1 approval. Risk: high (versioned derivation). Suggested executor: one reasoning-capable agent, high effort.
+Status: `awaiting_approval` (HR-2 implementation and gates passed; local checkpoint being finalized, then HR-3 entry approval required). Owner approved entry with "Yes you have approval" (2026-11-01). Risk: high (versioned derivation). Scope: pure calculation, additive metadata migration, explicit candidate-only derive-2/score-3 rebuild and synthetic compatibility/recovery tests; defaults remain derive-1/score-2. HR-3 UI/API/active-pair integration and HR-4 live work excluded.
 
 | Subphase | Deliverable / likely future files | Pass/fail exit criteria |
 | --- | --- | --- |
@@ -74,6 +74,16 @@ Planning verification (2026-11-01): inline Python check (`@' ... '@ | .venv/Scri
 - Verification: `.venv/Scripts/python.exe -m pytest backend/tests/ingest/test_parse_adapter.py backend/tests/scoring/test_rescore_v2.py -q -p no:cacheprovider --tb=short`: **12 passed** (existing synthetic parser/history tests, not new weighted-HR tests). `.venv/Scripts/python.exe scripts/scan_source.py`: **176 source files, no findings**. Inline Python documentation/independent arithmetic check: **9 documents, 16 added local links/anchors passed**, weighted-versus-sample mean, exact gap/coverage thresholds and both DST transitions passed. `git diff --check`: **passed**. No application lint/type/build/full-gate run: this phase has changed documentation only; runtime was not modified.
 - Input/contract review is complete. After settings confirmation, reran inline Python checks: **9 documents/16 local links and anchors passed**, independent weighting/gap/coverage/DST arithmetic and explicit unknown-grouping disclosure passed. Reran `.venv/Scripts/python.exe scripts/scan_source.py`: **176 source files, no findings**; `git diff --check` passed. Previously recorded 12-test synthetic parser/history evidence remains applicable because only documentation changed. P33 lint/type/build/full-gate evidence remains applicable to unchanged runtime, not a newly executed P34 gate; no weighted-HR code/test is claimed. The subsequent checkpoint-note edit changes no links, arithmetic examples or executable inputs.
 - Scoped local commit preparation includes only P34's nine documentation files; unrelated PLAN diagnostic/average-explanation notes and owner screenshot excluded. Commit must succeed and be verified before this phase checkpoint is reported complete. HR-2 entry remains pending under AGENTS.md/P8, separate from the accepted calculation policy. Remaining limit: unknown historical export configuration is an HR-4 gate, not assumed validated by current Summarize Data setting.
+
+### HR-2 implementation and verification (2026-11-01)
+
+- Owner entry approval recorded above/P34; HR-3 not started. Pure HR function/config, additive nullable metadata migration, explicit candidate rebuild/rescore and compatibility guards implemented. Defaults remain derive-1/score-2. Receiver/CLI accept legacy 0002 and additive 0003 without forcing migration. No active-pair mechanism, weighted CLI flag or user-facing consumer change yet; no owner records accessed/migrated/recalculated.
+- Red: new pure tests initially failed collection because `app.domain.heart_rate` did not exist; after implementation **25 passed**. Candidate persistence/history tests then produced **10 failed/1 passed** against the old rebuild/schema, including missing metadata/guards and a test-client host setup error. Implemented migration/storage/guards; corrected the synthetic client to obey existing loopback/Host checks. Added restore/policy-corruption/unknown-schema tests; corrected the restore fixture to open the existing snapshot filename `database.sqlite3`, never the live database. Final targeted new suite: **39 passed**.
+- Checks already run: `.venv/Scripts/python.exe -m pytest backend/tests/domain/test_weighted_hr.py backend/tests/scoring/test_weighted_rebuild.py -q -p no:cacheprovider --tb=short`: **39 passed**; `.venv/Scripts/python.exe -m ruff check backend`: passed; `.venv/Scripts/python.exe -m mypy`: passed (43 source files). Initial Ruff import/style findings were fixed in touched/new code only.
+- `powershell -NoProfile -File scripts/check.ps1 -Suite Foundation`: **exit 0** with tool-approved escalation for previously established Windows pytest temporary-directory restrictions. Ruff/Mypy passed; **303 backend tests (including the 39 new cases), 49 frontend tests passed**; TypeScript/Vite production build passed. Synthetic migration/recovery/security suites included; no real health store used.
+- First sandboxed `powershell -NoProfile -File scripts/security.ps1`: source secret scan **180 files, no findings**, but pip-audit unavailable due cache access/proxy refusal (`WinError 10061`, sandbox proxy 127.0.0.1:9). No proxy/security settings changed. Reran the same gate with tool-approved escalation: **exit 0**, source scan **180 files, no findings**, pip-audit **no known vulnerabilities**, npm audit **0 vulnerabilities**. Only dependency metadata sent to advisory services; no install/dependency change.
+- Inline Python documentation/legacy-configuration checks passed: **6 affected documents / 5 added local links and anchors**, legacy derivation fields identical to HR-1 commit, pilot-1 and score-2 configuration hashes unchanged. `git diff --check` passed. Only documentation changed after the passing executable gates, so runtime evidence remains applicable. New browser/active-pair/CSV acceptance and weighted-path performance work belongs to HR-3, not claimed complete by Foundation. Unrelated PLAN diagnostics/average-explanation notes and owner screenshot remain excluded.
+- Local checkpoint preparation: stage only the HR-2 implementation, synthetic tests and affected specifications/approval/evidence, excluding unrelated PLAN notes; verify staged diff and successful commit before reporting checkpoint complete. No live migration/recalculation/activation, infrastructure changes or dependency updates performed. Next phase requires explicit HR-3 entry approval and includes API/UI/CSV, active-pair integration and full release/performance/browser gates; HR-4 live operations remain separately gated.
 
 ## SleepIQ Score v2 (2026-11-01)
 

@@ -15,11 +15,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.db.backup import create_daily
 from app.db.coordinator import write_guard
 from app.db.engine import open_engine
-from app.db.migrate import upgrade
+from app.db.migrate import SUPPORTED_HEALTH_REVISIONS, upgrade
 from app.ingest.parse import UnsupportedExport
 from app.ingest.store import MAX_BYTES, import_bytes
-
-HEAD = "0002_health"
 
 
 def _revision(database: Path) -> str | None:
@@ -39,7 +37,7 @@ def run(
     database = data / "sleepiq.sqlite3"
     if export.is_symlink() or not export.is_file() or export.stat().st_size > MAX_BYTES:
         raise ValueError("Regular export file within the size limit required")
-    if _revision(database) != HEAD and not migrate:
+    if _revision(database) not in SUPPORTED_HEALTH_REVISIONS and not migrate:
         raise ValueError("Store needs the Phase 2 schema; rerun with --migrate after reading docs")
     with write_guard(data):
         create_daily(database, data / "raw", backups, today)

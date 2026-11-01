@@ -14,6 +14,20 @@ class DeriveConfig:
     qty_tolerance_seconds: int = 120  # stage `qty` hours vs timestamps cross-check
     completion_lookahead_seconds: int = 30 * 60  # later data must start this long after wake
 
+    def config_hash(self) -> str:
+        return hashlib.sha256(json.dumps(asdict(self), sort_keys=True).encode()).hexdigest()
+
+
+@dataclass(frozen=True)
+class WeightedDeriveConfig(DeriveConfig):
+    """P34 candidate only. Legacy runtime defaults deliberately remain unchanged."""
+
+    version: str = "derive-2"
+    hr_max_gap_seconds: int = 30 * 60
+    hr_coverage_numerator: int = 7
+    hr_coverage_denominator: int = 10
+    hr_input_assumption: str = "individual_points"
+
 
 @dataclass(frozen=True)
 class ScoreConfig:
@@ -89,4 +103,6 @@ class ScoreV2Config(ScoreConfig):
 
 
 SCORE = ScoreV2Config()
-SCORE_VERSIONS = {PILOT_SCORE.version: PILOT_SCORE, SCORE.version: SCORE}
+WEIGHTED_DERIVE = WeightedDeriveConfig()
+WEIGHTED_SCORE = ScoreV2Config(version="score-3")  # Same formula, new measurement provenance.
+SCORE_VERSIONS = {cfg.version: cfg for cfg in (PILOT_SCORE, SCORE, WEIGHTED_SCORE)}
