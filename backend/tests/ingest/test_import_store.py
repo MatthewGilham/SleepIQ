@@ -41,10 +41,9 @@ def snapshot(engine: Engine) -> dict[str, list[tuple[object, ...]]]:
     result = {}
     with engine.connect() as conn:
         for name, sql in queries.items():
-            rows = [tuple(r) for r in conn.execute(text(sql))]
-            if name == "nights":
-                rows = [r[:-1] for r in rows]  # drop computed_utc
-            result[name] = rows
+            rows = conn.execute(text(sql)).mappings()
+            # Drop computed_utc by name; later migrations append columns after it.
+            result[name] = [tuple(v for k, v in r.items() if k != "computed_utc") for r in rows]
     return result
 
 
